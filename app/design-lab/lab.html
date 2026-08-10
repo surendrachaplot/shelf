@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  body { background:#101014; display:flex; gap:28px; padding:28px; align-items:flex-start; font-kerning:normal; }
+  .screen { width:375px; overflow:hidden; position:relative; flex:none; }
+  .sheet { height:420px; }
+  .app   { height:760px; }
+  .cap { position:absolute; left:0; right:0; bottom:0; height:0; }
+  svg { display:block; }
+</style></head>
+<body><div id="out"></div>
+<script src="./variants.js"></script>
+<script>
+  const v = Number(new URLSearchParams(location.search).get("v") || 0);
+  document.body.innerHTML = VARIANTS[v].render();
+  document.title = VARIANTS[v].name;
+</script>
+</body></html>

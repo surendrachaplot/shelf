@@ -11,7 +11,8 @@
     "build:preview": "eas build -p ios --profile preview",
     "verify": "node verify-design.mjs && node verify-design.mjs --selftest && node preview/build.mjs && node preview/measure.mjs",
     "frames": "node verify-design.mjs --frames",
-    "preview": "node preview/build.mjs && node preview/shoot.mjs && node preview/measure.mjs"
+    "preview": "node preview/build.mjs && node preview/shoot.mjs && node preview/measure.mjs",
+    "lab": "node design-lab/shoot.mjs"
   },
   "dependencies": {
     "expo": "~52.0.0",
