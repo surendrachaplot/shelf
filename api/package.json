@@ -1,0 +1,20 @@
+{
+  "name": "shelf-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node serve.js",
+    "dev": "node --env-file=.env serve.js",
+    "worker": "node --env-file=.env worker.js --once",
+    "migrate": "node --env-file=.env -e \"import('./db.js').then(m=>m.migrate()).then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)})\"",
+    "selftest": "node resolve.js --selftest && node classify.js --selftest && node items.js --selftest && node auth.js --selftest && node ingest.js --selftest && node enrich/index.js --selftest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "pg": "^8.13.1"
+  }
+}

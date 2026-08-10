@@ -1,0 +1,115 @@
+# shelf — operations
+
+Read before touching the build, a deploy, a scheduled job, or a third-party
+API. Same convention as soundcheck: every rule names the failure that produced
+it, because that is what makes a rule survive contact with a deadline.
+
+## 0. The spike that decides everything — do it first
+
+Nothing downstream changes shape based on the answer, but the **order of the
+resolver chain** does, and so does whether the paid resolver is a fallback or
+the primary. Until this has a number, the caption path is a guess.
+
+Collect ~20 real reel URLs across the four categories and run each through:
+
+1. `GET https://www.instagram.com/p/<code>/embed/captioned/` with browser headers
+2. `GET https://www.instagram.com/reel/<code>/` — any `og:description`?
+3. **Both of the above from the Render box, not your laptop.**
+
+Write the hit rate into this file.
+
+- **Datacentre IPs are blocked far more aggressively than residential ones.** A
+  spike that passes from a laptop and is never repeated from the server is the
+  classic way this ships broken: it works in development, works in the demo,
+  and returns nothing in production, and the code is identical in all three.
+- The agent sandbox this repo was written in has `instagram.com` blocked by the
+  proxy (`CONNECT tunnel failed, 403`), so the numbers were never taken. Do not
+  read the resolver order in `resolve.js` as evidence that it was measured.
+
+## 1. The request path
+
+**Nothing slow happens while the share sheet is on screen.** `POST /api/ingest`
+writes one row and returns. Resolution, Claude, and provider lookups are the
+worker's job, always.
+
+This is soundcheck's "never call YouTube from a request path" rule with the
+names changed, and it is here for a sharper reason: the iOS share sheet is a
+modal over *another app*. A user waiting on Instagram's servers inside a sheet
+they cannot dismiss is a worse experience than any latency you can measure.
+
+If `/api/ingest` ever grows a `fetch`, that is the bug.
+
+## 2. Third-party limits
+
+- **Google Places is the only metered provider.** `provider_cache` stores the
+  MISS as well as the HIT — `found = false` with a null payload is a real,
+  reusable answer. Not caching negatives is how soundcheck doubled its YouTube
+  bill; the lesson is provider-agnostic and it cost a day.
+- **A provider FAILURE is not a cached miss.** A network error or a 500 must
+  never be written to the cache, or one bad afternoon becomes a permanently
+  empty field. `cached()` returns null on a throw without storing anything, so
+  the next attempt retries.
+- **City is part of the Places cache key.** "Ganapati" exists in several
+  cities; keying on the name alone reuses the wrong answer forever.
+- Open Library and schema.org recipe parsing need no key. TMDB needs a free
+  one. Everything degrades to `enriched: false` rather than failing the ingest —
+  an item Claude named correctly is already useful without a cover image.
+
+## 3. Claude
+
+- `claude-opus-5`, `effort: low` — this is short structured extraction, not
+  reasoning work. Override with `SHELF_MODEL` if you want Sonnet.
+- **Thinking stays on.** It is the default on Opus 5, and disabling it invites
+  the failure where a tool call is written into visible text instead of being
+  emitted as a call — the turn succeeds, nothing runs, nothing errors.
+- `max_tokens` caps thinking *and* output together. 8000 is headroom, not a
+  target.
+- Output is constrained by `output_config.format` (JSON schema), so there is no
+  "it wrapped the JSON in a fence again" path to defend against. The schema
+  guarantees **shape**, never **sense** — `coerceItems()` clamps confidence,
+  truncates titles, and drops nameless items before anything reaches the DB.
+
+## 4. iOS
+
+- **Expo Go cannot host a share extension.** Prebuild plus an EAS dev-client
+  build from the start.
+- **The Keychain access group is the silent failure.** The app and the extension
+  are separate processes. If the group is misconfigured, `getToken()` in the
+  extension returns null, every share 401s, and the app looks perfectly healthy.
+  `verifySharedAccess()` runs at pairing and says so on screen — that check is
+  the whole reason this is not a week-long mystery.
+- **A failed URL share is queued, a failed image share is not.** The queue lives
+  in the shared Keychain and the app flushes it on launch. Images are excluded
+  on purpose: the shared file lives in a temporary container that is gone by
+  the time the app next opens, so queueing one would guarantee a broken retry.
+- `index.share.js` and the component name `shareExtension` are both load-bearing
+  — rename either and the extension builds fine and launches to a blank sheet.
+- `metro.config.js` must wrap `withShareExtension`, or metro only ever builds
+  the app bundle and the extension ships stale JS.
+
+## 5. Deploy
+
+- API on Render: `node serve.js` as the web service, `node worker.js` as a
+  background worker. If a background worker is not available, run the drain from
+  cron against `POST /api/worker/run` with `ADMIN_SECRET`.
+- **`GET /api/health` goes 503 when the oldest pending share is over 10
+  minutes old.** That is the check that catches a dead worker — an API that
+  answers every request while nothing resolves is otherwise indistinguishable
+  from a healthy one, and the app shows "Working it out…" forever.
+- Migrations run at boot (`migrate()` in `serve.js`). They are additive and
+  recorded in `schema_migrations`; nothing here drops or sweeps anything.
+
+## 6. Traps already paid for
+
+- **`process.argv` is global, so `--selftest` leaks across imports.** Every
+  module here ends with a selftest block; `node items.js --selftest` imported
+  `auth.js`, which saw the flag, ran *its* tests and called `process.exit(0)`.
+  The suite printed "auth selftest ok" and exited green **without running a
+  single items.js assertion** — a test suite passing by not running, which
+  looks exactly like success. Guard every such block with
+  `isMain(import.meta.url)`.
+- **Instagram share URLs carry tracking junk** (`?igsh=…`). Canonicalise before
+  the deterministic id or the same reel makes a new row every time you share it.
+- A screenshot's base64 sits in `items.raw_image_b64` only until the worker
+  reads it, then it is nulled. It is a queue slot, not storage — leaving it
+  would make every list query drag megabytes along.

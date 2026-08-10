@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "shelf",
+    "slug": "shelf",
+    "scheme": "shelf",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.surendrachaplot.shelf",
+      "supportsTablet": false,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.surendrachaplot.shelf"],
+        "keychain-access-groups": ["$(AppIdentifierPrefix)com.surendrachaplot.shelf"]
+      }
+    },
+    "plugins": [
+      [
+        "expo-share-extension",
+        {
+          "activationRules": [
+            { "type": "url", "max": 1 },
+            { "type": "text", "max": 1 },
+            { "type": "image", "max": 1 }
+          ],
+          "backgroundColor": { "red": 250, "green": 249, "blue": 246, "alpha": 1 },
+          "height": 320
+        }
+      ]
+    ]
+  }
+}
