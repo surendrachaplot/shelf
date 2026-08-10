@@ -13,7 +13,7 @@ const Screen = which === "share"
 // a box the size of the real thing or the layout judgement is worthless.
 const isSheet = which === "share";
 const root = document.getElementById("root");
-root.style.height = isSheet ? "320px" : "100%";
+root.style.height = isSheet ? "420px" : "100%";
 root.style.width = "100%";
 if (isSheet) root.style.boxShadow = "0 -8px 40px rgba(0,0,0,.18)";
 

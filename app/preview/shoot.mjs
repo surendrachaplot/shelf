@@ -19,10 +19,10 @@ const SHOTS = [
   { name: "app-320-light", q: "", w: 320, h: 700, scheme: "light" },
   { name: "app-books-375-light", q: "", w: 375, h: 812, scheme: "light", click: "Books" },
   { name: "pair-375-light", q: "?paired=0", w: 375, h: 812, scheme: "light" },
-  { name: "share-375-light", q: "?screen=share", w: 375, h: 320, scheme: "light" },
-  { name: "share-375-dark", q: "?screen=share", w: 375, h: 320, scheme: "dark" },
-  { name: "share-320-light", q: "?screen=share", w: 320, h: 320, scheme: "light" },
-  { name: "share-done-375-light", q: "?screen=share", w: 375, h: 320, scheme: "light", click: "Restaurants" },
+  { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
+  { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
+  { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },
+  { name: "share-done-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light", click: "Restaurants" },
 ];
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });

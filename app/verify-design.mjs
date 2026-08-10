@@ -46,6 +46,10 @@ function linesWithStyleName(src) {
 }
 
 const CONTROL = /btn|button|tab|tile|decide|input|action|chip|press|retry/i;
+// ...but only when the style IS the control. Rules, fades, wrappers and labels
+// are decoration that happens to sit inside one, and flagging them would push
+// you to inflate a 2pt underline to 44pt.
+const NOT_CONTROL = /(rule|fade|wrap|inner|list|label|icon|bar|line|dot)$/i;
 
 const staticRules = [
   {
@@ -60,7 +64,7 @@ const staticRules = [
     why: `§5 / §4f — ${D.TOUCH_MIN}×${D.TOUCH_MIN} is a floor, not a target.`,
     check: (src) => linesWithStyleName(src)
       .filter(({ line, style }) => {
-        if (!style || !CONTROL.test(style)) return false;
+        if (!style || !CONTROL.test(style) || NOT_CONTROL.test(style)) return false;
         const m = /(?:minHeight|height):\s*(\d+)/.exec(line);
         return m && Number(m[1]) < D.TOUCH_MIN;
       })
@@ -93,6 +97,19 @@ const staticRules = [
     check: (src) => linesWithStyleName(src)
       .filter(({ line }) => /#[0-9a-fA-F]{3,8}\b/.test(line))
       .map(({ n, line }) => ({ n, msg: `colour literal outside design.js: ${line.trim()}` })),
+  },
+  {
+    id: "no-emoji-ui",
+    why: "§0a — emoji are not an icon set. They carry another vendor's illustration style, refuse your colour, render differently on every OS, and sit at a weight and optical size you did not choose. Draw the mark (src/Icon.tsx).",
+    check: (src) => {
+      const out = [];
+      const re = /[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F2FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu;
+      src.split("\n").forEach((line, i) => {
+        const m = line.match(re);
+        if (m) out.push({ n: i + 1, msg: `emoji used as UI: ${[...new Set(m)].join(" ")}` });
+      });
+      return out;
+    },
   },
   {
     id: "rows-wrap",
@@ -245,6 +262,20 @@ const systemRules = [
     },
   },
   {
+    id: "list-label-contrast",
+    why: "§2 — every list colour is used as a filled button behind a label. The label flips (white on light scheme, page ink on dark) and BOTH directions have to clear 4.5:1.",
+    check: (d) => {
+      const out = [];
+      for (const k of d.LIST_KEYS) {
+        const l = d.contrast(d.light.onList, d.light[k]);
+        if (l < 4.5) out.push({ msg: `light: white label on ${k} is ${l}:1` });
+        const dk = d.contrast(d.dark.onList, d.dark[k]);
+        if (dk < 4.5) out.push({ msg: `dark: page ink on ${k} is ${dk}:1` });
+      }
+      return out;
+    },
+  },
+  {
     id: "placeholder-inverts",
     why: "§6 — a skeleton must read as ABOVE the card in dark and BELOW it in light. One 'sunk' token cannot do both, and using one made every placeholder in dark mode look like a hole punched through the card.",
     check: (d) => {
@@ -331,6 +362,7 @@ const STATIC_PROBES = {
   "no-stretched-buttons": { bad: `const s = {\n  pairBtn: {\n    width: "100%",\n  },\n};`, good: `const s = {\n  pairBtn: {\n    alignSelf: "center",\n  },\n  input: {\n    width: "100%",\n  },\n};` },
   "image-failure": { bad: `<Image source={{ uri: u }} style={x} />`, good: `<Image source={{ uri: u }} style={x} onError={f} />` },
   "no-loose-colours": { bad: `const s = {\n  x: {\n    color: "#ff0000",\n  },\n};`, good: `const s = {\n  x: {\n    color: c.ink,\n  },\n};` },
+  "no-emoji-ui": { bad: 'const s = { x: { label: "\u{1F4DA} Books" } };', good: 'const s = { x: { label: "Books" } };' },
   "rows-wrap": { bad: `const s = {\n  actions: {\n    flexDirection: "row",\n  },\n};`, good: `const s = {\n  actions: {\n    flexDirection: "row", flexWrap: "wrap",\n  },\n};` },
 };
 
@@ -341,6 +373,7 @@ const SYSTEM_PROBES = {
   "type-complete": { ...D, type: { ...D.type, body: { name: "body", fontSize: 15, lineHeight: 0, letterSpacing: 0 } } },
   "spacing-grid": { ...D, sp: { ...D.sp, odd: 13 } },
   "placeholder-inverts": { ...D, dark: { ...D.dark, placeholder: "#000000" } },
+  "list-label-contrast": { ...D, light: { ...D.light, movies: "#D8C4E0" } },
   // ζ=0.35 is a spring that visibly bounces; the press budget forbids any.
   "motion-frames": { ...D, springs: { press: D.spring({ dampingRatio: 0.35, settleMs: 220 }) } },
   "stagger-budget": { ...D, staggerDelay: (i) => Math.min(i, 20) * 40 },

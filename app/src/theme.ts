@@ -5,25 +5,36 @@
 // thing that checks it, and then the gate would be checking a different app
 // than the one that ships.
 import { useMemo } from "react";
-import { useColorScheme, type TextStyle } from "react-native";
+import { Platform, useColorScheme, type TextStyle } from "react-native";
 import * as D from "./design.js";
 
 export const {
-  glyph, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR,
-  springs, duration, easing, staggerDelay, pressScale,
-  STAGGER_STEP, STAGGER_MAX_STEPS,
+  icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
+  springs, duration, easing, staggerDelay, pressScale, elevation,
+  STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS,
 } = D;
+
+// The serif is not decoration. It is what separates content (the name of the
+// thing you saved) from chrome (the label on the button that files it).
+const serif = Platform.select(D.family.serif);
 
 export type Palette = typeof D.light;
 
 /** The four lists, and the one mark each. */
+// `shape` is not decoration: a book and a film have covers (2:3), a place and
+// a dish have photographs (1:1). Forcing one aspect on all four makes half the
+// shelf look like it is missing artwork it was never going to have.
 export const lists = {
-  books: { label: "Books", glyph: "📚" },
-  restaurants: { label: "Restaurants", glyph: "🍜" },
-  movies: { label: "Movies", glyph: "🎬" },
-  recipes: { label: "Recipes", glyph: "🥣" },
-  unsorted: { label: "Unsorted", glyph: "📥" },
+  books: { label: "Books", one: "book", shape: "portrait" },
+  restaurants: { label: "Restaurants", one: "place", shape: "square" },
+  movies: { label: "Movies", one: "film", shape: "portrait" },
+  recipes: { label: "Recipes", one: "recipe", shape: "square" },
+  unsorted: { label: "Inbox", one: "item", shape: "square" },
 } as const;
+
+export const COVER_W = 62;
+export const coverHeight = (list: keyof typeof lists) =>
+  lists[list].shape === "portrait" ? Math.round(COVER_W * 1.5) : COVER_W;
 
 const asText = (t: (typeof D.type)[keyof typeof D.type]): TextStyle => ({
   fontSize: t.fontSize,
@@ -34,9 +45,13 @@ const asText = (t: (typeof D.type)[keyof typeof D.type]): TextStyle => ({
 
 /** The type scale, ready to spread into a style. Never write a size by hand. */
 export const t = {
-  display: asText(D.type.display),
-  title: asText(D.type.title),
-  heading: asText(D.type.heading),
+  // Serif — content. The wordmark, list names, the titles of saved things.
+  display: { ...asText(D.type.display), fontFamily: serif },
+  title: { ...asText(D.type.title), fontFamily: serif },
+  heading: { ...asText(D.type.heading), fontFamily: serif },
+  itemTitle: { ...asText(D.type.heading), fontFamily: serif, fontWeight: "600" as const },
+  quote: { ...asText(D.type.meta), fontFamily: serif, fontStyle: "italic" as const },
+  // Sans — chrome. Labels, controls, metadata.
   body: asText(D.type.body),
   bodyMed: asText(D.type.bodyMed),
   meta: asText(D.type.meta),

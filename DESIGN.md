@@ -29,18 +29,42 @@ That bar is only meaningful if it is falsifiable, so it is:
   non-finite value. The auditor imports the *same* spring math the app runs, so
   it measures the shipped curve and not a model of it.
 - **Every text/surface pairing is contrast-checked in both schemes**, exactly,
-  against WCAG 2.1. Thirty pairings, all ≥ 4.5:1.
+  against WCAG 2.1. Fifty pairings, all ≥ 4.5:1 — including each list colour
+  as a filled button behind a label that flips per scheme.
+- **No emoji, ever.** Emoji are not an icon set: they carry another vendor's
+  illustration style, refuse your colour, render differently on every OS, and
+  sit at a weight and optical size you did not choose. Four in a row is a
+  fallback, not a family. The marks are drawn on a 24 grid at one stroke
+  weight (`src/Icon.tsx`), and a rule fails the build on any emoji in a
+  component. **An icon set is also judged as a SET** — restaurants and recipes
+  first shipped as a bowl and a pot, two of four silhouettes reading the same
+  at a glance, which is a failed set however well each one is drawn.
+- **Two type families, and the split is the point.** SF does the interface —
+  labels, controls, metadata. New York (the platform serif, free on every iOS
+  device since 13) carries content: the wordmark, list names, the titles of
+  things you saved. That split is what makes Apple Books and News read as
+  edited rather than administered, and it costs nothing.
+- **Depth, not outlines.** A hairline border around every surface is the
+  visual equivalent of underlining every sentence: it flattens hierarchy and
+  reads as a wireframe that never got finished. Cards sit ON the paper.
+- **Each list owns a colour**, and a shape: a book and a film have covers
+  (2:3), a place and a dish have photographs (1:1). One aspect for all four
+  makes half the shelf look like it is missing artwork it never had.
 - **Dark mode is not a v2 thing.** Styles are built from the live palette inside
   components, never frozen at import time — a StyleSheet created once cannot
   follow the system appearance, and that is how an app ends up with one scheme
   permanently wrong.
 
-This bar has already paid for itself twice. The frame audit caught an `enter`
+This bar has already paid for itself repeatedly. The frame audit caught an `enter`
 curve whose first frame covered 36.9% of the journey — an initial slope of 14,
 which would have read as a snap rather than an ease. The type-floor check caught
 the ratio quietly producing 10.5px for the smallest step while a comment claimed
 11. Neither is visible in a screenshot; both are obvious to a machine that was
-told what "right" means.
+told what "right" means. And the reverse holds: **rendering it caught four
+things no rule could** — a 2×2 grid collapsed to four overlapping pills, a tab
+strip eating 200pt of vertical space, placeholders that read as holes punched
+through the card in dark mode, and an icon set whose middle two marks were the
+same silhouette. Both halves are load-bearing.
 
 **And the honest limit:** none of this is a substitute for §0.2 below. The
 auditor says so in its own passing output. A machine can prove the system is

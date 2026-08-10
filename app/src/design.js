@@ -64,8 +64,11 @@ export const type = {
   micro:   mkType("micro",   step(-2), "600"),
 };
 
-// Emoji used as illustration. Three named steps so a fourth cannot be inlined.
-export const glyph = { sm: 22, lg: 34, mark: 40 };
+// Icon sizes. NOT emoji — emoji as UI is the single loudest tell that nobody
+// drew anything, and it costs you every ounce of typographic voice you built.
+// Real drawn paths, one stroke weight, on a 24 grid. See src/Icon.tsx.
+export const icon = { sm: 18, md: 22, lg: 28, xl: 44 };
+export const STROKE = 1.75;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPACE — a strict 4pt grid.
@@ -90,6 +93,16 @@ export const TOUCH = 48;
 // survives both schemes at text weight, which pure orange does not.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Two families. SF (the platform sans) does the work of the interface —
+// labels, controls, metadata. New York (the platform SERIF, free on every iOS
+// device since 13) carries the content: the wordmark, list names, titles of
+// the things you saved. That split is what makes Apple Books and News read as
+// edited rather than administered, and it costs nothing.
+export const family = {
+  sans: { ios: undefined, web: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', default: undefined },
+  serif: { ios: "New York", web: 'ui-serif, "New York", Georgia, "Times New Roman", serif', default: "serif" },
+};
+
 export const light = {
   bg: "#FAF8F4",
   surface: "#FFFFFF",
@@ -109,6 +122,17 @@ export const light = {
   accentWash: "#F6E9E1",
   good: "#1F5D3F",
   warn: "#7A5310",
+
+  // Each list is its own thing and should look like it. A shelf of books and
+  // a list of restaurants sharing one accent is a filing cabinet, not a shelf.
+  books: "#2C4A6E",
+  restaurants: "#A8431A",
+  movies: "#5B3A66",
+  recipes: "#4A5D2B",
+  unsorted: "#746D62",
+  // The label that sits ON a filled list colour. Light scheme: paper white.
+  // Dark scheme: the page ink, because the list colours invert to bright.
+  onList: "#FFFFFF",
 };
 
 export const dark = {
@@ -126,6 +150,24 @@ export const dark = {
   accentWash: "#2A1C14",
   good: "#6FCF97",
   warn: "#E0B057",
+
+  books: "#8FB3DC",
+  restaurants: "#F08A5A",
+  movies: "#C9A0D8",
+  recipes: "#A8C46E",
+  unsorted: "#A79E92",
+  onList: "#131110",
+};
+
+export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "unsorted"];
+
+// Depth instead of outlines. A hairline border around every surface is the
+// visual equivalent of underlining every sentence: it flattens the hierarchy
+// and reads as a wireframe that never got finished. Cards sit ON the paper.
+export const elevation = {
+  card: { shadowColor: "#2A1F14", shadowOpacity: 0.06, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  raised: { shadowColor: "#2A1F14", shadowOpacity: 0.12, shadowRadius: 22, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  cover: { shadowColor: "#1A120A", shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 },
 };
 
 // Text/background pairings that actually occur in the UI. The auditor walks
@@ -140,6 +182,11 @@ export const PAIRINGS = [
   ["accentInk", "accent"],
   ["good", "bg"], ["good", "surface"],
   ["warn", "bg"], ["warn", "surface"],
+  ["books", "bg"], ["books", "surface"],
+  ["restaurants", "bg"], ["restaurants", "surface"],
+  ["movies", "bg"], ["movies", "surface"],
+  ["recipes", "bg"], ["recipes", "surface"],
+  ["unsorted", "bg"], ["unsorted", "surface"],
 ];
 
 // WCAG 2.1 relative luminance + contrast ratio. Exact, not approximated.

@@ -12,6 +12,7 @@ const swap = {
     b.onResolve({ filter: /^expo-linear-gradient$|^expo-share-extension$|^expo-file-system$|^expo-secure-store$/ }, () => ({ path: here("./nativeStubs.js") }));
     b.onResolve({ filter: /src\/api(\.[tj]s)?$/ }, () => ({ path: here("./stubs.js") }));
     b.onResolve({ filter: /src\/tokenStore(\.[tj]s)?$/ }, () => ({ path: here("./tokenStub.js") }));
+    b.onResolve({ filter: /assets-registry/ }, () => ({ path: here("./assetStub.js") }));
   },
 };
 
@@ -23,5 +24,7 @@ await esbuild.build({
   loader: { ".js": "jsx", ".tsx": "tsx", ".ts": "ts" },
   define: { "process.env.NODE_ENV": '"development"', __DEV__: "true", global: "globalThis" },
   jsx: "automatic",
+  // react-native-svg ships .web.js variants; RNW projects resolve these first.
+  resolveExtensions: [".web.tsx", ".web.ts", ".web.jsx", ".web.js", ".tsx", ".ts", ".jsx", ".js", ".json"],
   logLevel: "info",
 });

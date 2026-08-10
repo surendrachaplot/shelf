@@ -11,8 +11,12 @@
       "bundleIdentifier": "com.surendrachaplot.shelf",
       "supportsTablet": false,
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.surendrachaplot.shelf"],
-        "keychain-access-groups": ["$(AppIdentifierPrefix)com.surendrachaplot.shelf"]
+        "com.apple.security.application-groups": [
+          "group.com.surendrachaplot.shelf"
+        ],
+        "keychain-access-groups": [
+          "$(AppIdentifierPrefix)com.surendrachaplot.shelf"
+        ]
       }
     },
     "plugins": [
@@ -20,12 +24,26 @@
         "expo-share-extension",
         {
           "activationRules": [
-            { "type": "url", "max": 1 },
-            { "type": "text", "max": 1 },
-            { "type": "image", "max": 1 }
+            {
+              "type": "url",
+              "max": 1
+            },
+            {
+              "type": "text",
+              "max": 1
+            },
+            {
+              "type": "image",
+              "max": 1
+            }
           ],
-          "backgroundColor": { "red": 250, "green": 249, "blue": 246, "alpha": 1 },
-          "height": 320
+          "backgroundColor": {
+            "red": 250,
+            "green": 248,
+            "blue": 244,
+            "alpha": 1
+          },
+          "height": 420
         }
       ]
     ]
