@@ -4,8 +4,8 @@
 in anger after real things shipped broken — plus the standing bar below. The
 failures they name are not soundcheck-specific and neither are the rules.
 
-Run `node verify-design.mjs` in `app/` before shipping. Twelve of these rules
-are mechanised there. The rest are yours to hold.
+Run `node verify-design.mjs` in `app/` before shipping. Seventeen of these
+rules are mechanised there. The rest are yours to hold.
 
 ---
 
@@ -51,11 +51,32 @@ That bar is only meaningful if it is falsifiable, so it is:
 - **Depth is a BOARD, not a shadow.** A hard edge with visible thickness that
   things rest on is what makes a coloured field read as a shelf rather than a
   rectangle. Six points in the sheet, seven in the app.
-- **The app shows shelves.** Not a tab bar over a list of cards: four boards
-  with your things standing on them as spines, and the Inbox as the pile that
-  has not been put away. A spine's THICKNESS varies and its height barely
-  does — getting that backwards makes the row read as a bar chart, which is
-  exactly what the first pass did.
+- **The app shows shelves, FACE-OUT.** Not a tab bar over a list of cards: four
+  full-bleed boards with your things standing on them as jackets, and the Inbox
+  as the pile that has not been put away. The first pass drew them spine-out —
+  22pt slivers with the title rotated -90°, varying in height on a common
+  baseline — and that is a bar chart with a metaphor written on it: nothing
+  legible, two thirds of every row empty paper, and no trace of the thing you
+  actually saved. Face-out fixes all three at once. WIDTH varies and height
+  barely does, which is both what a shelf physically constrains and what the
+  layout requires: a horizontal row is as tall as its tallest member, so a 48pt
+  height spread leaves 48pt of dead air above every short cover.
+- **Everything saved gets a cover.** Real artwork when there is any, a
+  typographic jacket when there is not — the list's own colour, the label colour
+  that list names for itself, in one of three compositions (mass at the top, at
+  the foot, or centred and inverted) so a row of five books is not a swatch
+  book. A missing cover is a design brief, not a hole.
+- **Cover type SIZES ITSELF TO ITS TRIM.** Set at a fixed step and left to wrap,
+  "The Dispossessed" rendered as `Disposs / essed` and "Ganapati" as
+  `Ganapat / i` on a 112pt jacket. A word split mid-syllable is a rendering
+  failure, not a line break, and `numberOfLines` does not hide it. The size is
+  solved from the longest word and floored — never rounded, because rounding
+  12.78 up to 13 puts the word 1.6pt back outside the box.
+- **Every jacket is trimmed in ink.** Not in its own second colour: on a red
+  jacket that trim is white, so its white masthead bled into white paper and the
+  series number floated with no left or right edge. Ink is the one colour that
+  contrasts the paper in both schemes, and it gives yellow the boundary its
+  1.43:1 field cannot.
 - **Each list names its own label colour.** Yellow cannot carry white.
   Assuming one label colour for all four would have shipped a 1.4:1 label on
   Movies; `listOn` exists so the system cannot make that assumption.

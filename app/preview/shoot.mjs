@@ -17,7 +17,17 @@ const SHOTS = [
   { name: "app-375-light", q: "", w: 375, h: 980, scheme: "light" },
   { name: "app-375-dark", q: "", w: 375, h: 980, scheme: "dark" },
   { name: "app-320-light", q: "", w: 320, h: 900, scheme: "light" },
-  { name: "app-books-375-light", q: "", w: 375, h: 980, scheme: "light", click: "Books" },
+  { name: "app-lower-375-light", q: "", w: 375, h: 980, scheme: "light", scroll: 1100 },
+  { name: "app-lower-375-dark", q: "", w: 375, h: 980, scheme: "dark", scroll: 1100 },
+  // Tapping a jacket. The detail panel is the same two colours and the same
+  // composition language at full size, so opening one reads as a zoom.
+  { name: "app-detail-375-light", q: "", w: 375, h: 980, scheme: "light", click: "St. John" },
+  { name: "app-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", click: "St. John" },
+  // The same panel with a frame off the reel — the two cases the field has to
+  // hold, and the only way to see whether the empty one is composed or unfinished.
+  // By LABEL, not by text: a jacket showing artwork has no text node at all,
+  // which is exactly why getByText timed out here the first time.
+  { name: "app-detail-art-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Piranesi, Susanna Clarke" },
   { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
@@ -38,8 +48,21 @@ for (const s of SHOTS) {
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto(URLBASE + s.q);
   await page.waitForTimeout(700);        // let the entrance stagger finish
-  if (s.click) {
-    await page.getByText(s.click, { exact: false }).first().click();
+  if (s.scroll) {
+    // RNW's ScrollView is an overflow div, not the window — scrolling the
+    // window here silently does nothing and you screenshot the top twice.
+    await page.evaluate((y) => {
+      const el = [...document.querySelectorAll("div")].find((d) => d.scrollHeight > d.clientHeight + 40);
+      if (!el) throw new Error("no scrollable container found");
+      el.scrollTop = y;
+    }, s.scroll);
+    await page.waitForTimeout(200);
+  }
+  if (s.click || s.clickLabel) {
+    const target = s.clickLabel
+      ? page.getByLabel(s.clickLabel, { exact: false })
+      : page.getByText(s.click, { exact: false });
+    await target.first().click();
     await page.waitForTimeout(600);      // and the transition after the tap
   }
   await page.screenshot({ path: OUT + s.name + ".png" });

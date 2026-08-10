@@ -170,22 +170,78 @@ export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "unsorted
 // read as a shelf rather than a rectangle.
 export const elevation = { card: {}, raised: {}, cover: {} };
 
-export const BOARD = 7;        // the shelf a spine stands on
+export const BOARD = 7;        // the shelf a cover stands on
 export const BAND_BOARD = 6;   // the underside of a band in the share sheet
 export const RULE = 3;         // a section rule
 export const HAIRLINE = 1;
+// Every cover is trimmed with a hard keyline. Two jobs: a yellow cover on
+// white paper has a 1.43:1 edge and would otherwise float with no boundary at
+// all, and photographic artwork needs the same trim as a typographic cover or
+// the shelf reads as two unrelated systems.
+export const COVER_KEYLINE = 2;
 
-// A spine's THICKNESS varies; its height barely does. Getting that backwards
-// is what made the first pass read as a bar chart instead of a bookshelf.
-export const spine = { minW: 22, stepW: 3.5, stepsW: 7, minH: 106, stepH: 4, stepsH: 4 };
-export const spineFor = (title) => {
+// FACE-OUT, like the front table of a bookshop — not spine-out.
+//
+// The first pass drew spines: 22pt slivers with the title rotated -90°. It was
+// a diagram of a shelf, not a shelf. Nothing was legible, two thirds of every
+// row was empty paper, and a row of flat bars varying in height on a common
+// baseline is a bar chart no matter what you call it. Face-out fixes all three
+// at once: the thing you saved is the thing you see.
+//
+// Trim sizes vary the way real books do — a paperback and an art book are not
+// the same rectangle — and both dimensions stay on the 4pt grid.
+// WIDTH varies, HEIGHT barely does — the same truth the spine version had
+// backwards, applied face-out. A shelf constrains height: that is what a shelf
+// IS. Trim width is free, so paperbacks and art books sit side by side.
+//
+// It is also a layout constraint, not only a metaphor. A horizontal row is as
+// tall as its tallest member, so a 48pt height spread leaves 48pt of dead air
+// above every short cover — and when the tall one happens to be off-screen,
+// that gap reads as a bug rather than as a shelf. 16pt of spread reads as
+// variation. 104pt is the narrowest trim that still holds a 12-letter word at
+// the 11px floor without breaking it, which is why the ladder starts there.
+export const cover = { widths: [104, 116, 128], heights: [156, 164, 172], comps: 3, pad: 8 };
+export const coverFor = (title) => {
   let h = 7;
   for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  const width = cover.widths[h % cover.widths.length];
   return {
-    width: spine.minW + (h % spine.stepsW) * spine.stepW,
-    height: spine.minH + ((h + title.length) % spine.stepsH) * spine.stepH,
+    width,
+    height: cover.heights[(h >> 3) % cover.heights.length],
+    // Three layouts, three silhouettes: mass at the top, mass at the bottom,
+    // and one inverted. A shelf where every jacket is the same composition in
+    // the same colour is a swatch book.
+    comp: (h + title.length) % cover.comps,
   };
 };
+
+// A cover carries the main title only. "Babel, or the Necessity of Violence:
+// An Arcane History…" set in four ellipsised lines is not what that book looks
+// like; the full string belongs on the detail panel, where there is room.
+export const mainTitle = (s) => {
+  const head = String(s ?? "").split(/\s*[:—]\s*/)[0].trim();
+  if (!head) return String(s ?? "");
+  return head.length > 28 ? head.split(/,\s/)[0].trim() : head;
+};
+
+// Jacket type SIZES ITSELF TO ITS BOX, from the longest word in the title.
+//
+// The first face-out pass set every title at the heading step and let it wrap,
+// which broke "The Dispossessed" across a line as "Disposs / essed" and
+// "Ganapati" as "Ganapat / i". A word split mid-syllable is not a wrap, it is
+// a rendering failure, and no amount of numberOfLines hides it. Real covers do
+// exactly this: a long title is set smaller. The floor still outranks the fit —
+// below TYPE_FLOOR the answer is a shorter title, not smaller type.
+export const JACKET_GLYPH = 0.6;   // bold sans, mixed case, deliberately over-wide
+export function jacketType(title, coverWidth) {
+  const box = coverWidth - 2 * COVER_KEYLINE - 2 * cover.pad;
+  const longest = String(title).split(/\s+/).reduce((n, w) => Math.max(n, w.length), 1);
+  const fit = box / (longest * JACKET_GLYPH);
+  // FLOOR to the half-point, never round: rounding 12.78 up to 13 puts the
+  // longest word 1.6pt outside a 92pt box, which is the entire defect again.
+  const size = Math.max(TYPE_FLOOR, Math.min(type.heading.fontSize, Math.floor(fit * 2) / 2));
+  return { fontSize: size, lineHeight: Math.round(size * 1.05 * 2) / 2 };
+}
 
 // Text/background pairings that actually occur in the UI. The auditor walks
 // this list rather than guessing — DESIGN-RULES §4d is explicit that measuring

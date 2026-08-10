@@ -54,12 +54,12 @@ const NOT_CONTROL = /(rule|fade|wrap|inner|list|label|icon|bar|line|dot)$/i;
 // If a threshold the gate compares against is missing, every comparison using
 // it quietly returns false and the gate reports a clean run. Assert the
 // constants exist before trusting a single check.
-const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ", "MAX_SETTLE_MS", "MAX_FRAME_TRAVEL", "BOARD", "BAND_BOARD", "RULE"];
+const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ", "MAX_SETTLE_MS", "MAX_FRAME_TRAVEL", "BOARD", "BAND_BOARD", "RULE", "COVER_KEYLINE", "JACKET_GLYPH"];
 // Twice now a broad regex edit to design.js has silently deleted an export —
 // TOUCH_MIN once, `family` once — and both times the failure surfaced far from
 // the cause (a missing tap-target floor; a crash inside Platform.select at
 // render). The gate names what must exist so a deletion fails HERE.
-const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "spineFor"];
+const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle"];
 
 const staticRules = [
   {
@@ -296,6 +296,49 @@ const systemRules = [
     },
   },
   {
+    id: "cover-grid",
+    why: "§3 / §0a — a cover's trim is a derived size, not a hand-picked one: both dimensions on the 4pt grid, aspect inside the range real jackets occupy, and the composition index inside the set that is actually implemented. A comp the renderer has no branch for falls through to a blank field. The band is 1.15–1.85 rather than a tight 1.5: a wide art-book trim is legitimately squarer, and heights are deliberately near-constant because a row is as tall as its tallest member.",
+    check: (d) => {
+      const out = [];
+      // Walk enough distinct titles to exercise every branch of the hash.
+      for (let i = 0; i < 400; i++) {
+        const title = `title ${i} ${"x".repeat(i % 17)}`;
+        const { width, height, comp } = d.coverFor(title);
+        if (width % d.GRID || height % d.GRID) out.push({ msg: `coverFor("${title}") = ${width}×${height}, off the ${d.GRID}pt grid` });
+        const aspect = height / width;
+        if (aspect < 1.15 || aspect > 1.85) out.push({ msg: `coverFor("${title}") aspect ${aspect.toFixed(2)} is outside 1.15–1.85` });
+        if (d.cover.heights) {
+          const spread = Math.max(...d.cover.heights) - Math.min(...d.cover.heights);
+          if (spread > 24) out.push({ msg: `heights spread ${spread}pt — every short cover on a shelf gets that much dead air above it` });
+        }
+        if (!Number.isInteger(comp) || comp < 0 || comp >= d.cover.comps) out.push({ msg: `coverFor("${title}") comp ${comp} outside 0..${d.cover.comps - 1}` });
+      }
+      return out.slice(0, 4);
+    },
+  },
+  {
+    id: "jacket-fits",
+    why: "§1 — a cover title must FIT its trim. Set at a fixed step and left to wrap, 'The Dispossessed' rendered as 'Disposs / essed' on a 112pt jacket: a word split mid-syllable is a rendering failure, not a line break, and numberOfLines does not hide it. The size is derived from the longest word, and only the 11px floor may outrank the fit.",
+    check: (d) => {
+      const out = [];
+      const words = ["Piranesi", "The Dispossessed", "Cacio e pepe", "Ganapati", "Mangal II", "Solenoid", "Extraordinarily", "A", "Pot-au-feu"];
+      for (const w of d.cover.widths) {
+        const box = w - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
+        for (const title of words) {
+          const { fontSize, lineHeight } = d.jacketType(title, w);
+          const longest = title.split(/\s+/).reduce((n, x) => Math.max(n, x.length), 1);
+          const needed = longest * fontSize * d.JACKET_GLYPH;
+          if (needed > box + 1e-6 && fontSize > d.TYPE_FLOOR) {
+            out.push({ msg: `"${title}" at ${fontSize}px needs ${needed.toFixed(1)}pt on a ${w}pt trim (box ${box}pt) — it will break mid-word` });
+          }
+          if (fontSize < d.TYPE_FLOOR) out.push({ msg: `"${title}" sized to ${fontSize}px, below the ${d.TYPE_FLOOR}px floor` });
+          if (lineHeight < fontSize * 0.85) out.push({ msg: `"${title}" leading ${lineHeight} against size ${fontSize}` });
+        }
+      }
+      return out.slice(0, 4);
+    },
+  },
+  {
     id: "stagger-budget",
     why: "§5 — stagger caps at ~8 steps / 280ms. Past a third of a second it reads as slowness, not craft.",
     check: (d) => {
@@ -396,6 +439,12 @@ const SYSTEM_PROBES = {
   "spacing-grid": { ...D, sp: { ...D.sp, odd: 13 } },
   "placeholder-inverts": { ...D, dark: { ...D.dark, placeholder: "#000000" } },
   "list-label-contrast": { ...D, listOn: { ...D.listOn, movies: "#FFFFFF" } },
+  // A trim that is off-grid and far too square — exactly what hand-picking a
+  // "nice looking" cover size produces.
+  "cover-grid": { ...D, coverFor: () => ({ width: 101, height: 110, comp: 0 }) },
+  // Type picked by eye instead of solved for: it looks right on "Kiln" and
+  // shatters "The Dispossessed".
+  "jacket-fits": { ...D, jacketType: () => ({ fontSize: 40, lineHeight: 42 }) },
   // ζ=0.35 is a spring that visibly bounces; the press budget forbids any.
   "motion-frames": { ...D, springs: { press: D.spring({ dampingRatio: 0.35, settleMs: 220 }) } },
   "stagger-budget": { ...D, staggerDelay: (i) => Math.min(i, 20) * 40 },

@@ -11,7 +11,7 @@ export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
   STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
-  BOARD, BAND_BOARD, RULE, HAIRLINE, spineFor,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle,
 } = D;
 
 const sans = Platform.select(D.family.sans);
@@ -46,8 +46,14 @@ export const t = {
   wordmark: { ...asText(D.type.display), fontWeight: "700" as const, fontSize: 42, lineHeight: 38, letterSpacing: -2.6 },
   band: { ...asText(D.type.title), fontWeight: "700" as const, fontSize: 31, lineHeight: 31, letterSpacing: -1.5, textTransform: "uppercase" as const },
   itemTitle: { ...asText(D.type.heading), fontWeight: "700" as const, letterSpacing: -0.4 },
+  // A jacket title. Set solid-ish and ranged left, the way a cover is set —
+  // leading that is comfortable in a paragraph is a hole in a 104pt rectangle.
+  coverTitle: { ...asText(D.type.heading), fontWeight: "700" as const, lineHeight: Math.round(D.type.heading.fontSize * 1.05), letterSpacing: -0.5 },
+  detailTitle: { ...asText(D.type.display), fontWeight: "700" as const, letterSpacing: -1.4 },
   section: { ...asText(D.type.meta), fontWeight: "700" as const, letterSpacing: 0.9, textTransform: "uppercase" as const },
-  spine: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 0.4, textTransform: "uppercase" as const },
+  // Set on a jacket: the series line at the top of a cover, the author at
+  // the foot. Tighter tracking than `micro` because it sits inside 96pt.
+  tag: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 0.5, textTransform: "uppercase" as const },
   body: asText(D.type.body),
   bodyMed: asText(D.type.bodyMed),
   meta: asText(D.type.meta),

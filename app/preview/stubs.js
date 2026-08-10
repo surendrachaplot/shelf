@@ -21,6 +21,12 @@ const ITEMS = [
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const fetchInbox = async () => { await wait(60); return ITEMS.filter((i) => i.status !== "filed"); };
+const art = (bg, fg, txt) => "data:image/svg+xml;base64," + btoa(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="${bg}"/>` +
+  `<circle cx="100" cy="118" r="52" fill="none" stroke="${fg}" stroke-width="6"/>` +
+  `<text x="100" y="250" font-family="Helvetica" font-size="22" font-weight="bold" fill="${fg}" text-anchor="middle">${txt}</text></svg>`);
+const ART = { Piranesi: art("#101010", "#F5C542", "PIRANESI"), Sinners: art("#2A0A0A", "#FF6B4A", "SINNERS"), Babel: art("#0E2A4A", "#FFFFFF", "BABEL") };
+
 const SHELVED = {
   books: ["Piranesi", "Babel", "The Dispossessed", "Solenoid", "Checkout 19"],
   restaurants: ["Ganapati", "Kiln", "St. John", "Mangal II", "Brutto", "Toklas"],
@@ -30,8 +36,9 @@ const SHELVED = {
 export const fetchList = async (l) => {
   await wait(60);
   return (SHELVED[l] ?? []).map((title, i) => ({
-    id: `${l}-${i}`, list: l, status: "filed", title, subtitle: "", note: "",
-    image_url: null, canonical: {}, confidence: 0.9, source_url: "x", enriched: true, created_at: "",
+    id: `${l}-${i}`, list: l, status: "filed", title,
+    subtitle: l === "books" ? "Susanna Clarke" : l === "restaurants" ? "Peckham" : "",
+    note: "", image_url: ART[title] ?? null, canonical: {}, confidence: 0.9, source_url: "x", enriched: true, created_at: "",
   }));
 };
 export const updateItem = async () => ({ item: {} });
