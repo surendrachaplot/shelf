@@ -104,12 +104,13 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
 
       <View style={s.grid}>
         {LISTS.map((list, i) => (
-          <Reveal key={list} index={i}>
+          <Reveal key={list} index={i} style={s.cell}>
             <Press
               onPress={() => save(list)}
               disabled={phase.kind === "saving"}
+              containerStyle={s.cellFill}
               style={s.tile}
-              size={140}
+              size={160}
             >
               <Text style={s.glyph}>{lists[list].glyph}</Text>
               <Text style={s.tileLabel}>{lists[list].label}</Text>
@@ -140,23 +141,28 @@ const styles = (c: Palette) => StyleSheet.create({
   wrap: { flex: 1, paddingHorizontal: sp.lg, paddingTop: sp.lg, paddingBottom: sp.md, backgroundColor: c.bg },
   center: { alignItems: "center", justifyContent: "center" },
 
-  tick: { ...t.display, fontSize: glyph.mark, color: c.good, textAlign: "center" },
-  doneTitle: { ...t.heading, color: c.ink, textAlign: "center", marginTop: sp.sm },
+  tick: { ...t.display, fontSize: glyph.lg, lineHeight: glyph.lg * 1.2, color: c.good, textAlign: "center" },
+  doneTitle: { ...t.heading, color: c.ink, textAlign: "center", marginTop: sp.md },
   doneHint: { ...t.meta, color: c.inkSoft, textAlign: "center", marginTop: sp.xs },
 
   eyebrow: { ...t.micro, color: c.inkFaint },
   source: { ...t.meta, color: c.inkSoft, marginTop: sp.xs, marginBottom: sp.md },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm },
+  // The sizing lives on the OUTERMOST wrapper and is passed down. Setting it
+  // only on the painted tile resolves against a parent that has already
+  // shrunk to content — the bug that turned this 2×2 into four narrow pills.
+  cell: { width: "48%" },
+  cellFill: { width: "100%" },
   tile: {
     // A 2×2 picker, not a row of CTAs — §3's "never stretched buttons" governs
     // `decide` below, which is the actual button.
-    width: "48%", minHeight: TOUCH + sp.xl,
+    width: "100%", minHeight: TOUCH + sp.xxl,
     alignItems: "center", justifyContent: "center", gap: sp.xs,
     backgroundColor: c.surface, borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth * 2, borderColor: c.line,
   },
-  glyph: { fontSize: glyph.sm },
+  glyph: { fontSize: glyph.lg, lineHeight: glyph.lg * 1.15 },
   tileLabel: { ...t.bodyMed, color: c.ink },
 
   decide: {

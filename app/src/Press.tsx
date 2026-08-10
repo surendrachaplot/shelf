@@ -15,15 +15,24 @@ import { AccessibilityInfo, Animated, Pressable, type ViewStyle, type StyleProp 
 import { springs, pressScale } from "./theme";
 
 export function Press({
-  children, onPress, disabled, style, size = 48, hitSlop = 8,
+  children, onPress, disabled, style, containerStyle, size = 48, hitSlop = 8, label,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
+  /** The painted surface — this is what scales on press. */
   style?: StyleProp<ViewStyle>;
+  /** Layout for the touchable itself. Flex sizing belongs HERE: the Pressable
+   *  is the flex child, and a width set only on the inner view resolves
+   *  against a parent that has already shrunk to content. */
+  containerStyle?: StyleProp<ViewStyle>;
   /** Longest edge in pt — drives how far the press scales. */
   size?: number;
   hitSlop?: number;
+  /** What VoiceOver reads. Required for icon-only controls, where the visible
+   *  label is an emoji and announcing "trash can" is not the same as
+   *  announcing "Discard". */
+  label?: string;
 }) {
   const v = useRef(new Animated.Value(1)).current;
   const [reduced, setReduced] = useState(false);
@@ -50,12 +59,15 @@ export function Press({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       // §4f — keep the painted size, expand the touchable area. This is the
       // React Native equivalent of the absolute ::after the web app uses, and
       // it is why a small control can stay small without failing the 44pt floor.
       hitSlop={hitSlop}
       onPressIn={() => to(pressScale(size))}
       onPressOut={() => to(1)}
+      style={containerStyle}
     >
       <Animated.View style={[style, { transform: [{ scale: v }] }]}>{children}</Animated.View>
     </Pressable>

@@ -94,6 +94,11 @@ export const light = {
   bg: "#FAF8F4",
   surface: "#FFFFFF",
   surfaceSunk: "#F1EDE6",
+  // "Something goes here": skeletons and image placeholders. It must read as
+  // ABOVE the card in dark and BELOW it in light — a single "sunk" token
+  // cannot do both, and using one made every placeholder in dark mode look
+  // like a hole punched through the card.
+  placeholder: "#EFEAE1",
   ink: "#16130F",
   inkSoft: "#5C564D",
   inkFaint: "#746D62",
@@ -110,6 +115,7 @@ export const dark = {
   bg: "#131110",
   surface: "#1D1A18",
   surfaceSunk: "#0E0C0B",
+  placeholder: "#2B2724",
   ink: "#F4F0EA",
   inkSoft: "#B0A89C",
   inkFaint: "#8D857A",

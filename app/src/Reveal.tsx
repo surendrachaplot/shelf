@@ -10,10 +10,18 @@
 // animation, none. A person who asked the OS to stop moving things has asked
 // for exactly that.
 import React, { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Animated } from "react-native";
+import { AccessibilityInfo, Animated, type StyleProp, type ViewStyle } from "react-native";
 import { springs, staggerDelay } from "./theme";
 
-export function Reveal({ index = 0, children }: { index?: number; children: React.ReactNode }) {
+export function Reveal({ index = 0, children, style }: {
+  index?: number;
+  children: React.ReactNode;
+  // A wrapper inside a flex row is a flex CHILD. Without somewhere to put the
+  // sizing, wrapping a 48%-wide tile in a Reveal silently collapses it to
+  // content width — which is exactly how the share sheet's 2x2 grid rendered
+  // as four narrow pills with the labels overflowing them.
+  style?: StyleProp<ViewStyle>;
+}) {
   const [reduced, setReduced] = useState<boolean | null>(null);
   const v = useRef(new Animated.Value(0)).current;
 
@@ -43,10 +51,10 @@ export function Reveal({ index = 0, children }: { index?: number; children: Reac
   // away draws attention to the animation rather than to the content.
   return (
     <Animated.View
-      style={{
+      style={[style, {
         opacity: v,
         transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-      }}
+      }]}
     >
       {children}
     </Animated.View>

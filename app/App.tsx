@@ -20,7 +20,8 @@ import {
 import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
-import { glyph, lists, numeric, radius, sp, t, TOUCH, TOUCH_MIN, useTheme, type Palette } from "./src/theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { glyph, lists, radius, sp, t, TOUCH, TOUCH_MIN, useTheme, type Palette } from "./src/theme";
 
 type Tab = ListName | "inbox";
 const TABS: Tab[] = ["inbox", ...LISTS];
@@ -90,26 +91,41 @@ export default function App() {
 
       <View style={s.header}>
         <Text style={s.h1}>shelf</Text>
-        {items.length > 0 ? <Text style={s.count}>{items.length}</Text> : null}
       </View>
 
-      <FlatList
-        horizontal
-        data={TABS}
-        keyExtractor={(x) => x}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.tabs}
-        renderItem={({ item: name }) => {
-          const on = tab === name;
-          return (
-            <Press onPress={() => setTab(name)} style={[s.tab, on && s.tabOn]} size={100}>
-              <Text style={[s.tabLabel, on && s.tabLabelOn]}>
-                {name === "inbox" ? "📥 Inbox" : `${lists[name].glyph} ${lists[name].label}`}
-              </Text>
-            </Press>
-          );
-        }}
-      />
+      {/* §4e — the strip overflows at every width and hides its scrollbar, so
+          the cut edge is the only affordance left. A hard cut reads as broken
+          layout; a short fade reads as "there is more". */}
+      <View style={s.tabWrap}>
+        <FlatList
+          horizontal
+          data={TABS}
+          keyExtractor={(x) => x}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.tabs}
+          // A horizontal list inside a flex column is still a flex CHILD and
+          // will take flex:1 vertically, which left a ~200pt hole between the
+          // tabs and the first card. It has to be told not to grow.
+          style={s.tabList}
+          renderItem={({ item: name }) => {
+            const on = tab === name;
+            return (
+              <Press onPress={() => setTab(name)} style={[s.tab, on && s.tabOn]} size={100}>
+                <Text style={[s.tabLabel, on && s.tabLabelOn]}>
+                  {name === "inbox" ? "📥 Inbox" : `${lists[name].glyph} ${lists[name].label}`}
+                </Text>
+              </Press>
+            );
+          }}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={[c.bg + "00", c.bg]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={s.tabFade}
+        />
+      </View>
 
       {flash ? <Text style={s.flash}>{flash}</Text> : null}
 
@@ -173,6 +189,12 @@ function Row({ item, inbox, onAct, s }: {
           </Text>
           {item.subtitle ? <Text style={s.cardSub} numberOfLines={1}>{item.subtitle}</Text> : null}
           {item.note ? <Text style={s.note} numberOfLines={2}>{item.note}</Text> : null}
+          {pending ? (
+            <View style={s.skeleton}>
+              <View style={[s.skelLine, s.skelWide]} />
+              <View style={[s.skelLine, s.skelNarrow]} />
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -185,11 +207,11 @@ function Row({ item, inbox, onAct, s }: {
             <Text style={s.btnPrimaryLabel}>Keep</Text>
           </Press>
           {LISTS.filter((l) => l !== item.list).map((l) => (
-            <Press key={l} onPress={() => onAct(item, { list: l, action: "file" })} style={s.btn} size={TOUCH}>
+            <Press key={l} onPress={() => onAct(item, { list: l, action: "file" })} style={[s.btn, s.btnIcon]} size={TOUCH} label={`Move to ${lists[l].label}`}>
               <Text style={s.btnLabel}>{lists[l].glyph}</Text>
             </Press>
           ))}
-          <Press onPress={() => onAct(item, { action: "discard" })} style={s.btn} size={TOUCH}>
+          <Press onPress={() => onAct(item, { action: "discard" })} style={[s.btn, s.btnIcon]} size={TOUCH} label="Discard">
             <Text style={s.btnLabel}>🗑</Text>
           </Press>
         </View>
@@ -263,8 +285,10 @@ const styles = (c: Palette) => StyleSheet.create({
     paddingHorizontal: sp.lg, paddingTop: sp.sm, paddingBottom: sp.md,
   },
   h1: { ...t.title, color: c.ink },
-  count: { ...t.meta, ...numeric, color: c.inkFaint },
 
+  tabWrap: { position: "relative" },
+  tabList: { flexGrow: 0, flexShrink: 0 },
+  tabFade: { position: "absolute", right: 0, top: 0, bottom: 0, width: sp.xxl },
   tabs: { paddingHorizontal: sp.lg, gap: sp.sm, paddingBottom: sp.md },
   tab: {
     paddingHorizontal: sp.md, minHeight: TOUCH_MIN, justifyContent: "center",
@@ -290,21 +314,28 @@ const styles = (c: Palette) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2, borderColor: c.line, padding: sp.md,
   },
   cardTop: { flexDirection: "row", gap: sp.md },
-  thumb: { width: 56, height: 76, borderRadius: radius.sm, backgroundColor: c.surfaceSunk },
+  thumb: { width: 56, height: 76, borderRadius: radius.sm, backgroundColor: c.placeholder },
   thumbBlank: { alignItems: "center", justifyContent: "center" },
   glyph: { fontSize: glyph.sm },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { ...t.bodyMed, color: c.ink },
   cardSub: { ...t.meta, color: c.inkSoft },
   note: { ...t.meta, color: c.inkFaint, fontStyle: "italic" },
+  skeleton: { gap: sp.xs, marginTop: sp.xs },
+  skelLine: { height: 10, borderRadius: radius.sm, backgroundColor: c.placeholder },
+  skelWide: { width: "88%" },
+  skelNarrow: { width: "54%" },
 
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.md },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: sp.xs, marginTop: sp.md },
   btn: {
-    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN, paddingHorizontal: sp.md,
+    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN, paddingHorizontal: sp.sm,
     alignItems: "center", justifyContent: "center",
     borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: c.line, backgroundColor: c.bg,
   },
+  // Square, so five actions fit on one row even at 320pt. The 44pt floor is
+  // held by minWidth/minHeight, not by padding.
+  btnIcon: { paddingHorizontal: 0, width: TOUCH_MIN },
   btnLabel: { ...t.body, color: c.ink },
   btnPrimary: { backgroundColor: c.accent, borderColor: c.accent },
   btnPrimaryLabel: { ...t.bodyMed, color: c.accentInk },
