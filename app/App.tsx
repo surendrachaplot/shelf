@@ -1,8 +1,15 @@
-// App.tsx — the shelves.
+// App.tsx — the bookcase.
 //
-// The app is called shelf, so it shows you shelves: four boards running the
-// full width of the screen with your things standing FACE-OUT on them, and the
-// Inbox as the pile that has not been put away yet.
+// ONE shelf at a time, filling the screen. The previous pass stacked all four
+// lists down a scrolling page, each a horizontal carousel — so the page was a
+// vertical queue of rows, and every row showed three of six things with the
+// rest off the right-hand edge. A shelf you have to scroll sideways to read is
+// a shelf you never look at.
+//
+// Now: a colour rail picks the list, a full-bleed band names it, and its
+// jackets wrap left-to-right across as many boards as they need. That is what
+// a bookcase does — and it means the count in the band is a promise, because
+// everything it counts is on screen.
 //
 // Face-out is the whole correction. The first pass drew spine-out: 22pt slivers
 // with the title rotated -90°, varying in height on a common baseline. That is
@@ -26,9 +33,16 @@ import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
 import {
-  BOARD, COVER_KEYLINE, coverFor, jacketType, lists, listOn, mainTitle, RULE, sp, t,
-  TOUCH_MIN, useTheme, type Palette,
+  BOARD, COVER_KEYLINE, coverFor, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
+  RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
+
+// The pile is a tab like any other, not a section bolted above the shelves.
+// It is where a thing lives before it stands anywhere, which is a place — and
+// giving it the same affordance as the four lists is what lets one screen hold
+// the whole app.
+type TabName = ListName | "unsorted";
+const TABS: TabName[] = [...LISTS, "unsorted"];
 
 export default function App() {
   const { c } = useTheme();
@@ -41,6 +55,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [open, setOpen] = useState<Item | null>(null);
+  const [tab, setTab] = useState<TabName>("books");
+  const [viewportH, setViewportH] = useState(0);
   // null means the shelves really are empty. A string means we could not look.
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -94,51 +110,79 @@ export default function App() {
   if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
   const total = Object.values(shelves).reduce((n, xs) => n + (xs?.length ?? 0), 0);
+  const showing = tab === "unsorted" ? inbox : (shelves[tab] ?? []);
+  const fill = c[tab] ?? c.unsorted;
+  const on = listOn[tab] ?? c.onList;
 
   return (
     <View style={s.screen}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <View style={s.inset}>
-          <View style={s.head}>
-            <Text style={s.wordmark}>shelf</Text>
-            <Text style={s.headCount}>{total} shelved</Text>
+      <View style={[s.head, s.inset]}>
+        <Text style={s.wordmark}>shelf</Text>
+        <Text style={s.headCount}>{total} shelved</Text>
+      </View>
+
+      {/* The rail. Five flat blocks of colour carrying nothing but their series
+          number — at 75pt wide "RESTAURANTS" does not fit, and a truncated
+          label is worse than none when the band below already names it. The
+          selected block bridges the 4pt gap into the band, so tab and panel
+          read as one continuous field rather than as a chip above a header. */}
+      <View style={[s.rail, s.inset]}>
+        {TABS.map((k) => (
+          <Press
+            key={k}
+            onPress={() => setTab(k)}
+            style={[s.railTab, { backgroundColor: c[k] ?? c.unsorted }, k === tab ? s.railTabOn : null]}
+            containerStyle={s.railSlot}
+            size={TOUCH_MIN}
+            label={`${lists[k].label}, ${(k === "unsorted" ? inbox : shelves[k] ?? []).length} items`}
+          >
+            <Text style={[s.railNum, { color: listOn[k] ?? c.onList }]}>{lists[k].n}</Text>
+          </Press>
+        ))}
+      </View>
+
+      <View style={[s.band, { backgroundColor: fill }]}>
+        <Text style={[s.bandLabel, { color: on }]} numberOfLines={1}>{lists[tab].label}</Text>
+        <Text style={[s.bandCount, { color: on }]}>{String(showing.length).padStart(2, "0")}</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
+      >
+        {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
+
+        {loadError ? (
+          <View style={[s.errorBlock, s.insetMargin]}>
+            <Text style={s.section}>Couldn't reach your shelves</Text>
+            <Text style={s.errorNote}>{loadError}. Nothing has been lost.</Text>
+            <Press onPress={load} style={s.retry} size={TOUCH_MIN} label="Try again">
+              <Text style={s.retryLabel}>Try again →</Text>
+            </Press>
           </View>
+        ) : null}
 
-          {flash ? <Text style={s.flash}>{flash}</Text> : null}
-
-          {loadError ? (
-            <View style={s.errorBlock}>
-              <Text style={s.section}>Couldn't reach your shelves</Text>
-              <Text style={s.errorNote}>{loadError}. Nothing has been lost.</Text>
-              <Press onPress={load} style={s.retry} size={TOUCH_MIN} label="Try again">
-                <Text style={s.retryLabel}>Try again →</Text>
-              </Press>
-            </View>
-          ) : null}
-
-          {/* The pile: things that came in but are not on a board yet. Flat
-              rows, deliberately — a thing you have not filed is not standing
-              anywhere, and the layout should say that before the label does. */}
-          <View style={s.rule} />
-          <View style={s.sectionRow}>
-            <Text style={s.section}>Not shelved</Text>
-            <View style={s.sectionRule} />
-            <Text style={s.sectionNum}>{String(inbox.length).padStart(2, "0")}</Text>
-          </View>
-          {inbox.length === 0 ? (
-            <Text style={s.emptyLine}>Nothing waiting. Share a reel and pick a shelf.</Text>
-          ) : (
-            inbox.map((item, i) => (
+        {tab === "unsorted" ? (
+          /* The pile: things that came in but are not on a board yet. Flat
+             rows, deliberately — a thing you have not filed is not standing
+             anywhere, and the layout should say so before the label does. */
+          <View style={[s.inset, s.pileTop]}>
+            {inbox.length === 0 ? (
+              <Empty
+                title="Nothing waiting"
+                body="Share a reel from Instagram and pick a shelf. Anything we can't read lands here first."
+                s={s}
+              />
+            ) : inbox.map((item, i) => (
               <Reveal key={item.id} index={i}>
                 <PileRow item={item} onAct={act} onOpen={setOpen} s={s} c={c} />
               </Reveal>
-            ))
-          )}
-        </View>
-
-        {LISTS.map((list, i) => (
-          <Shelf key={list} list={list} items={shelves[list] ?? []} index={i} onOpen={setOpen} s={s} c={c} />
-        ))}
+            ))}
+          </View>
+        ) : (
+          <Bookcase list={tab} items={showing} viewportH={viewportH} onOpen={setOpen} s={s} c={c} />
+        )}
 
         {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
       </ScrollView>
@@ -149,50 +193,57 @@ export default function App() {
 }
 
 /**
- * One shelf: a labelled row of face-out covers standing on a board that runs
- * to both screen edges. Full-bleed is not decoration — a board that stops at
- * the 16pt inset reads as a card, and four cards down a page is the generic
- * list this design exists to not be.
+ * One list, wrapped across as many boards as it needs.
+ *
+ * The column is solved by `gridFor` in design.js rather than by flexWrap, for
+ * two reasons: a board has to be drawn under each row, which flexWrap cannot
+ * express; and the gate can prove a pure function never overflows the shelf,
+ * never sets a column too narrow to hold its type, and never paints before the
+ * container is measured.
  */
-function Shelf({ list, items, index, onOpen, s, c }: {
-  list: ListName; items: Item[]; index: number;
+function Bookcase({ list, items, viewportH, onOpen, s, c }: {
+  list: ListName; items: Item[]; viewportH: number;
   onOpen: (i: Item) => void;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
-  const fill = c[list] ?? c.unsorted;
-  const label = listOn[list] ?? c.onList;
-  return (
-    <Reveal index={index}>
-      <View style={s.shelf}>
-        <View style={[s.sectionRow, s.inset]}>
-          <View style={[s.shelfTag, { backgroundColor: fill }]}>
-            <Text style={[s.shelfTagLabel, { color: label }]}>{lists[list].label}</Text>
-          </View>
-          <View style={s.sectionRule} />
-          <Text style={s.sectionNum}>{String(items.length).padStart(2, "0")}</Text>
-        </View>
+  const [width, setWidth] = useState(0);
+  const grid = useMemo(() => gridFor(width, sp.sm), [width]);
+  const rows = useMemo(() => rowsOf(items.length, grid.cols), [items.length, grid.cols]);
+  const spare = emptyBoards(viewportH, Math.max(rows.length, 1) * rowPitch(sp.xl), emptyPitch(sp.xl));
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={s.coverScroll}
-          contentContainerStyle={s.coverRow}
-        >
-          {items.length === 0 ? (
-            <EmptyShelf list={list} s={s} c={c} />
-          ) : items.map((item) => (
-            <Cover key={item.id} item={item} list={list} onOpen={onOpen} s={s} c={c} />
-          ))}
-        </ScrollView>
-        <View style={s.board} />
-      </View>
-    </Reveal>
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width - sp.lg * 2)}>
+      {items.length === 0 ? (
+        <View style={s.inset}>
+          <EmptyShelf list={list} width={grid.width} s={s} c={c} />
+        </View>
+      ) : rows.map((row, r) => (
+        <Reveal key={r} index={r}>
+          <View style={[s.caseRow, s.inset]}>
+            {row.map((i) => (
+              <Cover key={items[i].id} item={items[i]} width={grid.width} list={list} onOpen={onOpen} s={s} c={c} />
+            ))}
+          </View>
+          <View style={s.board} />
+        </Reveal>
+      ))}
+
+      {/* The rest of the case. Empty boards, same pitch — a bookcase with room
+          left is a bookcase; two boards over a field of blank paper is a page
+          that stopped. */}
+      {Array.from({ length: spare }, (_, i) => (
+        <View key={`spare-${i}`}>
+          <View style={[s.caseRow, s.spareRow]} />
+          <View style={s.board} />
+        </View>
+      ))}
+    </View>
   );
 }
 
 /** A jacket. Artwork if we have it, type if we do not — never a grey box. */
-function Cover({ item, list, onOpen, s, c }: {
-  item: Item; list: ListName;
+function Cover({ item, width, list, onOpen, s, c }: {
+  item: Item; width: number; list: ListName;
   onOpen: (i: Item) => void;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
@@ -210,7 +261,7 @@ function Cover({ item, list, onOpen, s, c }: {
   const mark = inverted ? fill : on;
   const title = mainTitle(item.title ?? "") || "Untitled";
   // Sized from the longest word so nothing is ever split mid-syllable.
-  const jacket = jacketType(title, dims.width);
+  const jacket = jacketType(title, width);
 
   return (
     <Press
@@ -226,7 +277,7 @@ function Cover({ item, list, onOpen, s, c }: {
       // right edge. Ink also gives yellow the boundary it cannot get from a
       // 1.43:1 field, and the bottom edge merging into the board in dark mode
       // is not a defect — that is the book standing on the shelf.
-      style={[s.cover, { width: dims.width, height: dims.height, backgroundColor: field, borderColor: c.ink }]}
+      style={[s.cover, { width, height: dims.height, backgroundColor: field, borderColor: c.ink }]}
     >
       {art ? (
         <Image
@@ -260,7 +311,7 @@ function Cover({ item, list, onOpen, s, c }: {
               because its title already occupies the foot. */}
           {dims.comp !== 1 && item.subtitle ? (
             <View style={[s.coverFoot, { backgroundColor: mark }]}>
-              <Text style={[s.coverFootLabel, { color: field }]} numberOfLines={1}>{item.subtitle}</Text>
+              <Text style={[s.coverFootLabel, { color: field }]} numberOfLines={2}>{item.subtitle}</Text>
             </View>
           ) : null}
         </>
@@ -270,18 +321,28 @@ function Cover({ item, list, onOpen, s, c }: {
 }
 
 /** §7 — a title, a sentence saying what happens next, and a way forward. */
-function EmptyShelf({ list, s, c }: { list: ListName; s: ReturnType<typeof styles>; c: Palette }) {
+function Empty({ title, body, s }: { title: string; body: string; s: ReturnType<typeof styles> }) {
+  return (
+    <View style={s.emptyCopy}>
+      <Text style={s.emptyTitle}>{title}</Text>
+      <Text style={s.emptyBody}>{body}</Text>
+    </View>
+  );
+}
+
+function EmptyShelf({ list, width, s, c }: { list: ListName; width: number; s: ReturnType<typeof styles>; c: Palette }) {
   const fill = c[list] ?? c.unsorted;
   const dims = coverFor(list);
   return (
     <View style={s.emptyShelf}>
-      <View style={[s.ghost, { width: dims.width, height: dims.height, borderColor: fill }]} />
-      <View style={s.emptyCopy}>
-        <Text style={s.emptyTitle}>Nothing on this shelf</Text>
-        <Text style={s.emptyBody}>
-          Share a reel from Instagram and pick {lists[list].label} — the {lists[list].one} shows up here with a cover.
-        </Text>
-      </View>
+      {/* An outline of the thing that is missing, at the exact trim a real one
+          would have. It says "a cover goes here" in a way a sentence cannot. */}
+      <View style={[s.ghost, { width, height: dims.height, borderColor: fill }]} />
+      <Empty
+        title="Nothing on this shelf"
+        body={`Share a reel and pick ${lists[list].label} — the ${lists[list].one} lands here with a cover.`}
+        s={s}
+      />
     </View>
   );
 }
@@ -308,7 +369,7 @@ function PileRow({ item, onAct, onOpen, s, c }: {
       {pending ? (
         <Text style={s.pileAction}>Reading</Text>
       ) : (
-        <Press onPress={() => onAct(item, { action: "file" })} style={s.pileBtn} size={TOUCH_MIN} label={`Shelve on ${lists[item.list].label}`}>
+        <Press onPress={() => onAct(item, { action: "file" })} style={s.pileBtn} size={TOUCH_MIN} label="Shelve it">
           <Text style={s.pileAction}>Shelve →</Text>
         </Press>
       )}
@@ -373,7 +434,7 @@ function Detail({ item, onClose, onAct, s, c }: {
               </Press>
             ) : null}
             {item.status !== "filed" ? (
-              <Press onPress={() => onAct(item, { action: "file" })} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label={`Shelve on ${lists[list].label}`}>
+              <Press onPress={() => onAct(item, { action: "file" })} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Shelve it">
                 <Text style={[s.detailBtnLabel, { color: on }]}>Shelve it →</Text>
               </Press>
             ) : null}
@@ -450,27 +511,31 @@ const styles = (c: Palette) => StyleSheet.create({
   boot: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   // Vertical only. The horizontal inset lives on the blocks, so a board can run
   // edge to edge while the type it labels still lines up with the wordmark.
-  scroll: { paddingTop: sp.xl, paddingBottom: sp.huge },
+  scroll: { paddingBottom: sp.huge },
   inset: { paddingHorizontal: sp.lg },
+  insetMargin: { marginHorizontal: sp.lg },
 
-  head: { flexDirection: "row", alignItems: "baseline", marginBottom: sp.lg },
+  head: { flexDirection: "row", alignItems: "baseline", paddingTop: sp.xl, paddingBottom: sp.md },
   wordmark: { ...t.wordmark, color: c.ink, flex: 1 },
   headCount: { ...t.micro, color: c.inkFaint },
+
+  // Five equal blocks of flat colour. The selected one drops 4pt to meet the
+  // band below it, so the tab and its panel are one continuous field.
+  rail: { flexDirection: "row", gap: 2, marginBottom: sp.xs },
+  railSlot: { flex: 1 },
+  railTab: { minHeight: TOUCH_MIN, alignItems: "center", justifyContent: "center" },
+  railTabOn: { marginBottom: -sp.xs },
+  railNum: { ...t.micro },
+
+  band: { flexDirection: "row", alignItems: "center", gap: sp.md, paddingHorizontal: sp.lg, paddingVertical: sp.md },
+  bandLabel: { ...t.band, flex: 1 },
+  bandCount: { ...t.micro },
 
   flash: { ...t.meta, color: c.accent, marginBottom: sp.sm },
 
   rule: { height: RULE, backgroundColor: c.ink },
-  sectionRow: { flexDirection: "row", alignItems: "center", gap: sp.sm, paddingTop: sp.md, paddingBottom: sp.sm },
   section: { ...t.section, color: c.ink },
-  sectionRule: { flex: 1, height: 1, backgroundColor: c.line },
   sectionNum: { ...t.micro, color: c.inkFaint },
-
-  // The shelf-edge label: a colour tab carrying the list name, the way a shop
-  // labels the board its stock stands on.
-  shelfTag: { height: 24, paddingHorizontal: sp.sm, justifyContent: "center" },
-  shelfTagLabel: { ...t.micro },
-
-  emptyLine: { ...t.meta, color: c.inkFaint, paddingBottom: sp.md },
 
   pile: {
     flexDirection: "row", alignItems: "center", gap: sp.sm,
@@ -483,12 +548,12 @@ const styles = (c: Palette) => StyleSheet.create({
   pileBtn: { minHeight: TOUCH_MIN, justifyContent: "center", paddingLeft: sp.sm },
   pileAction: { ...t.micro, color: c.inkFaint },
 
-  shelf: { marginTop: sp.lg },
-  // flexGrow:0 or a horizontal list claims the vertical space of its parent —
-  // that is how a tab strip once ate 200pt of a 667pt screen.
-  coverScroll: { flexGrow: 0 },
-  coverRow: { flexDirection: "row", alignItems: "flex-end", gap: sp.sm, paddingHorizontal: sp.lg },
+  // One board's worth of jackets. flex-end so every trim rests on the board
+  // rather than hanging from a common top edge.
+  pileTop: { paddingTop: sp.xl },
+  caseRow: { flexDirection: "row", alignItems: "flex-end", gap: sp.sm, marginTop: sp.xl },
   coverSlot: { alignSelf: "flex-end" },
+  spareRow: { height: EMPTY_BOARD_H },
   cover: { overflow: "hidden", borderWidth: COVER_KEYLINE },
   coverArt: { width: "100%", height: "100%" },
   coverStrip: { height: 22, justifyContent: "center", paddingHorizontal: sp.sm },
@@ -501,9 +566,9 @@ const styles = (c: Palette) => StyleSheet.create({
   coverFootLabel: { ...t.tag },
   board: { height: BOARD, backgroundColor: c.ink },
 
-  emptyShelf: { flexDirection: "row", alignItems: "flex-end", gap: sp.md },
+  emptyShelf: { flexDirection: "row", alignItems: "flex-end", gap: sp.md, marginTop: sp.xl },
   ghost: { borderWidth: COVER_KEYLINE },
-  emptyCopy: { flex: 1, paddingBottom: sp.sm, maxWidth: 200 },
+  emptyCopy: { flex: 1, paddingBottom: sp.sm },
   emptyTitle: { ...t.section, color: c.ink },
   emptyBody: { ...t.meta, color: c.inkSoft, marginTop: sp.xs },
 

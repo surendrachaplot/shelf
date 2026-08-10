@@ -200,13 +200,15 @@ export const COVER_KEYLINE = 2;
 // that gap reads as a bug rather than as a shelf. 16pt of spread reads as
 // variation. 104pt is the narrowest trim that still holds a 12-letter word at
 // the 11px floor without breaking it, which is why the ladder starts there.
-export const cover = { widths: [104, 116, 128], heights: [156, 164, 172], comps: 3, pad: 8 };
+// Width is solved per screen by `gridFor`, not chosen per jacket — see there
+// for why. `minW` is the narrowest column that can still set a twelve-letter
+// word at the 11px floor. Heights vary and widths do not, which is what a shelf
+// physically constrains: it is the gap between boards that limits a book.
+export const cover = { minW: 104, heights: [156, 164, 172], comps: 3, pad: 8 };
 export const coverFor = (title) => {
   let h = 7;
   for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) % 997;
-  const width = cover.widths[h % cover.widths.length];
   return {
-    width,
     height: cover.heights[(h >> 3) % cover.heights.length],
     // Three layouts, three silhouettes: mass at the top, mass at the bottom,
     // and one inverted. A shelf where every jacket is the same composition in
@@ -214,6 +216,54 @@ export const coverFor = (title) => {
     comp: (h + title.length) % cover.comps,
   };
 };
+
+/**
+ * Solve the column for a bookcase.
+ *
+ * Greedy variable-width packing was tried first and looks wrong: with trims of
+ * 104/116/128 on a 343pt shelf only two fit, so every board ended with ~100pt
+ * of empty paper on the right and the case read as broken rather than as full.
+ * Face-out stock on a real shop shelf is evenly spaced; the variety comes from
+ * HEIGHT and from the jackets themselves, which this keeps.
+ *
+ * Columns are as many as fit at no less than `cover.minW` — below that a
+ * twelve-letter word cannot be set at the 11px floor without breaking, so the
+ * column minimum and the type floor are the same decision.
+ *
+ * `available <= 0` means the container has not been measured yet, and the
+ * caller must paint nothing: guessing a width costs a visible reflow on every
+ * open.
+ */
+export function gridFor(available, gap) {
+  if (!(available > 0)) return { cols: 0, width: 0 };
+  const cols = Math.max(1, Math.floor((available + gap) / (cover.minW + gap)));
+  return { cols, width: Math.floor((available - gap * (cols - 1)) / cols) };
+}
+
+// A bookcase with two occupied boards and then 400pt of blank paper looks
+// unfinished. A real one has empty shelves — so draw them, down to the bottom
+// of the viewport, at the same pitch. Capped so a tablet does not get twenty.
+export const MAX_EMPTY_BOARDS = 4;
+// Empty boards sit at a TIGHTER pitch than full ones. At the full 203pt pitch
+// a lone spare board floated 200pt below the last row and read as a stray rule,
+// not as a shelf; stacked at 88pt they read unmistakably as the rest of the
+// case. Real shelving is adjustable for exactly this reason — you do not leave
+// a paperback's worth of air above a paperback.
+export const EMPTY_BOARD_H = 88;
+export const rowPitch = (gapAbove) => gapAbove + Math.max(...cover.heights) + BOARD;
+export const emptyPitch = (gapAbove) => gapAbove + EMPTY_BOARD_H + BOARD;
+export function emptyBoards(viewportH, usedH, pitch) {
+  if (!(viewportH > 0) || !(pitch > 0)) return 0;
+  return Math.max(0, Math.min(MAX_EMPTY_BOARDS, Math.ceil((viewportH - usedH) / pitch)));
+}
+
+/** Chunk into rows of `cols`, one board per row. */
+export function rowsOf(n, cols) {
+  if (!(cols > 0)) return [];
+  const rows = [];
+  for (let i = 0; i < n; i += cols) rows.push(Array.from({ length: Math.min(cols, n - i) }, (_, k) => i + k));
+  return rows;
+}
 
 // A cover carries the main title only. "Babel, or the Necessity of Violence:
 // An Arcane History…" set in four ellipsised lines is not what that book looks

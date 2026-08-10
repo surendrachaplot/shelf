@@ -11,7 +11,7 @@ export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
   STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
-  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS,
 } = D;
 
 const sans = Platform.select(D.family.sans);
@@ -23,7 +23,7 @@ export const lists = {
   restaurants: { label: "Restaurants", one: "place", n: "02" },
   movies: { label: "Movies", one: "film", n: "03" },
   recipes: { label: "Recipes", one: "recipe", n: "04" },
-  unsorted: { label: "Unsorted", one: "item", n: "00" },
+  unsorted: { label: "Not shelved", one: "item", n: "00" },
 } as const;
 
 export const LIST_ORDER = ["books", "restaurants", "movies", "recipes"] as const;

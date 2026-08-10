@@ -4,8 +4,8 @@
 in anger after real things shipped broken — plus the standing bar below. The
 failures they name are not soundcheck-specific and neither are the rules.
 
-Run `node verify-design.mjs` in `app/` before shipping. Seventeen of these
-rules are mechanised there. The rest are yours to hold.
+Run `node verify-design.mjs` in `app/` before shipping. Eighteen of these
+rules are mechanised there, plus a bridge check. The rest are yours to hold.
 
 ---
 
@@ -51,16 +51,33 @@ That bar is only meaningful if it is falsifiable, so it is:
 - **Depth is a BOARD, not a shadow.** A hard edge with visible thickness that
   things rest on is what makes a coloured field read as a shelf rather than a
   rectangle. Six points in the sheet, seven in the app.
-- **The app shows shelves, FACE-OUT.** Not a tab bar over a list of cards: four
-  full-bleed boards with your things standing on them as jackets, and the Inbox
-  as the pile that has not been put away. The first pass drew them spine-out —
-  22pt slivers with the title rotated -90°, varying in height on a common
-  baseline — and that is a bar chart with a metaphor written on it: nothing
-  legible, two thirds of every row empty paper, and no trace of the thing you
-  actually saved. Face-out fixes all three at once. WIDTH varies and height
-  barely does, which is both what a shelf physically constrains and what the
-  layout requires: a horizontal row is as tall as its tallest member, so a 48pt
-  height spread leaves 48pt of dead air above every short cover.
+- **The app is a BOOKCASE: one list at a time, filling the screen.** Two wrong
+  answers came first and both are worth keeping written down. Spine-out — 22pt
+  slivers with the title rotated -90°, varying in height on a common baseline —
+  is a bar chart with a metaphor written on it: nothing legible, two thirds of
+  every row empty paper, no trace of the thing you saved. Then face-out, but as
+  four horizontal carousels stacked down a scrolling page: a vertical queue of
+  rows, each showing three of six things with the rest off the right-hand edge.
+  A shelf you scroll sideways to read is a shelf you never look at. Now a colour
+  rail picks the list, a full-bleed band names it, and its jackets wrap
+  left-to-right across as many boards as they need — so the count in the band is
+  a promise, because everything it counts is on screen.
+- **The column is SOLVED, not chosen.** As many columns as fit at no less than
+  the width a twelve-letter word needs at the 11px floor — so the column minimum
+  and the type floor are one decision. Greedy variable-width packing was tried
+  and looks broken: with trims of 104/116/128 on a 343pt shelf only two fit, and
+  every board ended with ~100pt of empty paper. Face-out stock on a real shop
+  shelf is evenly spaced; the variety comes from HEIGHT and from the jackets.
+- **Height varies, width does not.** That is what a shelf physically constrains —
+  it is the gap between boards that limits a book. It is also a layout
+  requirement: a row is as tall as its tallest member, so every point of height
+  spread is dead air above every shorter jacket. 16pt reads as variation; 48pt
+  read as a bug when the tall one happened to be off-screen.
+- **A bookcase with room left still looks like a bookcase.** Empty boards are
+  drawn down to the bottom of the viewport, at a TIGHTER pitch than full ones —
+  at the full 203pt pitch a lone spare board floated 200pt below the last row
+  and read as a stray rule. Two boards over a field of blank paper is a page
+  that stopped.
 - **Everything saved gets a cover.** Real artwork when there is any, a
   typographic jacket when there is not — the list's own colour, the label colour
   that list names for itself, in one of three compositions (mass at the top, at

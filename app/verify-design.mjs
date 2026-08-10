@@ -59,7 +59,36 @@ const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ"
 // TOUCH_MIN once, `family` once — and both times the failure surfaced far from
 // the cause (a missing tap-target floor; a crash inside Platform.select at
 // render). The gate names what must exist so a deletion fails HERE.
-const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle"];
+const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle", "gridFor", "rowsOf"];
+
+// Three times now a value has been added to design.js, imported by a component,
+// and forgotten in theme.ts's re-export list — each time the failure was an
+// esbuild error at the END of an edit-render loop rather than at the edit. The
+// bridge is mechanical, so check it mechanically.
+async function bridgeGaps() {
+  const theme = await readFile(new URL("src/theme.ts", import.meta.url), "utf8");
+  const design = await readFile(new URL("src/design.js", import.meta.url), "utf8");
+  const exported = new Set();
+  for (const m of theme.matchAll(/export (?:const|function|type)\s+\{?\s*([A-Za-z0-9_]+)/g)) exported.add(m[1]);
+  // The destructured re-export block: `export const { a, b, c } = D;`
+  const block = /export const \{([^}]*)\} = D;/.exec(theme);
+  if (block) for (const name of block[1].split(",")) exported.add(name.trim().split(/\s+as\s+/).pop().trim());
+  const designed = new Set([...design.matchAll(/^export (?:const|function)\s+([A-Za-z0-9_]+)/gm)].map((m) => m[1]));
+
+  const out = [];
+  for (const file of SOURCES) {
+    const src = await readFile(new URL(file, import.meta.url), "utf8");
+    const imp = /import\s+\{([^}]*)\}\s+from\s+"\.\/src\/theme"/.exec(src)
+      ?? /import\s+\{([^}]*)\}\s+from\s+"\.\/theme"/.exec(src);
+    if (!imp) continue;
+    for (const raw of imp[1].split(",")) {
+      const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
+      if (!name || exported.has(name)) continue;
+      out.push({ file, msg: `${file} imports "${name}" from theme, which does not re-export it${designed.has(name) ? " (it is exported by design.js — add it to the bridge)" : ""}` });
+    }
+  }
+  return out;
+}
 
 const staticRules = [
   {
@@ -297,22 +326,51 @@ const systemRules = [
   },
   {
     id: "cover-grid",
-    why: "§3 / §0a — a cover's trim is a derived size, not a hand-picked one: both dimensions on the 4pt grid, aspect inside the range real jackets occupy, and the composition index inside the set that is actually implemented. A comp the renderer has no branch for falls through to a blank field. The band is 1.15–1.85 rather than a tight 1.5: a wide art-book trim is legitimately squarer, and heights are deliberately near-constant because a row is as tall as its tallest member.",
+    why: "§3 / §0a — a jacket's trim is derived, not hand-picked: height on the 4pt grid, aspect inside the range real jackets occupy against every column the app actually renders, and a composition index inside the set implemented. A comp the renderer has no branch for falls through to a blank field.",
     check: (d) => {
       const out = [];
       // Walk enough distinct titles to exercise every branch of the hash.
       for (let i = 0; i < 400; i++) {
         const title = `title ${i} ${"x".repeat(i % 17)}`;
-        const { width, height, comp } = d.coverFor(title);
-        if (width % d.GRID || height % d.GRID) out.push({ msg: `coverFor("${title}") = ${width}×${height}, off the ${d.GRID}pt grid` });
-        const aspect = height / width;
-        if (aspect < 1.15 || aspect > 1.85) out.push({ msg: `coverFor("${title}") aspect ${aspect.toFixed(2)} is outside 1.15–1.85` });
-        if (d.cover.heights) {
-          const spread = Math.max(...d.cover.heights) - Math.min(...d.cover.heights);
-          if (spread > 24) out.push({ msg: `heights spread ${spread}pt — every short cover on a shelf gets that much dead air above it` });
+        const { height, comp } = d.coverFor(title);
+        if (height % d.GRID) out.push({ msg: `coverFor("${title}") is ${height}pt tall, off the ${d.GRID}pt grid` });
+        for (const w of [d.gridFor(288, 8).width, d.gridFor(343, 8).width]) {
+          const aspect = height / w;
+          if (aspect < 1.05 || aspect > 1.85) out.push({ msg: `coverFor("${title}") is ${w}×${height}, aspect ${aspect.toFixed(2)}, outside 1.05–1.85` });
         }
         if (!Number.isInteger(comp) || comp < 0 || comp >= d.cover.comps) out.push({ msg: `coverFor("${title}") comp ${comp} outside 0..${d.cover.comps - 1}` });
       }
+      // A row is as tall as its tallest member, so every point of height spread
+      // is dead air above every shorter jacket on that board.
+      const spread = Math.max(...d.cover.heights) - Math.min(...d.cover.heights);
+      if (spread > 24) out.push({ msg: `heights spread ${spread}pt — that much dead air above every short jacket` });
+      return out.slice(0, 4);
+    },
+  },
+  {
+    id: "shelf-grid",
+    why: "§4 — the bookcase solves its own column, so the solution has to be provable: a row never wider than the shelf, a column never narrower than a jacket needs to set a twelve-letter word at the 11px floor, at least one column at any width, every item placed exactly once in order, and NOTHING painted before the container is measured. Greedy variable-width packing was tried first and left ~100pt of empty paper on the right of every board.",
+    check: (d) => {
+      const out = [];
+      for (const gap of [8, 16]) {
+        // 320 and 375 are the real screens; the rest bracket them, including a
+        // shelf too narrow for even one column.
+        for (const avail of [60, 100, 288, 320, 343, 400, 768]) {
+          const { cols, width } = d.gridFor(avail, gap);
+          if (cols < 1) { out.push({ msg: `gridFor(${avail}, ${gap}) gave ${cols} columns` }); continue; }
+          const used = cols * width + gap * (cols - 1);
+          if (used > avail) out.push({ msg: `gridFor(${avail}, ${gap}) → ${cols}×${width} needs ${used}pt` });
+          // One column on a shelf too narrow for the minimum is the honest
+          // answer; two columns below the minimum is the bug.
+          if (cols > 1 && width < d.cover.minW) out.push({ msg: `gridFor(${avail}, ${gap}) → ${cols} columns of ${width}pt, under the ${d.cover.minW}pt minimum` });
+          const rows = d.rowsOf(9, cols);
+          const flat = rows.flat();
+          if (flat.length !== 9 || flat.some((v, i) => v !== i)) out.push({ msg: `rowsOf(9, ${cols}) dropped or reordered items: ${JSON.stringify(rows)}` });
+          if (rows.some((r) => r.length > cols)) out.push({ msg: `rowsOf(9, ${cols}) produced an over-full row` });
+        }
+      }
+      if (d.gridFor(0, 8).cols !== 0) out.push({ msg: "gridFor painted a layout before the container was measured" });
+      if (d.rowsOf(5, 0).length !== 0) out.push({ msg: "rowsOf produced rows for a zero-column grid" });
       return out.slice(0, 4);
     },
   },
@@ -322,7 +380,10 @@ const systemRules = [
     check: (d) => {
       const out = [];
       const words = ["Piranesi", "The Dispossessed", "Cacio e pepe", "Ganapati", "Mangal II", "Solenoid", "Extraordinarily", "A", "Pot-au-feu"];
-      for (const w of d.cover.widths) {
+      // The column widths the real screens actually produce, plus the bare
+      // minimum — checking a width the app never renders proves nothing.
+      const COLS = [d.cover.minW, d.gridFor(288, 8).width, d.gridFor(343, 8).width, d.gridFor(400, 8).width];
+      for (const w of COLS) {
         const box = w - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
         for (const title of words) {
           const { fontSize, lineHeight } = d.jacketType(title, w);
@@ -363,6 +424,11 @@ async function run() {
       findings++;
       console.error(`design.js  [missing-constant] ${k} is ${D[k]} — every check that compares against it is silently passing`);
     }
+  }
+  for (const f of await bridgeGaps()) {
+    findings++;
+    console.error(`src/theme.ts  [theme-bridge] ${f.msg}`);
+    console.error("    §0.1 — a value that reaches a component through a bridge must actually cross it. This has broken three times, always surfacing as a build error long after the edit.");
   }
   for (const rule of systemRules) {
     for (const f of rule.check(D)) {
@@ -441,10 +507,20 @@ const SYSTEM_PROBES = {
   "list-label-contrast": { ...D, listOn: { ...D.listOn, movies: "#FFFFFF" } },
   // A trim that is off-grid and far too square — exactly what hand-picking a
   // "nice looking" cover size produces.
-  "cover-grid": { ...D, coverFor: () => ({ width: 101, height: 110, comp: 0 }) },
+  "cover-grid": { ...D, coverFor: () => ({ height: 110, comp: 0 }) },
   // Type picked by eye instead of solved for: it looks right on "Kiln" and
   // shatters "The Dispossessed".
   "jacket-fits": { ...D, jacketType: () => ({ fontSize: 40, lineHeight: 42 }) },
+  // The classic off-by-one: the column solver forgets the gaps, so every row
+  // overflows and the last jacket is clipped by the screen edge.
+  "shelf-grid": {
+    ...D,
+    gridFor: (available) => {
+      if (!(available > 0)) return { cols: 0, width: 0 };
+      const cols = Math.max(1, Math.floor(available / D.cover.minW));
+      return { cols, width: Math.floor(available / cols) };
+    },
+  },
   // ζ=0.35 is a spring that visibly bounces; the press budget forbids any.
   "motion-frames": { ...D, springs: { press: D.spring({ dampingRatio: 0.35, settleMs: 220 }) } },
   "stagger-budget": { ...D, staggerDelay: (i) => Math.min(i, 20) * 40 },

@@ -17,12 +17,13 @@ const SHOTS = [
   { name: "app-375-light", q: "", w: 375, h: 980, scheme: "light" },
   { name: "app-375-dark", q: "", w: 375, h: 980, scheme: "dark" },
   { name: "app-320-light", q: "", w: 320, h: 900, scheme: "light" },
-  { name: "app-lower-375-light", q: "", w: 375, h: 980, scheme: "light", scroll: 1100 },
-  { name: "app-lower-375-dark", q: "", w: 375, h: 980, scheme: "dark", scroll: 1100 },
+  { name: "app-restaurants-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Restaurants," },
+  { name: "app-inbox-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Not shelved," },
+  { name: "app-recipes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Recipes," },
   // Tapping a jacket. The detail panel is the same two colours and the same
   // composition language at full size, so opening one reads as a zoom.
-  { name: "app-detail-375-light", q: "", w: 375, h: 980, scheme: "light", click: "St. John" },
-  { name: "app-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", click: "St. John" },
+  { name: "app-detail-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Restaurants,", click: "St. John" },
+  { name: "app-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Restaurants,", click: "St. John" },
   // The same panel with a frame off the reel — the two cases the field has to
   // hold, and the only way to see whether the empty one is composed or unfinished.
   // By LABEL, not by text: a jacket showing artwork has no text node at all,
@@ -58,10 +59,12 @@ for (const s of SHOTS) {
     }, s.scroll);
     await page.waitForTimeout(200);
   }
-  if (s.click || s.clickLabel) {
-    const target = s.clickLabel
-      ? page.getByLabel(s.clickLabel, { exact: false })
-      : page.getByText(s.click, { exact: false });
+  // Both, in order: reaching a jacket that is not on the default shelf takes
+  // two taps — pick the list, then pick the thing.
+  for (const step of [s.clickLabel && ["label", s.clickLabel], s.click && ["text", s.click]].filter(Boolean)) {
+    const target = step[0] === "label"
+      ? page.getByLabel(step[1], { exact: false })
+      : page.getByText(step[1], { exact: false });
     await target.first().click();
     await page.waitForTimeout(600);      // and the transition after the tap
   }
