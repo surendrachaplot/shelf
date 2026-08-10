@@ -346,3 +346,121 @@ VARIANTS.push({
     </div>`;
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. KIOSK / SHELVES — the chosen direction, taken further.
+//
+// The first Kiosk pass was four coloured blocks. Blocks are not shelves. What
+// makes a shelf a shelf is the BOARD: a hard edge with visible thickness that
+// things sit on. So every band gets one, and the app stops being a list of
+// cards and becomes what the app is called — your things standing as spines on
+// four boards, with the Inbox as the pile that has not been shelved yet.
+//
+// Still Swiss: radius zero, type as the icon, saturated fields, tight caps.
+// ─────────────────────────────────────────────────────────────────────────────
+VARIANTS.push({
+  name: "07 Kiosk · Shelves",
+  render() {
+    const INK = "#0A0A0A";
+    // Four flat primaries. BLACK IS NOT A LIST COLOUR — it is reserved for
+    // boards, rules and type, which is what holds the whole thing together.
+    // Movies was near-black and its board edge was therefore invisible
+    // against its own band; a system where one member cannot express the
+    // system's defining detail is not a system.
+    const tint = { books: "#0B3EE3", restaurants: "#FF2D16", movies: "#FFD400", recipes: "#00A050" };
+    const on = { books: "#FFFFFF", restaurants: "#FFFFFF", movies: "#0A0A0A", recipes: "#FFFFFF" };
+    // The board's underside: the same hue driven darker. This is the single
+    // detail that turns a colour field into a surface things rest on.
+    const board = { books: "#06229C", restaurants: "#B01A0C", movies: "#C69B00", recipes: "#006934" };
+
+    const SHELVES = [
+      { key: "books", label: "Books", n: "01", items: ["Piranesi", "Babel", "The Dispossessed", "Solenoid", "Checkout 19"] },
+      { key: "restaurants", label: "Restaurants", n: "02", items: ["Ganapati", "Kiln", "St. John", "Mangal II", "Brutto", "Toklas"] },
+      { key: "movies", label: "Movies", n: "03", items: ["Sinners", "Petrol", "La Chimera"] },
+      { key: "recipes", label: "Recipes", n: "04", items: ["Lemon dal", "Cacio e pepe", "Pot-au-feu", "Miso cod"] },
+    ];
+
+    // Spine thickness varies like a real shelf — deterministic from the title
+    // so it never reshuffles between renders.
+    const hash = (s) => [...s].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 997, 7);
+    const spine = (title, k, i) => {
+      const w = 22 + (hash(title) % 7) * 3.5;        // 22–43  thickness varies a lot
+      const h = 106 + (hash(title + "h") % 4) * 4;   // 106–118 height barely at all
+      const shade = i % 3 === 1 ? "rgba(255,255,255,.13)" : i % 3 === 2 ? "rgba(0,0,0,.13)" : "transparent";
+      return `
+        <div style="width:${w}px;height:${h}px;background:${tint[k]};position:relative;overflow:hidden;flex:none">
+          <div style="position:absolute;inset:0;background:${shade}"></div>
+          <div style="position:absolute;width:${h}px;height:${w}px;left:${(w - h) / 2}px;top:${(h - w) / 2}px;
+                      transform:rotate(-90deg);display:flex;align-items:center;padding-left:9px">
+            <span style="font:700 11px/1 'Liberation Sans',sans-serif;color:${on[k]};letter-spacing:.4px;
+                         text-transform:uppercase;white-space:nowrap;overflow:hidden;
+                         text-overflow:ellipsis;max-width:${h - 18}px">${title}</span>
+          </div>
+        </div>`;
+    };
+
+    const shelfBlock = (s) => `
+      <div style="margin-bottom:22px">
+        <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:7px">
+          <span style="width:11px;height:11px;background:${tint[s.key]};flex:none;transform:translateY(1px)"></span>
+          <span style="font:700 13px/1 'Liberation Sans',sans-serif;letter-spacing:.8px;text-transform:uppercase;color:${INK}">${s.label}</span>
+          <span style="flex:1;border-bottom:1px solid #DADADA;transform:translateY(-3px)"></span>
+          <span style="font:700 11px/1 'Liberation Sans',sans-serif;color:#8A8A8A">${String(s.items.length).padStart(2, "0")}</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:2px;overflow:hidden">${s.items.map((t, i) => spine(t, s.key, i)).join("")}</div>
+        <div style="height:7px;background:${INK}"></div>
+      </div>`;
+
+    // The share sheet: four boards, each with real thickness, filling the
+    // sheet edge to edge. No gaps — a shelf unit is continuous.
+    const band = (s) => `
+      <div style="flex:1;display:flex;flex-direction:column">
+        <div style="flex:1;background:${tint[s.key]};display:flex;align-items:center;gap:12px;padding:0 16px">
+          <span style="font:700 12px/1 'Liberation Sans',sans-serif;color:${on[s.key]};opacity:.55">${s.n}</span>
+          <span style="font:700 31px/1 'Liberation Sans',sans-serif;color:${on[s.key]};letter-spacing:-1.5px;
+                       text-transform:uppercase;flex:1">${s.label}</span>
+          <span style="font:700 12px/1 'Liberation Sans',sans-serif;color:${on[s.key]};opacity:.55">${String(s.items.length).padStart(2, "0")}</span>
+        </div>
+        <div style="height:6px;background:${board[s.key]}"></div>
+      </div>`;
+
+    const pile = (title, k) => `
+      <div style="background:#FFF;border:2px solid ${INK};padding:9px 11px;display:flex;align-items:center;gap:10px">
+        <span style="width:8px;height:8px;flex:none;${k ? `background:${tint[k]}` : "border:2px solid #B4B4B4"}"></span>
+        <span style="font:700 14px/1 'Liberation Sans',sans-serif;color:${INK};letter-spacing:-.3px;flex:1">${title}</span>
+        <span style="font:700 10px/1 'Liberation Sans',sans-serif;color:#8A8A8A;letter-spacing:1px">SHELVE</span>
+      </div>`;
+
+    return `
+    <div class="screen sheet" style="background:#FFF;display:flex;flex-direction:column">
+      <div style="padding:16px 16px 12px;display:flex;align-items:baseline">
+        <span style="font:700 11px/1 'Liberation Sans',sans-serif;letter-spacing:2px;text-transform:uppercase;flex:1">Put it on →</span>
+        <span style="font:400 11px/1 'Liberation Sans',sans-serif;color:#8A8A8A">Instagram reel</span>
+      </div>
+      ${SHELVES.map(band).join("")}
+      <div style="padding:13px 16px;display:flex;align-items:center">
+        <span style="font:700 12px/1 'Liberation Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;flex:1">Not sure</span>
+        <span style="font:700 12px/1 'Liberation Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:#8A8A8A">Decide for me →</span>
+      </div>
+    </div>
+    <div class="screen app" style="background:#FFF;padding:22px 16px 0">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:18px">
+        <span style="font:700 42px/.9 'Liberation Sans',sans-serif;letter-spacing:-2.8px">shelf</span>
+        <span style="flex:1"></span>
+        <span style="font:700 11px/1 'Liberation Sans',sans-serif;color:#8A8A8A;letter-spacing:1px">18 SAVED</span>
+      </div>
+
+      <div style="border-top:3px solid ${INK};padding-top:11px;margin-bottom:22px">
+        <div style="display:flex;align-items:baseline;margin-bottom:9px">
+          <span style="font:700 13px/1 'Liberation Sans',sans-serif;letter-spacing:.8px;text-transform:uppercase;flex:1">Not shelved</span>
+          <span style="font:700 11px/1 'Liberation Sans',sans-serif;color:#8A8A8A">02</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${pile("Ganapati", "restaurants")}${pile("Working it out…", null)}
+        </div>
+      </div>
+
+      ${SHELVES.map(shelfBlock).join("")}
+    </div>`;
+  },
+});

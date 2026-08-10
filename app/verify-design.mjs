@@ -51,6 +51,16 @@ const CONTROL = /btn|button|tab|tile|decide|input|action|chip|press|retry/i;
 // you to inflate a 2pt underline to 44pt.
 const NOT_CONTROL = /(rule|fade|wrap|inner|list|label|icon|bar|line|dot)$/i;
 
+// If a threshold the gate compares against is missing, every comparison using
+// it quietly returns false and the gate reports a clean run. Assert the
+// constants exist before trusting a single check.
+const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ", "MAX_SETTLE_MS", "MAX_FRAME_TRAVEL", "BOARD", "BAND_BOARD", "RULE"];
+// Twice now a broad regex edit to design.js has silently deleted an export —
+// TOUCH_MIN once, `family` once — and both times the failure surfaced far from
+// the cause (a missing tap-target floor; a crash inside Platform.select at
+// render). The gate names what must exist so a deletion fails HERE.
+const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "spineFor"];
+
 const staticRules = [
   {
     id: "type-scale",
@@ -227,10 +237,10 @@ const systemRules = [
   },
   {
     id: "type-complete",
-    why: "§1 — every step ships with its paired line-height and tracking. A bare size is half a decision.",
+    why: "§1 — every step ships with its paired line-height and tracking. A bare size is half a decision. Display type may set SOLID (leading below the size) because a wordmark is one line, but never below 0.85 or the ascenders collide.",
     check: (d) => Object.values(d.type)
-      .filter((t) => !(t.lineHeight > t.fontSize) || typeof t.letterSpacing !== "number")
-      .map((t) => ({ msg: `${t.name} has no usable lineHeight/letterSpacing pairing` })),
+      .filter((t) => !(t.lineHeight >= t.fontSize * 0.85) || typeof t.letterSpacing !== "number")
+      .map((t) => ({ msg: `${t.name}: lineHeight ${t.lineHeight} against size ${t.fontSize} — below the 0.85 solid floor` })),
   },
   {
     id: "spacing-grid",
@@ -263,14 +273,14 @@ const systemRules = [
   },
   {
     id: "list-label-contrast",
-    why: "§2 — every list colour is used as a filled button behind a label. The label flips (white on light scheme, page ink on dark) and BOTH directions have to clear 4.5:1.",
+    why: "§2 — every list colour carries a label on top of it, and the label colour is PER LIST (yellow cannot take white). This must read listOn rather than assume one label colour for all four — assuming it would have shipped a 1.4:1 label on Movies.",
     check: (d) => {
       const out = [];
-      for (const k of d.LIST_KEYS) {
-        const l = d.contrast(d.light.onList, d.light[k]);
-        if (l < 4.5) out.push({ msg: `light: white label on ${k} is ${l}:1` });
-        const dk = d.contrast(d.dark.onList, d.dark[k]);
-        if (dk < 4.5) out.push({ msg: `dark: page ink on ${k} is ${dk}:1` });
+      for (const scheme of ["light", "dark"]) {
+        for (const k of d.LIST_KEYS) {
+          const r = d.contrast(d.listOn[k], d[scheme][k]);
+          if (r < 4.5) out.push({ msg: `${scheme}: ${d.listOn[k]} label on ${k} is ${r}:1` });
+        }
       }
       return out;
     },
@@ -299,6 +309,18 @@ const systemRules = [
 
 async function run() {
   let findings = 0;
+  for (const k of REQUIRED_OBJECTS) {
+    if (D[k] == null) {
+      findings++;
+      console.error(`design.js  [missing-export] ${k} is not exported — something deleted it, and the failure will surface far from here`);
+    }
+  }
+  for (const k of REQUIRED_NUMBERS) {
+    if (typeof D[k] !== "number" || !Number.isFinite(D[k])) {
+      findings++;
+      console.error(`design.js  [missing-constant] ${k} is ${D[k]} — every check that compares against it is silently passing`);
+    }
+  }
   for (const rule of systemRules) {
     for (const f of rule.check(D)) {
       findings++;
@@ -370,10 +392,10 @@ const STATIC_PROBES = {
 const SYSTEM_PROBES = {
   contrast: { ...D, light: { ...D.light, inkFaint: "#CCCCCC" } },
   "type-floor": { ...D, type: { ...D.type, micro: { name: "micro", fontSize: 9, lineHeight: 12, letterSpacing: 0 } } },
-  "type-complete": { ...D, type: { ...D.type, body: { name: "body", fontSize: 15, lineHeight: 0, letterSpacing: 0 } } },
+  "type-complete": { ...D, type: { ...D.type, body: { name: "body", fontSize: 15, lineHeight: 4, letterSpacing: 0 } } },
   "spacing-grid": { ...D, sp: { ...D.sp, odd: 13 } },
   "placeholder-inverts": { ...D, dark: { ...D.dark, placeholder: "#000000" } },
-  "list-label-contrast": { ...D, light: { ...D.light, movies: "#D8C4E0" } },
+  "list-label-contrast": { ...D, listOn: { ...D.listOn, movies: "#FFFFFF" } },
   // ζ=0.35 is a spring that visibly bounces; the press budget forbids any.
   "motion-frames": { ...D, springs: { press: D.spring({ dampingRatio: 0.35, settleMs: 220 }) } },
   "stagger-budget": { ...D, staggerDelay: (i) => Math.min(i, 20) * 40 },

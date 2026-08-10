@@ -2,8 +2,7 @@
 //
 // It holds no values of its own. Every number comes from design.js, which the
 // auditor also imports; a constant that lived only here could drift from the
-// thing that checks it, and then the gate would be checking a different app
-// than the one that ships.
+// thing that checks it.
 import { useMemo } from "react";
 import { Platform, useColorScheme, type TextStyle } from "react-native";
 import * as D from "./design.js";
@@ -11,63 +10,53 @@ import * as D from "./design.js";
 export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
-  STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS,
+  STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, spineFor,
 } = D;
 
-// The serif is not decoration. It is what separates content (the name of the
-// thing you saved) from chrome (the label on the button that files it).
-const serif = Platform.select(D.family.serif);
+const sans = Platform.select(D.family.sans);
 
 export type Palette = typeof D.light;
 
-/** The four lists, and the one mark each. */
-// `shape` is not decoration: a book and a film have covers (2:3), a place and
-// a dish have photographs (1:1). Forcing one aspect on all four makes half the
-// shelf look like it is missing artwork it was never going to have.
 export const lists = {
-  books: { label: "Books", one: "book", shape: "portrait" },
-  restaurants: { label: "Restaurants", one: "place", shape: "square" },
-  movies: { label: "Movies", one: "film", shape: "portrait" },
-  recipes: { label: "Recipes", one: "recipe", shape: "square" },
-  unsorted: { label: "Inbox", one: "item", shape: "square" },
+  books: { label: "Books", one: "book", n: "01" },
+  restaurants: { label: "Restaurants", one: "place", n: "02" },
+  movies: { label: "Movies", one: "film", n: "03" },
+  recipes: { label: "Recipes", one: "recipe", n: "04" },
+  unsorted: { label: "Unsorted", one: "item", n: "00" },
 } as const;
 
-export const COVER_W = 62;
-export const coverHeight = (list: keyof typeof lists) =>
-  lists[list].shape === "portrait" ? Math.round(COVER_W * 1.5) : COVER_W;
+export const LIST_ORDER = ["books", "restaurants", "movies", "recipes"] as const;
 
-const asText = (t: (typeof D.type)[keyof typeof D.type]): TextStyle => ({
+const asText = (t: (typeof D.type)[keyof typeof D.type], extra: TextStyle = {}): TextStyle => ({
+  fontFamily: sans,
   fontSize: t.fontSize,
   lineHeight: t.lineHeight,
   letterSpacing: t.letterSpacing,
   fontWeight: t.fontWeight as TextStyle["fontWeight"],
+  ...extra,
 });
 
-/** The type scale, ready to spread into a style. Never write a size by hand. */
+/**
+ * One family, four jobs. Display is set SOLID (line-height below the size) —
+ * a wordmark and a band label are single lines and leading is dead space in
+ * both. Everything caps-and-tracked is chrome; only item titles are not.
+ */
 export const t = {
-  // Serif — content. The wordmark, list names, the titles of saved things.
-  display: { ...asText(D.type.display), fontFamily: serif },
-  title: { ...asText(D.type.title), fontFamily: serif },
-  heading: { ...asText(D.type.heading), fontFamily: serif },
-  itemTitle: { ...asText(D.type.heading), fontFamily: serif, fontWeight: "600" as const },
-  quote: { ...asText(D.type.meta), fontFamily: serif, fontStyle: "italic" as const },
-  // Sans — chrome. Labels, controls, metadata.
+  wordmark: { ...asText(D.type.display), fontWeight: "700" as const, fontSize: 42, lineHeight: 38, letterSpacing: -2.6 },
+  band: { ...asText(D.type.title), fontWeight: "700" as const, fontSize: 31, lineHeight: 31, letterSpacing: -1.5, textTransform: "uppercase" as const },
+  itemTitle: { ...asText(D.type.heading), fontWeight: "700" as const, letterSpacing: -0.4 },
+  section: { ...asText(D.type.meta), fontWeight: "700" as const, letterSpacing: 0.9, textTransform: "uppercase" as const },
+  spine: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 0.4, textTransform: "uppercase" as const },
   body: asText(D.type.body),
   bodyMed: asText(D.type.bodyMed),
   meta: asText(D.type.meta),
-  micro: { ...asText(D.type.micro), textTransform: "uppercase" as const },
-  code: { fontFamily: "Menlo", ...asText(D.type.meta) },
+  micro: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 1.8, textTransform: "uppercase" as const },
+  code: { ...asText(D.type.meta), fontFamily: "Menlo" },
 };
 
-/** Counts, dates, prices. Digits must not jitter between renders. */
 export const numeric: TextStyle = { fontVariant: ["tabular-nums"] };
 
-/**
- * Both schemes are first-class. Styles are built inside components from the
- * live palette rather than frozen at module scope — a StyleSheet created once
- * at import time cannot follow the system appearance, and "dark mode is a
- * v2 thing" is how an app ends up with one permanently wrong.
- */
 export function useTheme() {
   const scheme = useColorScheme();
   const c = scheme === "dark" ? D.dark : D.light;

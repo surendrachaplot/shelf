@@ -23,7 +23,7 @@
 // designed from typography that was defaulted.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RATIO = 1.185;
+const RATIO = 1.19;
 const BODY = 15;
 const step = (n) => Math.round(BODY * Math.pow(RATIO, n) * 2) / 2;
 
@@ -70,6 +70,13 @@ export const type = {
 export const icon = { sm: 18, md: 22, lg: 28, xl: 44 };
 export const STROKE = 1.75;
 
+// ONE family. In this system type IS the icon and the structure — a second
+// voice would soften exactly what makes it work. Helvetica is the reference;
+// SF Pro is the shipping stand-in.
+export const family = {
+  sans: { ios: undefined, web: '"Liberation Sans", Helvetica, Arial, sans-serif', default: undefined },
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPACE — a strict 4pt grid.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,86 +84,80 @@ export const STROKE = 1.75;
 export const sp = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, huge: 48 };
 export const GRID = 4;
 
-// Radii are on their own small scale; the card radius and the tile radius
-// being "nearly the same" is the kind of thing that reads as sloppiness
-// without anyone being able to say why.
-export const radius = { sm: 8, md: 14, lg: 20, pill: 999 };
+// Radius zero, everywhere, without exception. The moment one corner rounds,
+// the whole system starts apologising for itself.
+export const radius = { sm: 0, md: 0, lg: 0, pill: 0 };
 
-export const TOUCH_MIN = 44;   // Apple HIG floor. A floor, not a target.
+// Apple HIG floor. A FLOOR, not a target.
+//
+// These two were silently deleted by a regex meant for the radius block, and
+// the failure was invisible from both ends: every control's minHeight became
+// `undefined`, and verify-design's touch-target rule went quiet at the same
+// instant because `40 < undefined` is false. The guard and the thing it
+// guards died together. That is the argument for the selftest — the rule
+// reported "no violations" and the only reason anyone noticed is that the
+// selftest asked it to fail on purpose and it could not.
+export const TOUCH_MIN = 44;
 export const TOUCH = 48;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COLOUR — one palette, two schemes, every pairing contrast-checked.
-//
-// Warm neutrals rather than pure greys: a shelf of saved things should feel
-// like paper, not like a settings screen. The accent is a burnt sienna that
-// survives both schemes at text weight, which pure orange does not.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Two families. SF (the platform sans) does the work of the interface —
-// labels, controls, metadata. New York (the platform SERIF, free on every iOS
-// device since 13) carries the content: the wordmark, list names, titles of
-// the things you saved. That split is what makes Apple Books and News read as
-// edited rather than administered, and it costs nothing.
-export const family = {
-  sans: { ios: undefined, web: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', default: undefined },
-  serif: { ios: "New York", web: 'ui-serif, "New York", Georgia, "Times New Roman", serif', default: "serif" },
-};
-
 export const light = {
-  bg: "#FAF8F4",
+  bg: "#FFFFFF",
   surface: "#FFFFFF",
-  surfaceSunk: "#F1EDE6",
-  // "Something goes here": skeletons and image placeholders. It must read as
-  // ABOVE the card in dark and BELOW it in light — a single "sunk" token
-  // cannot do both, and using one made every placeholder in dark mode look
-  // like a hole punched through the card.
-  placeholder: "#EFEAE1",
-  ink: "#16130F",
-  inkSoft: "#5C564D",
-  inkFaint: "#746D62",
-  line: "#E4DED3",
-  lineStrong: "#CFC7B8",
-  accent: "#A8431A",
+  surfaceSunk: "#F2F2F2",
+  placeholder: "#EAEAEA",
+  ink: "#0A0A0A",
+  inkSoft: "#565656",
+  inkFaint: "#6E6E6E",
+  line: "#DADADA",
+  lineStrong: "#0A0A0A",
+  accent: "#E01000",
   accentInk: "#FFFFFF",
-  accentWash: "#F6E9E1",
-  good: "#1F5D3F",
-  warn: "#7A5310",
+  good: "#007A3D",
+  warn: "#8A6100",
 
-  // Each list is its own thing and should look like it. A shelf of books and
-  // a list of restaurants sharing one accent is a filing cabinet, not a shelf.
-  books: "#2C4A6E",
-  restaurants: "#A8431A",
-  movies: "#5B3A66",
-  recipes: "#4A5D2B",
-  unsorted: "#746D62",
-  // The label that sits ON a filled list colour. Light scheme: paper white.
-  // Dark scheme: the page ink, because the list colours invert to bright.
+  // The four. Poster red and poster green both fail 4.5:1 under white at
+  // their most saturated (#FF2D16 -> 3.72, #00A050 -> 3.42), so they are
+  // driven far enough to clear it and no further.
+  books: "#0B3EE3",
+  restaurants: "#E01000",
+  movies: "#FFD400",
+  recipes: "#007A3D",
+  unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
 
+// Yellow cannot carry white. Each list names its own label colour rather than
+// the system assuming one — an assumption that would have shipped a 1.6:1
+// label on Movies.
+export const listOn = {
+  books: "#FFFFFF", restaurants: "#FFFFFF", movies: "#0A0A0A",
+  recipes: "#FFFFFF", unsorted: "#FFFFFF",
+};
+
 export const dark = {
-  bg: "#131110",
-  surface: "#1D1A18",
-  surfaceSunk: "#0E0C0B",
-  placeholder: "#2B2724",
-  ink: "#F4F0EA",
-  inkSoft: "#B0A89C",
-  inkFaint: "#8D857A",
-  line: "#2E2A26",
-  lineStrong: "#433D37",
-  accent: "#F08A5A",
-  accentInk: "#1A0E07",
-  accentWash: "#2A1C14",
-  good: "#6FCF97",
+  bg: "#0A0A0A",
+  surface: "#0A0A0A",
+  surfaceSunk: "#161616",
+  placeholder: "#1E1E1E",
+  ink: "#FFFFFF",
+  inkSoft: "#A8A8A8",
+  inkFaint: "#8A8A8A",
+  line: "#2C2C2C",
+  lineStrong: "#FFFFFF",
+  accent: "#FF5A45",
+  accentInk: "#0A0A0A",
+  good: "#00C462",
   warn: "#E0B057",
 
-  books: "#8FB3DC",
-  restaurants: "#F08A5A",
-  movies: "#C9A0D8",
-  recipes: "#A8C46E",
-  unsorted: "#A79E92",
-  onList: "#131110",
+  // The primaries are the brand and do not change between schemes — only the
+  // structure colour inverts (boards and rules go white). Identical values,
+  // so a label that clears 4.5:1 in one scheme clears it in both.
+  books: "#0B3EE3",
+  restaurants: "#E01000",
+  movies: "#FFD400",
+  recipes: "#007A3D",
+  unsorted: "#6E6E6E",
+  onList: "#FFFFFF",
 };
 
 export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "unsorted"];
@@ -164,10 +165,26 @@ export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "unsorted
 // Depth instead of outlines. A hairline border around every surface is the
 // visual equivalent of underlining every sentence: it flattens the hierarchy
 // and reads as a wireframe that never got finished. Cards sit ON the paper.
-export const elevation = {
-  card: { shadowColor: "#2A1F14", shadowOpacity: 0.06, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
-  raised: { shadowColor: "#2A1F14", shadowOpacity: 0.12, shadowRadius: 22, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
-  cover: { shadowColor: "#1A120A", shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 },
+// No shadows anywhere. Depth in this system is a BOARD: a hard edge with
+// visible thickness that things rest on. That is what makes a coloured field
+// read as a shelf rather than a rectangle.
+export const elevation = { card: {}, raised: {}, cover: {} };
+
+export const BOARD = 7;        // the shelf a spine stands on
+export const BAND_BOARD = 6;   // the underside of a band in the share sheet
+export const RULE = 3;         // a section rule
+export const HAIRLINE = 1;
+
+// A spine's THICKNESS varies; its height barely does. Getting that backwards
+// is what made the first pass read as a bar chart instead of a bookshelf.
+export const spine = { minW: 22, stepW: 3.5, stepsW: 7, minH: 106, stepH: 4, stepsH: 4 };
+export const spineFor = (title) => {
+  let h = 7;
+  for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return {
+    width: spine.minW + (h % spine.stepsW) * spine.stepW,
+    height: spine.minH + ((h + title.length) % spine.stepsH) * spine.stepH,
+  };
 };
 
 // Text/background pairings that actually occur in the UI. The auditor walks
@@ -178,15 +195,10 @@ export const PAIRINGS = [
   ["ink", "bg"], ["ink", "surface"], ["ink", "surfaceSunk"],
   ["inkSoft", "bg"], ["inkSoft", "surface"],
   ["inkFaint", "bg"], ["inkFaint", "surface"],
-  ["accent", "bg"], ["accent", "surface"], ["accent", "accentWash"],
+  ["accent", "bg"], ["accent", "surface"],
   ["accentInk", "accent"],
   ["good", "bg"], ["good", "surface"],
   ["warn", "bg"], ["warn", "surface"],
-  ["books", "bg"], ["books", "surface"],
-  ["restaurants", "bg"], ["restaurants", "surface"],
-  ["movies", "bg"], ["movies", "surface"],
-  ["recipes", "bg"], ["recipes", "surface"],
-  ["unsorted", "bg"], ["unsorted", "surface"],
 ];
 
 // WCAG 2.1 relative luminance + contrast ratio. Exact, not approximated.

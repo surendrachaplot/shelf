@@ -5,10 +5,10 @@ const URLBASE = "file://" + fileURLToPath(new URL("./lab.html", import.meta.url)
 const OUT = fileURLToPath(new URL("./shots/", import.meta.url));
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
-const ctx = await browser.newContext({ viewport: { width: 840, height: 830 }, deviceScaleFactor: 2 });
+const ctx = await browser.newContext({ viewport: { width: 840, height: 1180 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
 const names = [];
-for (let v = 0; v < 6; v++) {
+for (let v = 0; v < 7; v++) {
   const errs = [];
   page.on("pageerror", (e) => errs.push(String(e)));
   await page.goto(`${URLBASE}?v=${v}`);

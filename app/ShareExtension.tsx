@@ -1,33 +1,40 @@
 // ShareExtension.tsx — the sheet that appears over Instagram.
 //
-// This is the whole product in one screen and its only job is to be FAST:
-// see it, tap a list, gone. The server queues the share and the worker does
-// the slow part while you carry on scrolling.
+// Four boards, edge to edge, filling the sheet. No gaps, no radius, no
+// shadows: a shelf unit is continuous, and the thing that makes a coloured
+// field read as a SHELF rather than a rectangle is the board — a hard edge
+// with visible thickness that things rest on. Every band has one.
 //
-// It is also the surface people actually see — several times a day, for about
-// a second each. So it is four FILED ROWS, not four grey boxes: each list
-// carries its own colour on a spine at the left edge, its own drawn mark, and
-// its name set in the serif. You are choosing a shelf, and it should look like
-// choosing a shelf.
+// Type is the icon. At 31pt tight caps you hit the right band without reading
+// it, which is the entire job: this is on screen for about a second, over
+// another app, one-handed.
 //
-// It closes optimistically. A failed POST is written to the shared Keychain
-// queue and flushed on next launch. The one thing this screen must never do is
+// It closes optimistically. A failed POST goes to the shared Keychain queue
+// and is flushed on next launch. The one thing this screen must never do is
 // lose a save silently.
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { close, type InitialProps } from "expo-share-extension";
 import * as FileSystem from "expo-file-system";
 import { ingestImage, ingestUrl, queueShare, type ListName, LISTS } from "./src/api";
-import { Icon, listIcon } from "./src/Icon";
 import { Press } from "./src/Press";
-import { Reveal } from "./src/Reveal";
-import { elevation, icon, lists, radius, sp, t, TOUCH, useTheme, type Palette } from "./src/theme";
+import {
+  BAND_BOARD, lists, listOn, sp, t, TOUCH_MIN, useTheme, type Palette,
+} from "./src/theme";
 
 type Phase =
   | { kind: "idle" }
   | { kind: "saving"; list: ListName }
   | { kind: "done"; list: ListName; offline: boolean }
   | { kind: "error"; message: string };
+
+// The board is the same hue driven dark. Derived, not hand-picked, so a new
+// list cannot arrive without one.
+function darken(hex: string, amount = 0.34) {
+  const h = hex.replace("#", "");
+  const v = [0, 2, 4].map((i) => Math.round(parseInt(h.slice(i, i + 2), 16) * (1 - amount)));
+  return "#" + v.map((x) => x.toString(16).padStart(2, "0")).join("");
+}
 
 export default function ShareExtension({ url, text, images }: InitialProps) {
   const { c } = useTheme();
@@ -57,8 +64,6 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
         return;
       }
       setPhase({ kind: "done", list, offline: false });
-      // Long enough to read, short enough that it never feels like a wait. The
-      // confirmation is the reward for the tap; skipping it reads as failure.
       setTimeout(close, 520);
     } catch (e) {
       if (sharedUrl) {
@@ -71,72 +76,71 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
     }
   }
 
+  // The confirmation is the band you just hit, filling the whole sheet. No
+  // tick, no dialog — the colour IS the receipt, and it is unmistakable at
+  // arm's length.
   if (phase.kind === "done") {
-    const tint = c[phase.list] ?? c.accent;
+    const fill = c[phase.list] ?? c.accent;
+    const label = listOn[phase.list] ?? c.onList;
     return (
-      <View style={[s.wrap, s.center]}>
-        <Reveal>
-          <View style={[s.doneMark, { borderColor: tint }]}>
-            <Icon name={phase.offline ? "offline" : "check"} size={icon.lg} color={tint} />
-          </View>
-        </Reveal>
-        <Reveal index={1}>
-          <Text style={s.doneTitle}>
-            {phase.offline ? "Saved — will sync" : `Saved to ${lists[phase.list].label}`}
-          </Text>
-        </Reveal>
-        {phase.offline ? (
-          <Reveal index={2}>
-            <Text style={s.doneHint}>No signal. It'll go up next time you open shelf.</Text>
-          </Reveal>
-        ) : null}
+      <View style={[s.wrap, { backgroundColor: fill }]}>
+        <View style={s.doneInner}>
+          <Text style={[s.doneKicker, { color: label }]}>{phase.offline ? "Queued" : "Shelved"}</Text>
+          <Text style={[s.doneLabel, { color: label }]}>{lists[phase.list].label}</Text>
+          {phase.offline ? (
+            <Text style={[s.doneNote, { color: label }]}>No signal — it goes up next time you open shelf</Text>
+          ) : null}
+        </View>
+        <View style={[s.board, { backgroundColor: darken(fill) }]} />
       </View>
     );
   }
 
   return (
     <View style={s.wrap}>
-      <Text style={s.eyebrow}>Save to</Text>
-      <Text style={s.source} numberOfLines={1}>{source}</Text>
-
-      <View style={s.rows}>
-        {LISTS.map((list, i) => {
-          const tint = c[list] ?? c.accent;
-          const active = phase.kind === "saving" && phase.list === list;
-          return (
-            <Reveal key={list} index={i}>
-              <Press
-                onPress={() => save(list)}
-                disabled={phase.kind === "saving"}
-                style={s.row}
-                size={320}
-                label={`Save to ${lists[list].label}`}
-              >
-                {/* The spine. Each list is a different thing and reads like one
-                    before you have read a single word. */}
-                <View style={[s.spine, { backgroundColor: tint }]} />
-                <View style={s.rowIcon}><Icon name={listIcon[list]} size={icon.md} color={tint} /></View>
-                <Text style={s.rowLabel}>{lists[list].label}</Text>
-                {active
-                  ? <ActivityIndicator color={tint} style={s.rowEnd} />
-                  : <View style={s.rowEnd}><Icon name="chevron" size={icon.sm} color={c.inkFaint} /></View>}
-              </Press>
-            </Reveal>
-          );
-        })}
+      <View style={s.head}>
+        <Text style={s.kicker}>Put it on →</Text>
+        <Text style={s.source} numberOfLines={1}>{source}</Text>
       </View>
 
-      <Reveal index={LISTS.length}>
-        <Press
-          onPress={() => save("unsorted")}
-          disabled={phase.kind === "saving"}
-          style={s.decide}
-          size={TOUCH}
-          label="Let shelf decide which list"
-        >
-          <Text style={s.decideLabel}>Not sure — let shelf decide</Text>
-        </Press>
-      </Reveal>
+      {LISTS.map((list) => {
+        const fill = c[list] ?? c.accent;
+        const label = listOn[list] ?? c.onList;
+        const busy = phase.kind === "saving" && phase.list === list;
+        return (
+          <Press
+            key={list}
+            onPress={() => save(list)}
+            disabled={phase.kind === "saving"}
+            containerStyle={s.bandOuter}
+            style={s.bandOuter}
+            size={340}
+            label={`Put it on ${lists[list].label}`}
+          >
+            <View style={[s.band, { backgroundColor: fill }]}>
+              <Text style={[s.bandNum, { color: label }]}>{lists[list].n}</Text>
+              <Text style={[s.bandLabel, { color: label }]} numberOfLines={1}>{lists[list].label}</Text>
+              {busy
+                ? <ActivityIndicator color={label} />
+                : <Text style={[s.bandNum, { color: label }]}>→</Text>}
+            </View>
+            {/* The board. Six points of visible thickness is the difference
+                between a shelf and a rectangle. */}
+            <View style={[s.board, { backgroundColor: darken(fill) }]} />
+          </Press>
+        );
+      })}
+
+      <Press
+        onPress={() => save("unsorted")}
+        disabled={phase.kind === "saving"}
+        style={s.foot}
+        size={340}
+        label="Let shelf decide which list"
+      >
+        <Text style={s.footLeft}>Not sure</Text>
+        <Text style={s.footRight}>Decide for me →</Text>
+      </Press>
 
       {phase.kind === "error" ? <Text style={s.error}>{phase.message}</Text> : null}
     </View>
@@ -144,40 +148,30 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
 }
 
 const styles = (c: Palette) => StyleSheet.create({
-  wrap: { flex: 1, paddingHorizontal: sp.lg, paddingTop: sp.lg, paddingBottom: sp.md, backgroundColor: c.bg },
-  center: { alignItems: "center", justifyContent: "center" },
+  wrap: { flex: 1, backgroundColor: c.bg },
 
-  doneMark: {
-    width: icon.xl + sp.md, height: icon.xl + sp.md, borderRadius: radius.pill,
-    borderWidth: 2, alignItems: "center", justifyContent: "center",
-  },
-  doneTitle: { ...t.heading, color: c.ink, textAlign: "center", marginTop: sp.md },
-  doneHint: { ...t.meta, color: c.inkSoft, textAlign: "center", marginTop: sp.xs },
+  head: { flexDirection: "row", alignItems: "baseline", paddingHorizontal: sp.lg, paddingTop: sp.lg, paddingBottom: sp.md },
+  kicker: { ...t.micro, color: c.ink, flex: 1 },
+  source: { ...t.meta, color: c.inkFaint },
 
-  eyebrow: { ...t.micro, color: c.inkFaint },
-  source: { ...t.meta, color: c.inkSoft, marginTop: 2, marginBottom: sp.lg },
+  // Each band takes an equal share of whatever height the sheet has, so the
+  // unit always fills it — no dead space under the last shelf.
+  bandOuter: { flex: 1 },
+  band: { flex: 1, flexDirection: "row", alignItems: "center", gap: sp.md, paddingHorizontal: sp.lg, minHeight: TOUCH_MIN },
+  bandNum: { ...t.micro, opacity: 0.55 },
+  bandLabel: { ...t.band, flex: 1 },
+  board: { height: BAND_BOARD },
 
-  rows: { gap: sp.sm },
-  row: {
-    flexDirection: "row", alignItems: "center", minHeight: TOUCH + sp.md,
-    backgroundColor: c.surface, borderRadius: radius.md,
-    paddingRight: sp.md,
-    ...elevation.card,
-  },
-  // A 4pt bar, full height, flush to the leading edge — a spine, not a badge.
-  spine: {
-    width: sp.xs, alignSelf: "stretch",
-    borderTopLeftRadius: radius.md, borderBottomLeftRadius: radius.md,
-  },
-  rowIcon: { width: TOUCH, alignItems: "center" },
-  rowLabel: { ...t.heading, color: c.ink, flex: 1 },
-  rowEnd: { width: icon.md, alignItems: "flex-end" },
+  foot: { flexDirection: "row", alignItems: "center", paddingHorizontal: sp.lg, minHeight: TOUCH + 0 },
+  footLeft: { ...t.micro, color: c.ink, flex: 1 },
+  footRight: { ...t.micro, color: c.inkFaint },
 
-  decide: {
-    marginTop: sp.lg, minHeight: TOUCH, alignSelf: "center",
-    paddingHorizontal: sp.md, alignItems: "center", justifyContent: "center",
-  },
-  decideLabel: { ...t.meta, color: c.inkFaint },
+  doneInner: { flex: 1, justifyContent: "center", paddingHorizontal: sp.lg },
+  doneKicker: { ...t.micro, opacity: 0.6 },
+  doneLabel: { ...t.wordmark, marginTop: sp.sm },
+  doneNote: { ...t.meta, marginTop: sp.md, opacity: 0.8 },
 
-  error: { ...t.meta, color: c.accent, marginTop: sp.sm, textAlign: "center" },
+  error: { ...t.meta, color: c.accent, textAlign: "center", paddingVertical: sp.sm },
 });
+
+const TOUCH = TOUCH_MIN + 4;

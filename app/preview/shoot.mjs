@@ -14,11 +14,11 @@ const OUT = fileURLToPath(new URL("./shots/", import.meta.url));
 await mkdir(OUT, { recursive: true });
 
 const SHOTS = [
-  { name: "app-375-light", q: "", w: 375, h: 812, scheme: "light" },
-  { name: "app-375-dark", q: "", w: 375, h: 812, scheme: "dark" },
-  { name: "app-320-light", q: "", w: 320, h: 700, scheme: "light" },
-  { name: "app-books-375-light", q: "", w: 375, h: 812, scheme: "light", click: "Books" },
-  { name: "pair-375-light", q: "?paired=0", w: 375, h: 812, scheme: "light" },
+  { name: "app-375-light", q: "", w: 375, h: 980, scheme: "light" },
+  { name: "app-375-dark", q: "", w: 375, h: 980, scheme: "dark" },
+  { name: "app-320-light", q: "", w: 320, h: 900, scheme: "light" },
+  { name: "app-books-375-light", q: "", w: 375, h: 980, scheme: "light", click: "Books" },
+  { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },

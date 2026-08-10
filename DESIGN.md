@@ -39,17 +39,26 @@ That bar is only meaningful if it is falsifiable, so it is:
   component. **An icon set is also judged as a SET** — restaurants and recipes
   first shipped as a bowl and a pot, two of four silhouettes reading the same
   at a glance, which is a failed set however well each one is drawn.
-- **Two type families, and the split is the point.** SF does the interface —
-  labels, controls, metadata. New York (the platform serif, free on every iOS
-  device since 13) carries content: the wordmark, list names, the titles of
-  things you saved. That split is what makes Apple Books and News read as
-  edited rather than administered, and it costs nothing.
-- **Depth, not outlines.** A hairline border around every surface is the
-  visual equivalent of underlining every sentence: it flattens hierarchy and
-  reads as a wireframe that never got finished. Cards sit ON the paper.
-- **Each list owns a colour**, and a shape: a book and a film have covers
-  (2:3), a place and a dish have photographs (1:1). One aspect for all four
-  makes half the shelf look like it is missing artwork it never had.
+- **One family, and type does the icon's job.** At 31pt tight caps you hit the
+  right band in the share sheet without reading it. A second voice would
+  soften exactly what makes this work.
+- **Radius zero, everywhere, without exception.** The moment one corner rounds,
+  the whole system starts apologising for itself.
+- **Four flat primaries, and BLACK IS NOT ONE OF THEM.** Black is reserved for
+  boards, rules and type. The first pass made Movies near-black and its board
+  edge was therefore invisible against its own band — a system where one
+  member cannot express the system's defining detail is not a system.
+- **Depth is a BOARD, not a shadow.** A hard edge with visible thickness that
+  things rest on is what makes a coloured field read as a shelf rather than a
+  rectangle. Six points in the sheet, seven in the app.
+- **The app shows shelves.** Not a tab bar over a list of cards: four boards
+  with your things standing on them as spines, and the Inbox as the pile that
+  has not been put away. A spine's THICKNESS varies and its height barely
+  does — getting that backwards makes the row read as a bar chart, which is
+  exactly what the first pass did.
+- **Each list names its own label colour.** Yellow cannot carry white.
+  Assuming one label colour for all four would have shipped a 1.4:1 label on
+  Movies; `listOn` exists so the system cannot make that assumption.
 - **Dark mode is not a v2 thing.** Styles are built from the live palette inside
   components, never frozen at import time — a StyleSheet created once cannot
   follow the system appearance, and that is how an app ends up with one scheme

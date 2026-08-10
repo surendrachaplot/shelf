@@ -1,46 +1,40 @@
-// App.tsx — the four shelves, the Inbox, and pairing.
+// App.tsx — the shelves.
 //
-// The register is a reading room, not a dashboard: warm paper, ink, a serif
-// for the things you saved and a sans for the controls that file them. Each
-// list owns a colour, so a shelf of books and a list of places do not look
-// like one undifferentiated pile.
+// The app is called shelf, so it shows you shelves. Not a tab bar over a list
+// of cards: four boards, your things standing on them as spines, and the
+// Inbox as the pile that has not been put away yet. That single structural
+// choice is the whole design — everything else is Swiss discipline around it
+// (radius zero, four flat primaries, black reserved for boards/rules/type,
+// and type doing the work an icon set would otherwise do).
 //
-// No borders around everything. Cards sit ON the paper with a soft shadow —
-// a hairline outline on every surface is the visual equivalent of underlining
-// every sentence, and it is what makes an interface read as a wireframe that
-// never got finished.
+// A spine's THICKNESS varies and its height barely does, which is how a real
+// shelf looks. Getting that backwards makes the row read as a bar chart.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, FlatList, Image, RefreshControl, SafeAreaView,
-  StatusBar, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import {
   fetchInbox, fetchList, flushQueue, pair, updateItem,
   type Item, type ListName, LISTS,
 } from "./src/api";
 import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
-import { Icon, listIcon } from "./src/Icon";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
-import { coverHeight, elevation, icon, lists, radius, sp, t, TOUCH, TOUCH_MIN, useTheme, type Palette } from "./src/theme";
-
-type Tab = ListName | "inbox";
-const TABS: Tab[] = ["inbox", ...LISTS];
-const tintOf = (c: Palette, tab: Tab) => (tab === "inbox" ? c.unsorted : c[tab] ?? c.accent);
+import {
+  BOARD, lists, listOn, RULE, sp, spineFor, t, TOUCH_MIN, useTheme, type Palette,
+} from "./src/theme";
 
 export default function App() {
-  const { c, dark } = useTheme();
-  const s = useMemo(() => styles(c, dark), [c, dark]);
+  const { c } = useTheme();
+  const s = useMemo(() => styles(c), [c]);
 
   const [ready, setReady] = useState(false);
   const [paired, setPaired] = useState(false);
-  const [tab, setTab] = useState<Tab>("inbox");
-  const [items, setItems] = useState<Item[]>([]);
+  const [shelves, setShelves] = useState<Record<string, Item[]>>({});
+  const [inbox, setInbox] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
-  // null means "the shelf really is empty". A string means "we could not look".
-  // Rendering those the same way tells the user their saves vanished.
+  // null means the shelves really are empty. A string means we could not look.
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,14 +53,16 @@ export default function App() {
     if (!paired) return;
     setBusy(true);
     try {
-      setItems(tab === "inbox" ? await fetchInbox() : await fetchList(tab));
+      const [ib, ...rest] = await Promise.all([fetchInbox(), ...LISTS.map((l) => fetchList(l))]);
+      setInbox(ib);
+      setShelves(Object.fromEntries(LISTS.map((l, i) => [l, rest[i]])));
       setLoadError(null);
     } catch (e) {
       setLoadError((e as Error).message);
     } finally {
       setBusy(false);
     }
-  }, [tab, paired]);
+  }, [paired]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -76,170 +72,142 @@ export default function App() {
   }, [flash]);
 
   async function act(item: Item, body: Record<string, unknown>) {
-    setItems((prev) => prev.filter((i) => i.id !== item.id)); // optimistic
+    setInbox((prev) => prev.filter((i) => i.id !== item.id)); // optimistic
     try {
       await updateItem({ id: item.id, ...body });
+      load();
     } catch (e) {
       setFlash((e as Error).message);
       load();
     }
   }
 
-  if (!ready) return <View style={s.boot}><ActivityIndicator color={c.accent} /></View>;
+  if (!ready) return <View style={s.boot}><ActivityIndicator color={c.ink} /></View>;
   if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
+  const total = Object.values(shelves).reduce((n, xs) => n + (xs?.length ?? 0), 0);
+
   return (
-    <SafeAreaView style={s.screen}>
-      <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
+    <View style={s.screen}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <View style={s.head}>
+          <Text style={s.wordmark}>shelf</Text>
+          <Text style={s.headCount}>{total} saved</Text>
+        </View>
 
-      <Text style={s.wordmark}>shelf</Text>
+        {flash ? <Text style={s.flash}>{flash}</Text> : null}
 
-      {/* §4e — the strip overflows at every width and hides its scrollbar, so
-          the cut edge is the only affordance left. A hard cut reads as broken
-          layout; a short fade reads as "there is more". */}
-      <View style={s.tabWrap}>
-        <FlatList
-          horizontal
-          data={TABS}
-          keyExtractor={(x) => x}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.tabs}
-          // A horizontal list inside a flex column is still a flex child and
-          // takes flex:1 vertically unless told not to.
-          style={s.tabList}
-          renderItem={({ item: name }) => {
-            const on = tab === name;
-            const tint = tintOf(c, name);
-            return (
-              <Press onPress={() => setTab(name)} style={s.tab} size={100} label={lists[name === "inbox" ? "unsorted" : name].label}>
-                <View style={s.tabInner}>
-                  <Icon name={name === "inbox" ? "inbox" : listIcon[name]} size={icon.sm} color={on ? tint : c.inkFaint} />
-                  <Text style={[s.tabLabel, on && { color: c.ink }]}>
-                    {lists[name === "inbox" ? "unsorted" : name].label}
-                  </Text>
-                </View>
-                {/* Selection is a rule in the list's own colour, not a filled
-                    black pill — the pill is the default look and it drowns
-                    every colour the app just spent effort establishing. */}
-                <View style={[s.tabRule, on && { backgroundColor: tint }]} />
-              </Press>
-            );
-          }}
-        />
-        <LinearGradient
-          pointerEvents="none"
-          colors={[c.bg + "00", c.bg]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={s.tabFade}
-        />
-      </View>
+        {loadError ? (
+          <View style={s.errorBlock}>
+            <Text style={s.section}>Couldn't reach your shelves</Text>
+            <Text style={s.errorNote}>{loadError}. Nothing has been lost.</Text>
+            <Press onPress={load} style={s.retry} size={TOUCH_MIN} label="Try again">
+              <Text style={s.retryLabel}>Try again →</Text>
+            </Press>
+          </View>
+        ) : null}
 
-      {flash ? <Text style={s.flash}>{flash}</Text> : null}
-
-      <FlatList
-        data={items}
-        keyExtractor={(i) => i.id}
-        refreshControl={<RefreshControl refreshing={busy} onRefresh={load} tintColor={c.accent} />}
-        contentContainerStyle={items.length ? s.list : s.listEmpty}
-        ListEmptyComponent={
-          busy ? null : loadError ? (
-            <View style={s.empty}>
-              <View style={s.emptyMark}><Icon name="offline" size={icon.xl} color={c.inkFaint} /></View>
-              <Text style={s.emptyTitle}>Couldn't reach your shelf</Text>
-              <Text style={s.emptyHint}>{loadError}. Nothing has been lost.</Text>
-              <Press onPress={load} style={[s.btn, s.btnPrimary, s.retry]} size={TOUCH} label="Try again">
-                <Text style={s.btnPrimaryLabel}>Try again</Text>
-              </Press>
-            </View>
-          ) : (
-            <View style={s.empty}>
-              <View style={s.emptyMark}>
-                <Icon name={tab === "inbox" ? "inbox" : listIcon[tab]} size={icon.xl} color={tintOf(c, tab)} />
-              </View>
-              <Text style={s.emptyTitle}>
-                {tab === "inbox" ? "Nothing waiting" : `No ${lists[tab].label.toLowerCase()} yet`}
-              </Text>
-              <Text style={s.emptyHint}>
-                Share a reel from Instagram and pick a list — it'll arrive here.
-              </Text>
-            </View>
-          )
-        }
-        renderItem={({ item, index }) => (
-          <Reveal index={index}>
-            <Row item={item} inbox={tab === "inbox"} onAct={act} s={s} c={c} />
-          </Reveal>
+        {/* Not shelved: the pile. Flat cards, not spines — a thing you have
+            not filed is not standing on a board yet, and the layout should
+            say so before the label does. */}
+        <View style={s.rule} />
+        <View style={s.sectionRow}>
+          <Text style={s.section}>Not shelved</Text>
+          <Text style={s.sectionNum}>{String(inbox.length).padStart(2, "0")}</Text>
+        </View>
+        {inbox.length === 0 ? (
+          <Text style={s.emptyLine}>Nothing waiting. Share a reel and pick a shelf.</Text>
+        ) : (
+          inbox.map((item, i) => (
+            <Reveal key={item.id} index={i}>
+              <PileRow item={item} onAct={act} s={s} c={c} />
+            </Reveal>
+          ))
         )}
-      />
-    </SafeAreaView>
+
+        {LISTS.map((list, i) => (
+          <Shelf key={list} list={list} items={shelves[list] ?? []} index={i} s={s} c={c} />
+        ))}
+
+        {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
+      </ScrollView>
+    </View>
   );
 }
 
-function Row({ item, inbox, onAct, s, c }: {
-  item: Item; inbox: boolean; s: ReturnType<typeof styles>; c: Palette;
+function Shelf({ list, items, index, s, c }: {
+  list: ListName; items: Item[]; index: number;
+  s: ReturnType<typeof styles>; c: Palette;
+}) {
+  const fill = c[list] ?? c.accent;
+  const label = listOn[list] ?? c.onList;
+  return (
+    <Reveal index={index}>
+      <View style={s.shelf}>
+        <View style={s.sectionRow}>
+          <View style={[s.swatch, { backgroundColor: fill }]} />
+          <Text style={s.section}>{lists[list].label}</Text>
+          <View style={s.sectionRule} />
+          <Text style={s.sectionNum}>{String(items.length).padStart(2, "0")}</Text>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.spineScroll} contentContainerStyle={s.spineRow}>
+          {items.length === 0 ? (
+            <Text style={s.shelfEmpty}>Nothing on this shelf yet</Text>
+          ) : items.map((item, i) => {
+            const dims = spineFor(item.title ?? item.id);
+            // Every third spine takes a light or dark wash so a run of the
+            // same colour still reads as separate objects.
+            const wash = i % 3 === 1 ? "rgba(255,255,255,.14)" : i % 3 === 2 ? "rgba(0,0,0,.14)" : "transparent";
+            return (
+              <View key={item.id} style={[s.spine, { width: dims.width, height: dims.height, backgroundColor: fill }]}>
+                <View style={[s.spineWash, { backgroundColor: wash }]} />
+                <View style={[s.spineTextBox, {
+                  width: dims.height, height: dims.width,
+                  left: (dims.width - dims.height) / 2, top: (dims.height - dims.width) / 2,
+                }]}>
+                  <Text style={[s.spineText, { color: label, maxWidth: dims.height - sp.lg }]} numberOfLines={1}>
+                    {item.title ?? "Untitled"}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+        <View style={s.board} />
+      </View>
+    </Reveal>
+  );
+}
+
+function PileRow({ item, onAct, s, c }: {
+  item: Item; s: ReturnType<typeof styles>; c: Palette;
   onAct: (i: Item, body: Record<string, unknown>) => void;
 }) {
   const pending = item.status === "pending";
-  const tint = c[item.list] ?? c.accent;
-  // MISSING and FAILED are two different states and both need the same
-  // designed fallback. Open Library and TMDB both serve dead cover paths.
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = !!item.image_url && !imageFailed;
-
+  // A pending item has no shelf yet. Painting it in a list colour is a lie the
+  // eye reads before the words do — it gets an outline instead.
+  const fill = pending ? "transparent" : (c[item.list] ?? c.unsorted);
   return (
-    <View style={s.card}>
-      <View style={s.cardTop}>
-        {showImage
-          ? <Image source={{ uri: item.image_url! }} style={[s.cover, { height: coverHeight(item.list) }]} onError={() => setImageFailed(true)} />
-          : <View style={[s.cover, s.coverBlank, { height: coverHeight(item.list) }]}>
-              <Icon name={listIcon[item.list]} size={icon.lg} color={tint} />
-            </View>}
-        <View style={s.cardText}>
-          <Text style={s.cardTitle} numberOfLines={2}>
-            {item.title ?? (pending ? "Working it out…" : "Couldn't read this one")}
-          </Text>
-          {item.subtitle ? <Text style={s.cardSub} numberOfLines={2}>{item.subtitle}</Text> : null}
-          {/* The note is the only part of a saved thing no catalogue knows —
-              why it was worth keeping. It gets the pull-quote treatment. */}
-          {item.note ? (
-            <View style={[s.noteWrap, { borderLeftColor: tint }]}>
-              <Text style={s.note} numberOfLines={3}>{item.note}</Text>
-            </View>
-          ) : null}
-          {pending ? (
-            <View style={s.skeleton}>
-              <View style={[s.skelLine, s.skelWide]} />
-              <View style={[s.skelLine, s.skelNarrow]} />
-            </View>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Pending rows show no buttons: nothing to confirm until the worker has
-          had its go, and "Keep" on a row with no title files an empty item. */}
-      {inbox && !pending ? (
-        <View style={s.actions}>
-          <Press onPress={() => onAct(item, { action: "file" })} style={[s.btn, { backgroundColor: tint }]} size={TOUCH} label="Keep">
-            <Text style={s.btnPrimaryLabel}>Keep</Text>
-          </Press>
-          {LISTS.filter((l) => l !== item.list).map((l) => (
-            <Press key={l} onPress={() => onAct(item, { list: l, action: "file" })} style={[s.btn, s.btnIcon]} size={TOUCH} label={`Move to ${lists[l].label}`}>
-              <Icon name={listIcon[l]} size={icon.sm} color={c[l] ?? c.inkSoft} />
-            </Press>
-          ))}
-          <Press onPress={() => onAct(item, { action: "discard" })} style={[s.btn, s.btnIcon]} size={TOUCH} label="Discard">
-            <Icon name="trash" size={icon.sm} color={c.inkFaint} />
-          </Press>
-        </View>
-      ) : null}
+    <View style={s.pile}>
+      <View style={[s.pileSwatch, { backgroundColor: fill, borderColor: pending ? c.line : fill }]} />
+      <Text style={s.pileTitle} numberOfLines={1}>
+        {item.title ?? (pending ? "Working it out…" : "Couldn't read this one")}
+      </Text>
+      {pending ? (
+        <Text style={s.pileAction}>Reading</Text>
+      ) : (
+        <Press onPress={() => onAct(item, { action: "file" })} style={s.pileBtn} size={TOUCH_MIN} label={`Shelve on ${lists[item.list].label}`}>
+          <Text style={s.pileAction}>Shelve →</Text>
+        </Press>
+      )}
     </View>
   );
 }
 
 function Pairing({ onPaired }: { onPaired: () => void }) {
-  const { c, dark } = useTheme();
-  const s = useMemo(() => styles(c, dark), [c, dark]);
+  const { c } = useTheme();
+  const s = useMemo(() => styles(c), [c]);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -264,99 +232,85 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
   }
 
   return (
-    <SafeAreaView style={[s.screen, s.pairWrap]}>
-      <Reveal><Text style={s.pairMark}>shelf</Text></Reveal>
-      <Reveal index={1}>
-        <Text style={s.pairHint}>
-          Run{"  "}<Text style={s.mono}>node auth.js --pair you@email</Text>{"  "}on the server, then type the code it prints.
-        </Text>
-      </Reveal>
-      <Reveal index={2}>
-        <TextInput
-          value={code}
-          onChangeText={setCode}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          placeholder="PAIRING CODE"
-          placeholderTextColor={c.inkFaint}
-          style={s.input}
-          onSubmitEditing={submit}
-        />
-      </Reveal>
-      <Reveal index={3}>
-        <Press onPress={submit} disabled={busy || code.length < 4} style={[s.btn, s.btnPrimary, s.pairBtn]} size={TOUCH} label="Pair this phone">
-          {busy ? <ActivityIndicator color={c.accentInk} /> : <Text style={s.btnPrimaryLabel}>Pair this phone</Text>}
-        </Press>
-      </Reveal>
-      {error ? <Text style={s.error}>{error}</Text> : null}
-    </SafeAreaView>
+    <View style={[s.screen, s.pairWrap]}>
+      <Text style={s.wordmark}>shelf</Text>
+      <Text style={s.pairHint}>Run <Text style={s.mono}>node auth.js --pair you@email</Text> on the server, then type the code.</Text>
+      <TextInput
+        value={code}
+        onChangeText={setCode}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        placeholder="PAIRING CODE"
+        placeholderTextColor={c.inkFaint}
+        style={s.input}
+        onSubmitEditing={submit}
+      />
+      <Press onPress={submit} disabled={busy || code.length < 4} style={s.pairBtn} size={TOUCH_MIN} label="Pair this phone">
+        {busy ? <ActivityIndicator color={c.onList} /> : <Text style={s.pairBtnLabel}>Pair this phone →</Text>}
+      </Press>
+      {error ? <Text style={s.errorNote}>{error}</Text> : null}
+    </View>
   );
 }
 
-const styles = (c: Palette, _dark: boolean) => StyleSheet.create({
+const styles = (c: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.bg },
   boot: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
+  scroll: { paddingHorizontal: sp.lg, paddingTop: sp.xl, paddingBottom: sp.huge },
 
-  wordmark: { ...t.display, color: c.ink, paddingHorizontal: sp.lg, paddingTop: sp.xs, paddingBottom: sp.md },
+  head: { flexDirection: "row", alignItems: "baseline", marginBottom: sp.lg },
+  wordmark: { ...t.wordmark, color: c.ink, flex: 1 },
+  headCount: { ...t.micro, color: c.inkFaint },
 
-  tabWrap: { position: "relative" },
-  tabList: { flexGrow: 0, flexShrink: 0 },
-  tabFade: { position: "absolute", right: 0, top: 0, bottom: 0, width: sp.xxl },
-  tabs: { paddingHorizontal: sp.lg, gap: sp.lg, paddingBottom: sp.md },
-  tab: { minHeight: TOUCH_MIN, justifyContent: "space-between", alignItems: "center", gap: sp.sm },
-  tabInner: { flexDirection: "row", alignItems: "center", gap: sp.xs, flex: 1 },
-  tabLabel: { ...t.bodyMed, color: c.inkFaint },
-  tabRule: { height: 2, alignSelf: "stretch", borderRadius: radius.pill, backgroundColor: "transparent" },
+  flash: { ...t.meta, color: c.accent, marginBottom: sp.sm },
 
-  flash: { ...t.meta, color: c.accent, paddingHorizontal: sp.lg, paddingBottom: sp.sm },
+  rule: { height: RULE, backgroundColor: c.ink },
+  sectionRow: { flexDirection: "row", alignItems: "center", gap: sp.sm, paddingTop: sp.md, paddingBottom: sp.sm },
+  section: { ...t.section, color: c.ink },
+  sectionRule: { flex: 1, height: 1, backgroundColor: c.line },
+  sectionNum: { ...t.micro, color: c.inkFaint },
+  swatch: { width: 11, height: 11 },
 
-  list: { paddingHorizontal: sp.lg, paddingBottom: sp.huge, gap: sp.md, paddingTop: sp.xs },
-  listEmpty: { flexGrow: 1, justifyContent: "center" },
-  empty: { alignItems: "center", paddingHorizontal: sp.xxl, gap: sp.xs },
-  emptyMark: { opacity: 0.4, marginBottom: sp.sm },
-  emptyTitle: { ...t.heading, color: c.ink, textAlign: "center" },
-  emptyHint: { ...t.meta, color: c.inkSoft, textAlign: "center" },
-  retry: { marginTop: sp.lg },
+  emptyLine: { ...t.meta, color: c.inkFaint, paddingBottom: sp.md },
 
-  card: { backgroundColor: c.surface, borderRadius: radius.lg, padding: sp.md, ...elevation.card },
-  cardTop: { flexDirection: "row", gap: sp.md },
-  // 2:3, the proportion of a book cover and a film poster. It leads the row.
-  cover: { width: 62, borderRadius: radius.sm, backgroundColor: c.placeholder, ...elevation.cover },
-  coverBlank: { alignItems: "center", justifyContent: "center" },
-  cardText: { flex: 1, gap: sp.xs },
-  cardTitle: { ...t.itemTitle, color: c.ink },
-  cardSub: { ...t.meta, color: c.inkSoft },
-  noteWrap: { borderLeftWidth: 2, paddingLeft: sp.sm, marginTop: 2 },
-  note: { ...t.quote, color: c.inkSoft },
-
-  skeleton: { gap: sp.xs, marginTop: sp.xs },
-  skelLine: { height: 9, borderRadius: radius.sm, backgroundColor: c.placeholder },
-  skelWide: { width: "82%" },
-  skelNarrow: { width: "48%" },
-
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: sp.xs, marginTop: sp.md },
-  btn: {
-    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN, paddingHorizontal: sp.md,
-    alignItems: "center", justifyContent: "center", borderRadius: radius.md,
+  pile: {
+    flexDirection: "row", alignItems: "center", gap: sp.sm,
+    borderWidth: 2, borderColor: c.ink, paddingHorizontal: sp.md,
+    minHeight: TOUCH_MIN, marginBottom: sp.sm,
   },
-  // Square, so five actions fit on one row even at 320pt. The 44pt floor is
-  // held by minWidth/minHeight, never by padding.
-  // `placeholder`, not `surfaceSunk`: this sits ON the card, so it has to be
-  // lighter than it in dark and darker in light. surfaceSunk is darker in both
-  // and punched five holes through every Inbox card.
-  btnIcon: { paddingHorizontal: 0, width: TOUCH_MIN, backgroundColor: c.placeholder },
-  btnPrimary: { backgroundColor: c.accent },
-  // On light the lists are deep, on dark they are bright — so the label flips.
-  btnPrimaryLabel: { ...t.bodyMed, color: c.onList },
+  pileSwatch: { width: 9, height: 9, borderWidth: 2 },
+  pileTitle: { ...t.bodyMed, color: c.ink, flex: 1 },
+  pileBtn: { minHeight: TOUCH_MIN, justifyContent: "center", paddingLeft: sp.sm },
+  pileAction: { ...t.micro, color: c.inkFaint },
 
-  pairWrap: { alignItems: "center", justifyContent: "center", paddingHorizontal: sp.xxl, gap: sp.md },
-  pairMark: { ...t.display, color: c.ink, textAlign: "center" },
-  pairHint: { ...t.meta, color: c.inkSoft, textAlign: "center" },
+  shelf: { marginTop: sp.lg },
+  spineScroll: { flexGrow: 0 },
+  spineRow: { flexDirection: "row", alignItems: "flex-end", gap: 2, minHeight: 118 },
+  spine: { position: "relative", overflow: "hidden" },
+  spineWash: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  // Rotated inside its own box so the spine itself stays a simple rect.
+  spineTextBox: { position: "absolute", transform: [{ rotate: "-90deg" }], flexDirection: "row", alignItems: "center", paddingLeft: sp.sm },
+  spineText: { ...t.spine },
+  board: { height: BOARD, backgroundColor: c.ink },
+  shelfEmpty: { ...t.meta, color: c.inkFaint, alignSelf: "flex-end", paddingBottom: sp.sm },
+
+  errorBlock: { borderWidth: 2, borderColor: c.ink, padding: sp.md, marginBottom: sp.md },
+  errorNote: { ...t.meta, color: c.inkSoft, marginTop: sp.xs },
+  retry: { marginTop: sp.md, minHeight: TOUCH_MIN, justifyContent: "center", alignSelf: "flex-start" },
+  retryLabel: { ...t.micro, color: c.ink },
+
+  busy: { marginTop: sp.lg },
+
+  pairWrap: { justifyContent: "center", paddingHorizontal: sp.xl, gap: sp.md },
+  pairHint: { ...t.meta, color: c.inkSoft },
   mono: { ...t.code, color: c.ink },
   input: {
-    ...t.body, color: c.ink, width: 264, height: TOUCH, textAlign: "center", letterSpacing: 4,
-    borderRadius: radius.md, backgroundColor: c.surface, ...elevation.card,
+    ...t.bodyMed, color: c.ink, height: TOUCH_MIN + 8, paddingHorizontal: sp.md,
+    letterSpacing: 4, borderWidth: 2, borderColor: c.ink, backgroundColor: c.bg,
   },
-  pairBtn: { alignSelf: "center", paddingHorizontal: sp.xl, height: TOUCH, marginTop: sp.xs },
-  error: { ...t.meta, color: c.accent, textAlign: "center" },
+  pairBtn: {
+    minHeight: TOUCH_MIN + 8, backgroundColor: c.ink, alignItems: "center", justifyContent: "center",
+    alignSelf: "flex-start", paddingHorizontal: sp.lg,
+  },
+  pairBtnLabel: { ...t.micro, color: c.bg },
 });

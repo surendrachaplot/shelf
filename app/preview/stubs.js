@@ -21,7 +21,19 @@ const ITEMS = [
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const fetchInbox = async () => { await wait(60); return ITEMS.filter((i) => i.status !== "filed"); };
-export const fetchList = async (l) => { await wait(60); return ITEMS.filter((i) => i.status === "filed" && i.list === l); };
+const SHELVED = {
+  books: ["Piranesi", "Babel", "The Dispossessed", "Solenoid", "Checkout 19"],
+  restaurants: ["Ganapati", "Kiln", "St. John", "Mangal II", "Brutto", "Toklas"],
+  movies: ["Sinners", "Petrol", "La Chimera"],
+  recipes: ["Lemon dal", "Cacio e pepe", "Pot-au-feu", "Miso cod"],
+};
+export const fetchList = async (l) => {
+  await wait(60);
+  return (SHELVED[l] ?? []).map((title, i) => ({
+    id: `${l}-${i}`, list: l, status: "filed", title, subtitle: "", note: "",
+    image_url: null, canonical: {}, confidence: 0.9, source_url: "x", enriched: true, created_at: "",
+  }));
+};
 export const updateItem = async () => ({ item: {} });
 export const ingestUrl = async () => { await wait(140); return { id: "1" }; };
 export const ingestImage = async () => ({ id: "1" });
