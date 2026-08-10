@@ -26,9 +26,14 @@ import {
   ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import {
-  fetchInbox, fetchList, flushQueue, pair, updateItem,
-  type Item, type ListName, LISTS,
+  fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, updateItem,
+  type Item, type ListName, type ShareKind, LISTS,
 } from "./src/api";
+import { Add } from "./src/Add";
+import { ExLibris } from "./src/ExLibris";
+import { Profile } from "./src/Profile";
+import { Received } from "./src/Received";
+import { ShareSheet } from "./src/ShareSheet";
 import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
@@ -44,6 +49,11 @@ import {
 type TabName = ListName | "unsorted";
 const TABS: TabName[] = [...LISTS, "unsorted"];
 
+// One screen at a time, held in one variable. A router for four destinations
+// would be a dependency that hides where you are; this is four words.
+type Screen = "case" | "add" | "profile" | "received";
+type Sharing = { kind: ShareKind; target: string | null; list: string; title: string };
+
 export default function App() {
   const { c } = useTheme();
   const s = useMemo(() => styles(c), [c]);
@@ -57,6 +67,10 @@ export default function App() {
   const [open, setOpen] = useState<Item | null>(null);
   const [tab, setTab] = useState<TabName>("books");
   const [viewportH, setViewportH] = useState(0);
+  const [screen, setScreen] = useState<Screen>("case");
+  const [sharing, setSharing] = useState<Sharing | null>(null);
+  const [seed, setSeed] = useState<string>("shelf");
+  const [waiting, setWaiting] = useState(0);
   // null means the shelves really are empty. A string means we could not look.
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -88,6 +102,23 @@ export default function App() {
   }, [paired]);
 
   useEffect(() => { load(); }, [load]);
+
+  // The plate and the delivery count are the two things the header needs and
+  // the shelves do not, so they are fetched once rather than on every list
+  // change. Both fail SILENTLY: a header is not a place to report a network
+  // error, and neither is load-bearing for reading your own shelves.
+  const loadHeader = useCallback(async () => {
+    if (!paired) return;
+    const [me, inbound] = await Promise.all([
+      getProfile().catch(() => null),
+      listReceived().catch(() => []),
+    ]);
+    if (me?.profile) setSeed(me.profile.plate_seed || me.profile.handle || "shelf");
+    setWaiting(inbound.length);
+  }, [paired]);
+
+  useEffect(() => { loadHeader(); }, [loadHeader]);
+
   useEffect(() => {
     if (!flash) return;
     const id = setTimeout(() => setFlash(null), 3500);
@@ -118,7 +149,25 @@ export default function App() {
     <View style={s.screen}>
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>shelf</Text>
-        <Text style={s.headCount}>{total} shelved</Text>
+        <View style={s.headTools}>
+          <Press onPress={() => setScreen("add")} style={s.tool} size={TOUCH_MIN} label="Add something by name">
+            <Text style={s.toolLabel}>Add</Text>
+          </Press>
+          {/* A count of zero is not a badge. "Sent to you" with nothing behind
+              it is a dot that trains you to ignore dots. */}
+          {waiting > 0 ? (
+            <Press onPress={() => setScreen("received")} style={s.toolLive} size={TOUCH_MIN} label={`${waiting} sent to you`}>
+              <Text style={s.toolLiveLabel}>{waiting} sent you</Text>
+            </Press>
+          ) : (
+            <Press onPress={() => setScreen("received")} style={s.tool} size={TOUCH_MIN} label="Things sent to you">
+              <Text style={s.toolLabel}>Inbox</Text>
+            </Press>
+          )}
+          <Press onPress={() => setScreen("profile")} style={s.plateBtn} size={TOUCH_MIN} label="Your card">
+            <ExLibris seed={seed} size={36} />
+          </Press>
+        </View>
       </View>
 
       {/* The rail. Five flat blocks of colour carrying nothing but their series
@@ -143,6 +192,16 @@ export default function App() {
 
       <View style={[s.band, { backgroundColor: fill }]}>
         <Text style={[s.bandLabel, { color: on }]} numberOfLines={1}>{lists[tab].label}</Text>
+        {/* The pile is not a shelf you can hand to anyone — it is the things
+            you have not decided about yet. */}
+        {tab !== "unsorted" ? (
+          <Press
+            onPress={() => setSharing({ kind: "shelf", target: tab, list: tab, title: `Your ${lists[tab].label.toLowerCase()} shelf` })}
+            style={s.bandShare} size={TOUCH_MIN} label={`Share the ${lists[tab].label} shelf`}
+          >
+            <Text style={[s.bandCount, { color: on }]}>Share</Text>
+          </Press>
+        ) : null}
         <Text style={[s.bandCount, { color: on }]}>{String(showing.length).padStart(2, "0")}</Text>
       </View>
 
@@ -187,7 +246,46 @@ export default function App() {
         {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
       </ScrollView>
 
-      {open ? <Detail item={open} onClose={() => setOpen(null)} onAct={act} s={s} c={c} /> : null}
+      {open ? (
+        <Detail
+          item={open}
+          onClose={() => setOpen(null)}
+          onAct={act}
+          onShare={() => setSharing({
+            kind: "item", target: open.id, list: open.list,
+            title: open.title ?? "This one",
+          })}
+          s={s} c={c}
+        />
+      ) : null}
+
+      {screen === "add" ? (
+        <View style={s.over}>
+          <Add onClose={() => { setScreen("case"); load(); }} onAdded={(it) => setTab(it.list)} />
+        </View>
+      ) : null}
+      {screen === "profile" ? (
+        <View style={s.over}>
+          <Profile
+            onClose={() => { setScreen("case"); loadHeader(); }}
+            onShare={(handle) => setSharing({ kind: "profile", target: null, list: "books", title: `Everything on @${handle}` })}
+          />
+        </View>
+      ) : null}
+      {screen === "received" ? (
+        <View style={s.over}>
+          <Received
+            onClose={() => { setScreen("case"); loadHeader(); }}
+            onAccepted={() => { load(); loadHeader(); }}
+          />
+        </View>
+      ) : null}
+
+      {sharing ? (
+        <View style={s.over}>
+          <ShareSheet {...sharing} onClose={() => setSharing(null)} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -383,9 +481,10 @@ function PileRow({ item, onAct, onOpen, s, c }: {
  * top-aligned the block and left four fifths of the screen as an empty red
  * field, which is not "generous white space", it is a poster nobody finished.
  */
-function Detail({ item, onClose, onAct, s, c }: {
+function Detail({ item, onClose, onAct, onShare, s, c }: {
   item: Item; onClose: () => void;
   onAct: (i: Item, body: Record<string, unknown>) => void;
+  onShare: () => void;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
   const list = (item.list ?? "unsorted") as ListName;
@@ -428,9 +527,12 @@ function Detail({ item, onClose, onAct, s, c }: {
           {item.note ? <Text style={[s.detailNote, { color: on }]}>{item.note}</Text> : null}
 
           <View style={s.detailActions}>
+            <Press onPress={onShare} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Share this">
+              <Text style={[s.detailBtnLabel, { color: fill }]}>Share →</Text>
+            </Press>
             {item.source_url ? (
-              <Press onPress={() => Linking.openURL(item.source_url as string)} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Open the reel">
-                <Text style={[s.detailBtnLabel, { color: fill }]}>Open reel →</Text>
+              <Press onPress={() => Linking.openURL(item.source_url as string)} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Open the reel">
+                <Text style={[s.detailBtnLabel, { color: on }]}>Open reel →</Text>
               </Press>
             ) : null}
             {item.status !== "filed" ? (
@@ -448,7 +550,9 @@ function Detail({ item, onClose, onAct, s, c }: {
               render the same way. One means we could not look at it; the other
               means we did and were unsure. */}
           <Text style={[s.detailMeta, { color: on }]}>
-            {item.confidence == null
+            {(item.canonical as { from?: string })?.from
+              ? `From @${(item.canonical as { from?: string }).from}`
+              : item.confidence == null
               ? "Not read yet"
               : `${Math.round(item.confidence * 100)}% sure · ${item.enriched ? "matched to a catalogue" : "from the caption only"}`}
           </Text>
@@ -515,9 +619,15 @@ const styles = (c: Palette) => StyleSheet.create({
   inset: { paddingHorizontal: sp.lg },
   insetMargin: { marginHorizontal: sp.lg },
 
-  head: { flexDirection: "row", alignItems: "baseline", paddingTop: sp.xl, paddingBottom: sp.md },
+  head: { flexDirection: "row", alignItems: "center", paddingTop: sp.xl, paddingBottom: sp.md },
   wordmark: { ...t.wordmark, color: c.ink, flex: 1 },
-  headCount: { ...t.micro, color: c.inkFaint },
+  headTools: { flexDirection: "row", alignItems: "center", gap: sp.sm },
+  tool: { minHeight: TOUCH_MIN, paddingHorizontal: sp.sm, justifyContent: "center" },
+  toolLabel: { ...t.micro, color: c.inkFaint },
+  toolLive: { minHeight: TOUCH_MIN, paddingHorizontal: sp.sm, justifyContent: "center", backgroundColor: c.accent },
+  toolLiveLabel: { ...t.micro, color: c.accentInk },
+  plateBtn: { minHeight: TOUCH_MIN, justifyContent: "center" },
+  over: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.bg },
 
   // Five equal blocks of flat colour. The selected one drops 4pt to meet the
   // band below it, so the tab and its panel are one continuous field.
@@ -530,6 +640,7 @@ const styles = (c: Palette) => StyleSheet.create({
   band: { flexDirection: "row", alignItems: "center", gap: sp.md, paddingHorizontal: sp.lg, paddingVertical: sp.md },
   bandLabel: { ...t.band, flex: 1 },
   bandCount: { ...t.micro },
+  bandShare: { minHeight: TOUCH_MIN, justifyContent: "center", paddingHorizontal: sp.sm },
 
   flash: { ...t.meta, color: c.accent, marginBottom: sp.sm },
 

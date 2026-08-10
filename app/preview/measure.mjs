@@ -12,9 +12,22 @@ const URLBASE = "file://" + fileURLToPath(new URL("./index.html", import.meta.ur
 const MIN = 44;
 const HIT_SLOP = 8; // Press passes this to hitSlop; it counts toward the box.
 
+// The overlays have to be OPENED to be measured. A screen that is only ever
+// reachable by a tap is a screen this audit never saw, and every new control
+// on it is unverified — which was true of Add, the profile card, deliveries
+// and the share panel the moment they were written.
 const SCREENS = [
   { name: "app 375", q: "", w: 375, h: 812 },
   { name: "app 320", q: "", w: 320, h: 700 },
+  { name: "add 375", q: "", w: 375, h: 812, open: "Add something by name" },
+  { name: "add 320", q: "", w: 320, h: 700, open: "Add something by name" },
+  { name: "card 375", q: "", w: 375, h: 812, open: "Your card" },
+  { name: "card 320", q: "", w: 320, h: 700, open: "Your card" },
+  { name: "card new 375", q: "?blankProfile=1", w: 375, h: 812, open: "Your card" },
+  { name: "sent 375", q: "", w: 375, h: 812, open: "2 sent to you" },
+  { name: "share panel 375", q: "", w: 375, h: 812, open: "Share the Books shelf" },
+  { name: "share panel 320", q: "", w: 320, h: 700, open: "Share the Books shelf" },
+  { name: "detail 375", q: "", w: 375, h: 812, open: "Piranesi, Susanna Clarke" },
   { name: "pair 375", q: "?paired=0", w: 375, h: 812 },
   { name: "share 375", q: "?screen=share", w: 375, h: 320 },
   { name: "share 320", q: "?screen=share", w: 320, h: 320 },
@@ -27,6 +40,10 @@ for (const s of SCREENS) {
   const page = await ctx.newPage();
   await page.goto(URLBASE + s.q);
   await page.waitForTimeout(700);
+  if (s.open) {
+    await page.getByLabel(s.open, { exact: false }).first().click();
+    await page.waitForTimeout(600);
+  }
   const rects = await page.$$eval('[role="button"]', (els, slop) =>
     els.map((el) => {
       const r = el.getBoundingClientRect();

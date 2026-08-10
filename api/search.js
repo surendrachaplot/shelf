@@ -1,0 +1,330 @@
+// search.js — find a thing and put it on a shelf, with no reel involved.
+//
+// Sharing a reel is how shelf gets used at 1am. This is how it gets used when
+// someone tells you about a restaurant over dinner, and it has to be just as
+// short a path: type, tap, done.
+//
+// Four providers, four different shapes, ONE result envelope — the same
+// discipline `resolve.js` applies to caption extraction, for the same reason.
+// A renderer that has to know which provider produced a row is a renderer that
+// grows a branch per provider and then a bug per branch.
+//
+// Every provider is OPTIONAL. Books and recipes need no key at all; movies and
+// restaurants light up when a key appears in the environment. A missing key
+// produces a NAMED, VISIBLE absence, never an empty result that reads as "we
+// looked and there is nothing" — §8 is explicit that those must not render the
+// same way, and it applies to a search box as much as to a shelf.
+import { isMain } from "./ismain.js";
+import { fetchT, BROWSER_HEADERS } from "./net.js";
+import { query, dbReady } from "./db.js";
+import { getUser } from "./auth.js";
+import { json, itemId, normList } from "./items.js";
+import { parseLd, extractWebPage } from "./resolve.js";
+
+export const PROVIDERS = {
+  books: { name: "Open Library", key: null },
+  movies: { name: "TMDB", key: "TMDB_API_KEY" },
+  restaurants: { name: "Google Places", key: "GOOGLE_PLACES_KEY" },
+  recipes: { name: "the page itself", key: null },
+};
+
+export const providerReady = (list) => {
+  const p = PROVIDERS[list];
+  return !p ? false : !p.key || !!process.env[p.key];
+};
+
+/**
+ * The envelope. `key` is the CATALOGUE identity — it is what stops the same
+ * book being added twice, and it is why every provider must produce one.
+ */
+export function result({ list, key, title, subtitle, imageUrl, canonical, provider }) {
+  return {
+    list, key: `${list}:${key}`, title, subtitle: subtitle || null,
+    image_url: imageUrl || null, canonical: { ...(canonical || {}), key: `${list}:${key}` },
+    provider,
+  };
+}
+
+const jsonGet = async (url, opts = {}, ms = 9000) => {
+  const r = await fetchT(url, { headers: { Accept: "application/json", ...(opts.headers || {}) }, ...opts }, ms);
+  if (!r.ok) throw new Error(`${r.status}`);
+  return r.json();
+};
+
+// ── the cache ────────────────────────────────────────────────────────────────
+// Searches are cached exactly like enrichments, MISSES INCLUDED. A search box
+// is the worst possible thing to leave uncached against a metered provider:
+// every keystroke past the debounce is a paid question, and "nothing matched
+// 'ganapat'" is a real, reusable answer.
+async function cachedSearch(provider, key, fetcher) {
+  if (!dbReady()) return fetcher();
+  const r = await query(
+    "select found, payload from provider_cache where provider = $1 and cache_key = $2",
+    [`search:${provider}`, key]
+  );
+  if (r.rows.length) return r.rows[0].found ? r.rows[0].payload : [];
+  let value = [];
+  try { value = await fetcher(); }
+  catch (_) { return []; }   // a network failure is NOT a cached miss
+  await query(
+    `insert into provider_cache (provider, cache_key, found, payload)
+     values ($1, $2, $3, $4) on conflict (provider, cache_key)
+     do update set found = excluded.found, payload = excluded.payload, created_at = now()`,
+    [`search:${provider}`, key, value.length > 0, JSON.stringify(value)]
+  );
+  return value;
+}
+
+// ── books: Open Library, keyless ─────────────────────────────────────────────
+
+export function bookResults(docs = []) {
+  return docs.filter((d) => d.title).slice(0, 8).map((d) =>
+    result({
+      list: "books",
+      key: d.key || d.cover_edition_key || `${d.title}|${(d.author_name || [])[0] || ""}`,
+      title: d.title,
+      subtitle: [(d.author_name || [])[0], d.first_publish_year].filter(Boolean).join(" · ") || null,
+      imageUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
+      canonical: { openlibrary_key: d.key, isbn: (d.isbn || [])[0] || null, year: d.first_publish_year || null },
+      provider: "Open Library",
+    })
+  );
+}
+
+export const searchBooks = (q) =>
+  cachedSearch("books", q, async () => {
+    const r = await jsonGet(`https://openlibrary.org/search.json?limit=8&fields=key,title,author_name,first_publish_year,cover_i,isbn&q=${encodeURIComponent(q)}`);
+    return bookResults(r.docs);
+  });
+
+// ── movies & TV: TMDB, free key ──────────────────────────────────────────────
+
+export function movieResults(hits = []) {
+  return hits
+    .filter((h) => (h.media_type === "movie" || h.media_type === "tv" || !h.media_type) && (h.title || h.name))
+    .slice(0, 8)
+    .map((h) => {
+      const date = h.release_date || h.first_air_date || "";
+      return result({
+        list: "movies",
+        key: `${h.media_type || "movie"}/${h.id}`,
+        title: h.title || h.name,
+        subtitle: [date.slice(0, 4), h.media_type === "tv" ? "TV" : null].filter(Boolean).join(" · ") || null,
+        imageUrl: h.poster_path ? `https://image.tmdb.org/t/p/w500${h.poster_path}` : null,
+        canonical: { tmdb_id: h.id, tmdb_type: h.media_type || "movie", year: date.slice(0, 4) || null },
+        provider: "TMDB",
+      });
+    });
+}
+
+export const searchMovies = (q) =>
+  !process.env.TMDB_API_KEY ? Promise.resolve([]) : cachedSearch("movies", q, async () => {
+    const r = await jsonGet(`https://api.themoviedb.org/3/search/multi?include_adult=false&query=${encodeURIComponent(q)}&api_key=${process.env.TMDB_API_KEY}`);
+    return movieResults(r.results);
+  });
+
+// ── restaurants: Google Places, PAID ─────────────────────────────────────────
+
+export function placeResults(places = []) {
+  return places.filter((p) => p.name).slice(0, 8).map((p) =>
+    result({
+      list: "restaurants",
+      key: p.place_id || p.id || p.name,
+      title: p.name,
+      subtitle: p.formatted_address || p.vicinity || null,
+      // Deliberately no photo: a Places photo is a second billed request per
+      // result, and eight of those per keystroke is how a search box becomes a
+      // line item. The typographic jacket is the designed answer for this.
+      imageUrl: null,
+      canonical: {
+        place_id: p.place_id || p.id || null,
+        address: p.formatted_address || p.vicinity || null,
+        lat: p.geometry?.location?.lat ?? null,
+        lng: p.geometry?.location?.lng ?? null,
+      },
+      provider: "Google Places",
+    })
+  );
+}
+
+export const searchPlaces = (q, city) =>
+  !process.env.GOOGLE_PLACES_KEY ? Promise.resolve([]) : cachedSearch("restaurants", [q, city].filter(Boolean).join("|"), async () => {
+    const r = await jsonGet(
+      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent([q, city].filter(Boolean).join(" "))}&type=restaurant&key=${process.env.GOOGLE_PLACES_KEY}`
+    );
+    return placeResults(r.results);
+  });
+
+// ── recipes: the page itself, keyless ────────────────────────────────────────
+// There is no good general recipe search that is free, and inventing one out of
+// a web search would return blogspam. What there IS, reliably, is schema.org
+// Recipe markup on the page someone is actually looking at — so for recipes the
+// query is a URL, and pasting one is the interaction.
+
+export const looksLikeUrl = (q) => /^https?:\/\/\S+$/i.test(String(q || "").trim());
+
+export async function searchRecipeUrl(url) {
+  try {
+    const r = await fetchT(url, { headers: BROWSER_HEADERS }, 9000);
+    if (!r.ok) return [];
+    const html = await r.text();
+    const nodes = parseLd(html);
+    const recipe = nodes.find((n) => /Recipe/i.test([].concat(n["@type"] || []).join(" ")));
+    const page = extractWebPage(html, url);
+    const title = recipe?.name || page?.title;
+    if (!title) return [];
+    return [result({
+      list: "recipes",
+      key: url,
+      title,
+      subtitle: recipe?.recipeYield || recipe?.author?.name || new URL(url).hostname.replace(/^www\./, ""),
+      imageUrl: (Array.isArray(recipe?.image) ? recipe.image[0] : recipe?.image?.url || recipe?.image) || page?.imageUrl || null,
+      canonical: { recipe_url: url, yield: recipe?.recipeYield || null, time: recipe?.totalTime || null },
+      provider: "the page itself",
+    })];
+  } catch (_) {
+    return [];
+  }
+}
+
+// ── the one search ───────────────────────────────────────────────────────────
+
+/**
+ * Everything at once, in one envelope, with the providers that could not answer
+ * NAMED rather than silently missing. `unavailable` is the difference between
+ * "no films matched" and "films are switched off because there is no key" —
+ * §8, and the reason the Add screen can tell the truth instead of looking
+ * broken to someone who never set TMDB_API_KEY.
+ */
+export async function searchAll(q, { city = null, only = null } = {}) {
+  const term = String(q || "").trim();
+  if (term.length < 2) return { results: [], unavailable: [] };
+
+  if (looksLikeUrl(term)) {
+    return { results: await searchRecipeUrl(term), unavailable: [], mode: "url" };
+  }
+
+  const wanted = only ? [only] : ["books", "movies", "restaurants"];
+  const unavailable = wanted.filter((l) => !providerReady(l)).map((l) => ({ list: l, provider: PROVIDERS[l].name }));
+
+  const jobs = wanted.filter(providerReady).map((l) =>
+    (l === "books" ? searchBooks(term) : l === "movies" ? searchMovies(term) : searchPlaces(term, city))
+      .then((r) => r, () => [])
+  );
+  const got = (await Promise.all(jobs)).flat();
+
+  // Interleave by list rather than concatenating. Eight books followed by eight
+  // films means the films are below the fold on every search, which quietly
+  // turns a four-shelf app into a book app.
+  return { results: interleave(got), unavailable, mode: "query" };
+}
+
+export function interleave(rows) {
+  const byList = new Map();
+  for (const r of rows) (byList.get(r.list) ?? byList.set(r.list, []).get(r.list)).push(r);
+  const out = [];
+  for (let i = 0; out.length < rows.length; i++) {
+    let moved = false;
+    for (const list of byList.values()) {
+      if (list[i]) { out.push(list[i]); moved = true; }
+    }
+    if (!moved) break;
+  }
+  return out;
+}
+
+// ── routes ───────────────────────────────────────────────────────────────────
+
+export async function searchRoute(req, res, url) {
+  const user = await getUser(req);
+  if (!user) return json(res, 401, { ok: false, error: "not paired" });
+  const q = url.searchParams.get("q") || "";
+  const only = url.searchParams.get("list");
+  const out = await searchAll(q, { city: user.home_city, only: only && PROVIDERS[only] ? only : null });
+  return json(res, 200, { ok: true, ...out });
+}
+
+/** Add a search result to a shelf, filed immediately — you chose it yourself. */
+export async function addRoute(req, res, body) {
+  const user = await getUser(req);
+  if (!user) return json(res, 401, { ok: false, error: "not paired" });
+
+  const list = normList(body?.list);
+  const title = String(body?.title || "").trim();
+  if (!title) return json(res, 400, { ok: false, error: "an item needs a title" });
+  if (list === "unsorted") return json(res, 400, { ok: false, error: "pick a shelf" });
+
+  const canonical = { ...(body?.canonical || {}) };
+  // Hand-added items have no reel, so the deterministic id keys off the
+  // catalogue identity instead — which is what makes adding the same book
+  // twice update one row rather than grow a second.
+  const seed = canonical.key ? `catalogue:${canonical.key}` : `manual:${list}:${title.toLowerCase()}`;
+  const id = itemId(user.id, seed, 0);
+  const r = await query(
+    `insert into items (id, user_id, list, status, source_url, title, subtitle, image_url,
+                        canonical, confidence, enriched, added_by, filed_at)
+     values ($1, $2, $3, 'filed', null, $4, $5, $6, $7, 1.0, $8, 'search', now())
+     on conflict (id) do update
+       set title = excluded.title, subtitle = excluded.subtitle,
+           image_url = coalesce(excluded.image_url, items.image_url),
+           list = excluded.list, status = 'filed', filed_at = now()
+     returning id, list, title, subtitle, image_url, status, canonical, confidence, enriched, source_url, note, created_at`,
+    [id, user.id, list, title, body?.subtitle || null, body?.image_url || null, canonical, !!canonical.key]
+  );
+  return json(res, 200, { ok: true, item: r.rows[0] });
+}
+
+// ── selftest ─────────────────────────────────────────────────────────────────
+
+if (isMain(import.meta.url)) {
+  if (process.argv.includes("--selftest")) {
+    let n = 0, bad = 0;
+    const ok = (cond, msg) => { n++; if (!cond) { bad++; console.error("FAIL", msg); } };
+
+    const books = bookResults([
+      { key: "/works/OL1W", title: "Piranesi", author_name: ["Susanna Clarke"], first_publish_year: 2020, cover_i: 42, isbn: ["978"] },
+      { key: "/works/OL2W" },  // no title — must be dropped, not rendered blank
+    ]);
+    ok(books.length === 1, "a result with no title was kept");
+    ok(books[0].subtitle === "Susanna Clarke · 2020", `book subtitle was ${books[0].subtitle}`);
+    ok(books[0].image_url.includes("covers.openlibrary.org"), "book cover url");
+    ok(books[0].key === "books:/works/OL1W", "book catalogue key must be namespaced by list");
+    ok(books[0].canonical.key === books[0].key, "canonical.key must match — the dedupe index reads it, not the envelope");
+
+    const films = movieResults([
+      { media_type: "movie", id: 7, title: "Sinners", release_date: "2025-04-18", poster_path: "/p.jpg" },
+      { media_type: "person", id: 9, name: "Someone" },   // must not become an item
+    ]);
+    ok(films.length === 1, "a person came back as a film");
+    ok(films[0].subtitle === "2025", `film subtitle was ${films[0].subtitle}`);
+
+    const places = placeResults([{ place_id: "p1", name: "Ganapati", formatted_address: "38 Holly Grove" }]);
+    ok(places[0].image_url === null, "a Places result must not carry a photo — that is a second billed request per row");
+    ok(places[0].canonical.place_id === "p1", "place_id");
+
+    // Interleaving: this is what stops eight books burying every film.
+    const mixed = interleave([
+      ...Array.from({ length: 3 }, (_, i) => ({ list: "books", key: `b${i}` })),
+      ...Array.from({ length: 2 }, (_, i) => ({ list: "movies", key: `m${i}` })),
+    ]);
+    ok(mixed.length === 5, `interleave lost rows: ${mixed.length}`);
+    ok(mixed[0].list === "books" && mixed[1].list === "movies", "interleave did not alternate");
+    ok(new Set(mixed.map((r) => r.key)).size === 5, "interleave duplicated a row");
+    ok(interleave([]).length === 0, "interleave([])");
+
+    ok(looksLikeUrl("https://x.com/a") && !looksLikeUrl("cacio e pepe"), "url detection");
+
+    // The absence must be NAMED. Without a key this has to say so.
+    const saved = process.env.TMDB_API_KEY;
+    delete process.env.TMDB_API_KEY;
+    ok(providerReady("books") === true, "books need no key");
+    ok(providerReady("movies") === false, "movies must report unavailable with no key");
+    if (saved) process.env.TMDB_API_KEY = saved;
+
+    const short = await searchAll("a");
+    ok(short.results.length === 0, "a one-character query must not hit a provider");
+
+    console.log(bad ? `search selftest FAILED (${bad}/${n})` : `search selftest ok — ${n} assertions`);
+    process.exit(bad ? 1 : 0);
+  }
+}

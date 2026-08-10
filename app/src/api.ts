@@ -82,6 +82,82 @@ export const ingestImage = (imageB64: string, mediaType: string, list: ListName)
     15000
   );
 
+// ── who you are, and handing a shelf to someone ──────────────────────────────
+
+export type Profile = {
+  handle: string | null;
+  display_name: string;
+  bio: string | null;
+  plate_seed: string;
+  since: string;
+};
+
+export type ProfileState = {
+  profile: Profile | null;
+  needs_handle: boolean;
+  public_shelves: boolean;
+  counts: Record<string, number>;
+};
+
+export type ShareKind = "item" | "shelf" | "profile";
+export type Share = { code: string; kind: ShareKind; target: string | null; note: string | null; views: number };
+
+export type Received = {
+  id: string; note: string | null; created_at: string; code: string;
+  from_handle: string; from_name: string | null; from_seed: string;
+  kind: ShareKind | null; target: string | null;
+};
+
+/** Where a share code becomes something you can paste into a message. */
+export const SHARE_BASE = process.env.EXPO_PUBLIC_SHELF_WEB ?? "https://shelf.club";
+export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
+export const profileUrl = (handle: string) => `${SHARE_BASE}/@${handle}`;
+
+export const getProfile = () => req<{ ok: true } & ProfileState>(`/api/profile`);
+
+export const saveProfile = (patch: Partial<Profile> & { public_shelves?: boolean }) =>
+  req<{ ok: true } & ProfileState>(`/api/profile`, { method: "POST", body: JSON.stringify(patch) });
+
+export const makeShare = (kind: ShareKind, target?: string | null, note?: string) =>
+  req<{ share: Share; handle: string }>(`/api/share`, {
+    method: "POST", body: JSON.stringify({ kind, target: target ?? null, note: note ?? null }),
+  });
+
+export const revokeShare = (code: string) =>
+  req<{ revoked: boolean }>(`/api/share/revoke`, { method: "POST", body: JSON.stringify({ code }) });
+
+export const listShares = () => req<{ shares: Share[] }>(`/api/shares`).then((r) => r.shares);
+
+export const sendTo = (to: string, kind: ShareKind, target: string | null, note?: string) =>
+  req<{ sent_to: string; code: string; duplicate: boolean }>(`/api/send`, {
+    method: "POST", body: JSON.stringify({ to, kind, target, note: note ?? null }),
+  });
+
+export const listReceived = () => req<{ received: Received[] }>(`/api/received`).then((r) => r.received);
+
+export const actOnSend = (id: string, action: "accept" | "decline") =>
+  req<{ copied: number }>(`/api/send/act`, { method: "POST", body: JSON.stringify({ id, action }) });
+
+// ── search and add ───────────────────────────────────────────────────────────
+
+export type SearchHit = {
+  list: ListName; key: string; title: string; subtitle: string | null;
+  image_url: string | null; canonical: Record<string, unknown>; provider: string;
+};
+
+/**
+ * `unavailable` is not an error and must not render as one. It is the honest
+ * answer to "why are there no films here" when nobody has set TMDB_API_KEY —
+ * and §8 says a zero and a couldn't-look must never look the same.
+ */
+export const search = (q: string, list?: ListName) =>
+  req<{ results: SearchHit[]; unavailable: { list: ListName; provider: string }[]; mode?: string }>(
+    `/api/search?q=${encodeURIComponent(q)}${list ? `&list=${list}` : ""}`, {}, 12000
+  );
+
+export const addItem = (hit: Pick<SearchHit, "list" | "title" | "subtitle" | "image_url" | "canonical">) =>
+  req<{ item: Item }>(`/api/add`, { method: "POST", body: JSON.stringify(hit) });
+
 // ── offline queue ────────────────────────────────────────────────────────────
 // Stored in the shared Keychain rather than AsyncStorage for the same reason
 // the token is: the extension writes it and the app reads it, and they do not

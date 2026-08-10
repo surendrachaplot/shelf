@@ -28,8 +28,15 @@
 import { readFile } from "node:fs/promises";
 import { isMain } from "../api/ismain.js";
 import * as D from "./src/design.js";
+import * as E from "./src/exlibris.js";
 
-const SOURCES = ["App.tsx", "ShareExtension.tsx"];
+// Every file that paints. A component outside this list is a component the
+// gate has never read — which is exactly how a 40pt tap target or a raw font
+// size gets in, in the one file nobody thought to add.
+const SOURCES = [
+  "App.tsx", "ShareExtension.tsx",
+  "src/Add.tsx", "src/Profile.tsx", "src/Received.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
+];
 
 // ─── static rules ────────────────────────────────────────────────────────────
 
@@ -59,7 +66,7 @@ const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ"
 // TOUCH_MIN once, `family` once — and both times the failure surfaced far from
 // the cause (a missing tap-target floor; a crash inside Platform.select at
 // render). The gate names what must exist so a deletion fails HERE.
-const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle", "gridFor", "rowsOf"];
+const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle", "gridFor", "rowsOf", "mix", "placeholderOn"];
 
 // Three times now a value has been added to design.js, imported by a component,
 // and forgotten in theme.ts's re-export list — each time the failure was an
@@ -78,10 +85,11 @@ async function bridgeGaps() {
   const out = [];
   for (const file of SOURCES) {
     const src = await readFile(new URL(file, import.meta.url), "utf8");
-    const imp = /import\s+\{([^}]*)\}\s+from\s+"\.\/src\/theme"/.exec(src)
-      ?? /import\s+\{([^}]*)\}\s+from\s+"\.\/theme"/.exec(src);
-    if (!imp) continue;
-    for (const raw of imp[1].split(",")) {
+    const imports = [
+      ...src.matchAll(/import\s+\{([^}]*)\}\s+from\s+"\.(?:\/src)?\/theme"/g),
+    ];
+    if (!imports.length) continue;
+    for (const raw of imports.flatMap((m) => m[1].split(","))) {
       const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
       if (!name || exported.has(name)) continue;
       out.push({ file, msg: `${file} imports "${name}" from theme, which does not re-export it${designed.has(name) ? " (it is exported by design.js — add it to the bridge)" : ""}` });
@@ -125,7 +133,11 @@ const staticRules = [
       let m;
       while ((m = re.exec(src))) {
         const tail = src.slice(m.index, src.indexOf(">", m.index) + 1);
-        if (!/onError/.test(tail)) out.push({ n: src.slice(0, m.index).split("\n").length, msg: "<Image> with no onError fallback" });
+        const n = src.slice(0, m.index).split("\n").length;
+        if (!/onError/.test(tail)) out.push({ n, msg: "<Image> with no onError fallback" });
+        // An empty handler passes a grep and leaves the hole exactly where it
+        // was. This shipped once, in the Add screen's result thumbnails.
+        else if (/onError=\{\(\s*\)\s*=>\s*\{\s*\}\}/.test(tail)) out.push({ n, msg: "<Image> onError is an empty function — that is a grep passing, not a fallback" });
       }
       return out;
     },
@@ -315,6 +327,24 @@ const systemRules = [
     },
   },
   {
+    id: "placeholder-on-field",
+    why: "§2 / §6 — a placeholder on a coloured field must be READ AS EMPTY and still be legible. Set in the full label colour it read as a typed value; set too faint it disappears. It is derived by mixing toward the field, and the floor here is 3:1 rather than 4.5 because placeholder text is not essential content — but it is a floor, and it is checked in both schemes for every list.",
+    check: (d) => {
+      const out = [];
+      for (const scheme of ["light", "dark"]) {
+        for (const k of d.LIST_KEYS) {
+          const ph = d.placeholderOn(k, d[scheme]);
+          const r = d.contrast(ph, d[scheme][k]);
+          if (r < d.PLACEHOLDER_MIN) out.push({ msg: `${scheme}: placeholder on ${k} is ${r}:1 (needs ${d.PLACEHOLDER_MIN}:1)` });
+          // And it must actually differ from a real value, or the whole point
+          // of deriving it is lost.
+          if (ph === d.listOn[k]) out.push({ msg: `${scheme}: placeholder on ${k} is identical to the label colour — an empty field will read as a filled one` });
+        }
+      }
+      return out;
+    },
+  },
+  {
     id: "placeholder-inverts",
     why: "§6 — a skeleton must read as ABOVE the card in dark and BELOW it in light. One 'sunk' token cannot do both, and using one made every placeholder in dark mode look like a hole punched through the card.",
     check: (d) => {
@@ -400,6 +430,45 @@ const systemRules = [
     },
   },
   {
+    id: "plate-variety",
+    why: "§0a — an ex-libris plate is an IDENTITY, so two people must rarely look alike and no one colour may dominate. The hash pulls the ground, the border and the device from different slices of the same seed precisely so they do not correlate; a change that re-used one slice would make every plate in a list of deliveries the same colour and nobody would be able to say why.",
+    check: (d, E) => {
+      const out = [];
+      const names = Array.from({ length: 600 }, (_, i) => `user${i}`);
+      const tally = (fn) => names.reduce((m, n) => { const k = fn(E.plateFor(n)); m[k] = (m[k] || 0) + 1; return m; }, {});
+      const grounds = tally((p) => p.list);
+      const borders = tally((p) => p.border);
+      const devices = tally((p) => p.device);
+      const lists = d.LIST_KEYS.filter((k) => k !== "unsorted");
+      for (const k of lists) {
+        const share = (grounds[k] || 0) / names.length;
+        if (share < 0.15) out.push({ msg: `ground ${k} appears on ${(share * 100).toFixed(0)}% of plates — the ground slice is skewed` });
+        if (share > 0.45) out.push({ msg: `ground ${k} appears on ${(share * 100).toFixed(0)}% of plates — one colour is swallowing the set` });
+      }
+      if (grounds.unsorted) out.push({ msg: "a plate came out grey — a person is not an unresolved item" });
+      for (const [name, seen, all] of [["border", borders, E.BORDERS], ["device", devices, E.DEVICES]]) {
+        for (const v of all) {
+          const share = (seen[v] || 0) / names.length;
+          if (share < 0.05) out.push({ msg: `${name} "${v}" appears on ${(share * 100).toFixed(1)}% of plates — effectively never drawn` });
+        }
+      }
+      // Same handle, same plate. Forever, on every engine.
+      const a = JSON.stringify(E.plateShapes("suren"));
+      const b = JSON.stringify(E.plateShapes("suren"));
+      if (a !== b) out.push({ msg: "plateShapes is not deterministic — an identity that changes is not an identity" });
+      if (JSON.stringify(E.plateShapes("suren")) === JSON.stringify(E.plateShapes("nadia"))) {
+        out.push({ msg: "two different handles produced an identical plate" });
+      }
+      // Never a raw colour: the renderers resolve role names against the palette.
+      for (const shape of E.plateShapes("suren")) {
+        for (const role of [shape.fill, shape.stroke].filter(Boolean)) {
+          if (!E.ROLES.includes(role)) out.push({ msg: `a plate shape names "${role}", which is not one of the ${E.ROLES.join("/")} roles — §0a` });
+        }
+      }
+      return out.slice(0, 4);
+    },
+  },
+  {
     id: "stagger-budget",
     why: "§5 — stagger caps at ~8 steps / 280ms. Past a third of a second it reads as slowness, not craft.",
     check: (d) => {
@@ -431,7 +500,7 @@ async function run() {
     console.error("    §0.1 — a value that reaches a component through a bridge must actually cross it. This has broken three times, always surfacing as a build error long after the edit.");
   }
   for (const rule of systemRules) {
-    for (const f of rule.check(D)) {
+    for (const f of rule.check(D, E)) {
       findings++;
       console.error(`design.js  [${rule.id}] ${f.msg}`);
       console.error(`    ${rule.why}`);
@@ -491,7 +560,10 @@ const STATIC_PROBES = {
   "type-scale": { bad: `const s = {\n  x: {\n    fontSize: 34,\n  },\n};`, good: `const s = {\n  x: {\n    fontSize: glyph.lg,\n  },\n};` },
   "touch-target": { bad: `const s = {\n  btn: {\n    minHeight: 40,\n  },\n};`, good: `const s = {\n  btn: {\n    minHeight: 44,\n  },\n  thumb: {\n    height: 20,\n  },\n};` },
   "no-stretched-buttons": { bad: `const s = {\n  pairBtn: {\n    width: "100%",\n  },\n};`, good: `const s = {\n  pairBtn: {\n    alignSelf: "center",\n  },\n  input: {\n    width: "100%",\n  },\n};` },
-  "image-failure": { bad: `<Image source={{ uri: u }} style={x} />`, good: `<Image source={{ uri: u }} style={x} onError={f} />` },
+  "image-failure": {
+    bad: `<Image source={{ uri: u }} style={x} />\n<Image source={{ uri: v }} onError={() => {}} />`,
+    good: `<Image source={{ uri: u }} style={x} onError={f} />`,
+  },
   "no-loose-colours": { bad: `const s = {\n  x: {\n    color: "#ff0000",\n  },\n};`, good: `const s = {\n  x: {\n    color: c.ink,\n  },\n};` },
   "no-emoji-ui": { bad: 'const s = { x: { label: "\u{1F4DA} Books" } };', good: 'const s = { x: { label: "Books" } };' },
   "rows-wrap": { bad: `const s = {\n  actions: {\n    flexDirection: "row",\n  },\n};`, good: `const s = {\n  actions: {\n    flexDirection: "row", flexWrap: "wrap",\n  },\n};` },
@@ -504,6 +576,11 @@ const SYSTEM_PROBES = {
   "type-complete": { ...D, type: { ...D.type, body: { name: "body", fontSize: 15, lineHeight: 4, letterSpacing: 0 } } },
   "spacing-grid": { ...D, sp: { ...D.sp, odd: 13 } },
   "placeholder-inverts": { ...D, dark: { ...D.dark, placeholder: "#000000" } },
+  // The exact defect: a placeholder set in the full label colour.
+  "placeholder-on-field": { ...D, placeholderOn: (list) => D.listOn[list] },
+  // This rule reads the GENERATOR, not the palette — the palette it gets is
+  // the real one and the broken plate generator arrives via PROBE_E.
+  "plate-variety": D,
   "list-label-contrast": { ...D, listOn: { ...D.listOn, movies: "#FFFFFF" } },
   // A trim that is off-grid and far too square — exactly what hand-picking a
   // "nice looking" cover size produces.
@@ -526,6 +603,14 @@ const SYSTEM_PROBES = {
   "stagger-budget": { ...D, staggerDelay: (i) => Math.min(i, 20) * 40 },
 };
 
+// Rules that audit the plate generator get a broken GENERATOR, not a broken
+// palette — the second argument is what they actually read.
+const PROBE_E = {
+  // The classic: every choice pulled from the same bits, so the ground, the
+  // border and the device all move together and the set collapses.
+  "plate-variety": { ...E, plateFor: (h) => ({ ...E.plateFor(h), list: "books", border: "double", device: "ring" }) },
+};
+
 function selftest() {
   let fail = 0;
   for (const rule of staticRules) {
@@ -538,8 +623,8 @@ function selftest() {
   for (const rule of systemRules) {
     const broken = SYSTEM_PROBES[rule.id];
     if (!broken) { fail++; console.error(`FAIL ${rule.id}: no probe — an unproven check`); continue; }
-    if (rule.check(broken).length === 0) { fail++; console.error(`FAIL ${rule.id}: did NOT fire on a deliberately broken system`); }
-    if (rule.check(D).length !== 0) { fail++; console.error(`FAIL ${rule.id}: fires on the real system`); }
+    if (rule.check(broken, PROBE_E[rule.id] ?? E).length === 0) { fail++; console.error(`FAIL ${rule.id}: did NOT fire on a deliberately broken system`); }
+    if (rule.check(D, E).length !== 0) { fail++; console.error(`FAIL ${rule.id}: fires on the real system`); }
   }
   // The frame auditor itself must be able to fail, or every motion guarantee
   // above is decorative.

@@ -1,13 +1,20 @@
 # Two processes, one database. The worker is not optional: without it every
 # share sits at "Working it out…" forever and /api/health goes 503 after ten
 # minutes, which is the whole point of that check.
+#
+# rootDir IS THE REPOSITORY ROOT, not `api`. It used to be `api`, and that would
+# have shipped a server that cannot boot: `api/page.js` renders the public
+# shared pages from `app/src/design.js` and `app/src/exlibris.js` — the SAME
+# files the app imports, which is the only arrangement where a link you send
+# somebody looks like the app it came from. With rootDir: api those imports
+# point outside the deploy root and the process dies on its first require.
+# `api/page.js --selftest` asserts this file still says so.
 services:
   - type: web
     name: shelf-api
     env: node
-    rootDir: api
-    buildCommand: npm ci
-    startCommand: node serve.js
+    buildCommand: cd api && npm ci
+    startCommand: node api/serve.js
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -17,13 +24,15 @@ services:
       - { key: TMDB_API_KEY, sync: false }
       - { key: GOOGLE_PLACES_KEY, sync: false }
       - { key: ADMIN_SECRET, sync: false }
+      # Where share links point. The app builds every URL it hands out from
+      # this, so a mismatch here produces links that 404 on arrival.
+      - { key: SHELF_WEB_BASE, value: "https://shelf.club" }
 
   - type: worker
     name: shelf-worker
     env: node
-    rootDir: api
-    buildCommand: npm ci
-    startCommand: node worker.js
+    buildCommand: cd api && npm ci
+    startCommand: node api/worker.js
     envVars:
       - key: DATABASE_URL
         fromDatabase: { name: shelf-db, property: connectionString }

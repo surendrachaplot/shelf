@@ -4,8 +4,9 @@
 in anger after real things shipped broken — plus the standing bar below. The
 failures they name are not soundcheck-specific and neither are the rules.
 
-Run `node verify-design.mjs` in `app/` before shipping. Eighteen of these
-rules are mechanised there, plus a bridge check. The rest are yours to hold.
+Run `node verify-design.mjs` in `app/` before shipping. Twenty of these
+rules are mechanised there, plus a bridge check and a live tap-target audit
+over 196 controls across every screen. The rest are yours to hold.
 
 ---
 
@@ -97,6 +98,25 @@ That bar is only meaningful if it is falsifiable, so it is:
 - **Each list names its own label colour.** Yellow cannot carry white.
   Assuming one label colour for all four would have shipped a 1.4:1 label on
   Movies; `listOn` exists so the system cannot make that assumption.
+- **A person gets a MARK, not an avatar.** The ex-libris plate is generated
+  from the handle — a real drawn bookplate, in the same four primaries the
+  shelves are, with the ground / border / device each pulled from a DIFFERENT
+  slice of the seed so they cannot correlate. One generator returns a
+  description; the app renders it with react-native-svg and the server renders
+  it into the public page. A mark that differs between your phone and the page
+  you sent someone is not an identity, which is why there is one generator and
+  two renderers rather than two implementations.
+- **The shared page is the same object, not a version of it.** `api/page.js`
+  imports `app/src/design.js` directly. Not a copy of the palette, not a
+  stylesheet that agrees today: the same file. (This is why the API deploy
+  needs the repository root — see OPERATIONS.)
+- **A placeholder on a coloured field is DERIVED and has a floor.** Set in the
+  full label colour it reads as a value somebody typed. It is mixed toward the
+  field, and the mix is solved rather than picked: 0.42 was the first guess and
+  the gate rejected it at 2.3:1 on red and green. 3:1 is the bar, not 4.5 —
+  placeholder text is not essential content — but it is a bar.
+- **A count of zero is not a badge.** "Sent to you" with nothing behind it is a
+  dot that teaches people to ignore dots.
 - **Dark mode is not a v2 thing.** Styles are built from the live palette inside
   components, never frozen at import time — a StyleSheet created once cannot
   follow the system appearance, and that is how an app ends up with one scheme

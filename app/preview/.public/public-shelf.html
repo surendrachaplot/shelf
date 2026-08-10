@@ -1,0 +1,119 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Suren Chaplot&#39;s Restaurants · shelf</title>
+<meta name="description" content="4 things on Suren Chaplot&#39;s restaurants shelf.">
+<meta property="og:type" content="profile"><meta property="og:title" content="Suren Chaplot&#39;s Restaurants · shelf">
+<meta property="og:description" content="4 things on Suren Chaplot&#39;s restaurants shelf.">
+
+
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+  --paper:#FFFFFF; --ink:#0A0A0A; --soft:#565656; --faint:#6E6E6E;
+  --books:#0B3EE3; --restaurants:#E01000; --movies:#FFD400;
+  --recipes:#007A3D; --unsorted:#6E6E6E;
+  --on-books:#FFFFFF; --on-restaurants:#FFFFFF;
+  --on-movies:#0A0A0A; --on-recipes:#FFFFFF;
+  --board:7px; --rule:3px; --key:2px;
+}
+/* Dark is not a v2 thing here either. Only the STRUCTURE colour inverts; the
+   four primaries are the brand and do not move, so every label that clears
+   4.5:1 in one scheme clears it in both. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --paper:#0A0A0A; --ink:#FFFFFF; --soft:#A8A8A8; --faint:#8A8A8A; }
+}
+:root[data-theme="dark"]{ --paper:#0A0A0A; --ink:#FFFFFF; --soft:#A8A8A8; --faint:#8A8A8A; }
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:Helvetica,Arial,sans-serif;font-kerning:normal}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 48px}
+.bleed{margin-left:-16px;margin-right:-16px}
+a{color:inherit}
+.head{display:flex;align-items:baseline;gap:12px;padding:24px 0 12px}
+.wordmark{font-size:42px;line-height:38px;letter-spacing:-2.6px;font-weight:700;flex:1;text-decoration:none}
+.micro{font-size:11px;line-height:15px;letter-spacing:1.8px;font-weight:700;text-transform:uppercase}
+.meta{font-size:12.5px;line-height:17.5px;color:var(--soft)}
+.faint{color:var(--faint)}
+
+/* ── the plate ── */
+.plate{display:flex;gap:16px;align-items:flex-start;padding:16px 0 24px}
+.plate svg{display:block;flex:none}
+.who{flex:1;min-width:0}
+.name{font-size:25.5px;line-height:29.5px;letter-spacing:-1px;font-weight:700}
+.handle{margin-top:4px}
+.bio{margin-top:12px;font-size:15px;line-height:22px;color:var(--soft);max-width:44ch}
+.rule{height:var(--rule);background:var(--ink)}
+
+/* ── band + bookcase, exactly as the app builds them ── */
+.band{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-top:24px}
+.band h2{font-size:31px;line-height:31px;letter-spacing:-1.5px;font-weight:700;text-transform:uppercase;flex:1}
+/* Rows are chunked server-side, not laid out by a grid, for the same reason
+   the app does it: a board has to be drawn under EACH row, and no grid can
+   express that. flex-wrap is the narrow-screen escape — below ~360px three
+   jackets cannot each hold their type, so they wrap to two and grow. */
+.case{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding-top:24px}
+.board{height:var(--board);background:var(--ink);margin-top:0}
+.jacket{position:relative;overflow:hidden;border:var(--key) solid var(--ink);display:flex;flex-direction:column;
+  text-decoration:none;flex:1 1 104px;min-width:104px;max-width:166px;
+  aspect-ratio:104 / 172;
+  /* Jacket type sizes itself to the JACKET, not the viewport — the page has no
+     measuring pass, so the container query is how it does what jacketType()
+     does on the phone. */
+  container-type:inline-size}
+.jacket img{width:100%;height:100%;object-fit:cover;display:block}
+.strip{padding:4px 8px;font-size:11px;line-height:15px;letter-spacing:.5px;font-weight:700;text-transform:uppercase}
+.body{flex:1;padding:12px 8px 8px;overflow:hidden}
+.body.mid{display:flex;align-items:center}
+.body.low{display:flex;align-items:flex-end}
+/* 11cqw is not a taste value: a 12-letter word in bold sans needs about
+   0.6em per character, and (100 - 2*pad)cqw / (12 * 0.6) lands there. The
+   11px floor still outranks the fit, and overflow-wrap:anywhere is the
+   last-resort guarantee that nothing escapes the trim — which is exactly
+   what "The Dispossessed" did on the first render of this page. */
+.jtitle{font-weight:700;letter-spacing:-.5px;font-size:clamp(11px,11cqw,19.5px);
+  line-height:1.05;overflow-wrap:anywhere;hyphens:auto;display:block}
+.foot{padding:4px 8px;font-size:11px;line-height:15px;letter-spacing:.5px;font-weight:700;text-transform:uppercase}
+.empty{padding:24px 0;color:var(--faint)}
+
+/* ── the colophon ── */
+.colophon{margin-top:48px;border-top:var(--rule) solid var(--ink);padding-top:12px;
+  display:flex;flex-wrap:wrap;gap:12px;align-items:baseline}
+.cta{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;
+  background:var(--ink);color:var(--paper);text-decoration:none}
+.note{border:2px solid var(--ink);padding:12px;margin-top:16px;
+  font-size:15px;line-height:22px}
+.solo{max-width:420px;margin:0 auto}
+.solo .jacket{aspect-ratio:2 / 3}
+@media (max-width:400px){ .wordmark{font-size:34px;line-height:32px} .band h2{font-size:24px;line-height:24px} }
+</style>
+</head><body><div class="wrap">
+<div class="head"><a class="wordmark" href="/">shelf</a></div>
+<div class="rule bleed"></div>
+<div class="plate">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="96" height="96" role="img" aria-label="Ex libris suren"><rect x="0" y="0" width="100" height="100" fill="#E01000" stroke="none" stroke-width="0"/><rect x="0" y="6" width="100" height="5" fill="#FFFFFF" stroke="none" stroke-width="0"/><rect x="0" y="89" width="100" height="5" fill="#FFFFFF" stroke="none" stroke-width="0"/><rect x="22" y="30" width="56" height="2" fill="#FFFFFF" stroke="none" stroke-width="0"/><rect x="22" y="47" width="56" height="2" fill="#FFFFFF" stroke="none" stroke-width="0"/><rect x="22" y="64" width="56" height="2" fill="#FFFFFF" stroke="none" stroke-width="0"/><rect x="35" y="36" width="30" height="28" fill="#E01000" stroke="none" stroke-width="0"/><text x="50" y="59" font-size="30" font-weight="700" text-anchor="middle" fill="#FFFFFF" font-family="Helvetica, Arial, sans-serif" letter-spacing="-1">S</text></svg>
+    <div class="who">
+      <div class="micro faint">Ex libris</div>
+      <h1 class="name">Suren Chaplot</h1>
+      <div class="handle micro faint">@suren · shelving since Mar 2026</div>
+      <p class="bio">Mostly things I saw at 1am and could not stop thinking about. Peckham, mostly.</p>
+    </div>
+  </div>
+    <div class="note">Everywhere I&#39;d send you in south London.</div>
+    <section>
+    <div class="band bleed" style="background:var(--restaurants);color:var(--on-restaurants)">
+      <h2>Restaurants</h2>
+      <span class="micro">04</span>
+    </div>
+    <div class="case"><div class="jacket" style="background:var(--on-restaurants, #FFFFFF)"><div class="strip" style="background:var(--restaurants);color:var(--on-restaurants, #FFFFFF)">02</div>
+    <div class="body mid"><span class="jtitle" style="color:var(--restaurants)">Ganapati</span></div><div class="foot" style="background:var(--restaurants);color:var(--on-restaurants, #FFFFFF)">Peckham</div></div><div class="jacket" style="background:var(--restaurants)"><div class="strip" style="background:var(--on-restaurants, #FFFFFF);color:var(--restaurants)">02</div>
+    <div class="body low"><span class="jtitle" style="color:var(--on-restaurants, #FFFFFF)">Kiln</span></div></div><div class="jacket" style="background:var(--on-restaurants, #FFFFFF)"><div class="strip" style="background:var(--restaurants);color:var(--on-restaurants, #FFFFFF)">02</div>
+    <div class="body mid"><span class="jtitle" style="color:var(--restaurants)">St. John</span></div><div class="foot" style="background:var(--restaurants);color:var(--on-restaurants, #FFFFFF)">Smithfield</div></div></div><div class="board bleed"></div><div class="case"><div class="jacket" style="background:var(--restaurants)">
+    <div class="body"><span class="jtitle" style="color:var(--on-restaurants, #FFFFFF)">Mangal II</span></div><div class="foot" style="background:var(--on-restaurants, #FFFFFF);color:var(--restaurants)">Dalston</div></div></div><div class="board bleed"></div>
+  </section>
+<div class="colophon">
+  <span class="micro faint">Made with shelf</span>
+  <span style="flex:1"></span>
+  <a class="cta micro" href="/">Start your own →</a>
+</div>
+</div></body></html>

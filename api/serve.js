@@ -7,6 +7,12 @@ import { redeemPairCode, secretMatches } from "./auth.js";
 import { listItems, updateItem, json } from "./items.js";
 import { ingestUrl, ingestImage } from "./ingest.js";
 import { drain } from "./worker.js";
+import {
+  getProfile, putProfile, createShare, listShares, revokeShare,
+  resolveShare, resolveHandle, sendToHandle, listReceived, actOnSend,
+} from "./profile.js";
+import { searchRoute, addRoute } from "./search.js";
+import { renderProfile, renderShelf, renderItem, renderGone, html } from "./page.js";
 
 const PORT = Number(process.env.PORT || 8080);
 
@@ -36,7 +42,56 @@ const routes = {
   "POST /api/ingest": ingestUrl,
   "POST /api/ingest/image": ingestImage,
   "POST /api/item": updateItem,
+  "POST /api/profile": putProfile,
+  "POST /api/share": createShare,
+  "POST /api/share/revoke": revokeShare,
+  "POST /api/send": sendToHandle,
+  "POST /api/send/act": actOnSend,
+  "POST /api/add": addRoute,
 };
+
+const getRoutes = {
+  "GET /api/items": (req, res, url) => listItems(req, res, url),
+  "GET /api/profile": (req, res) => getProfile(req, res),
+  "GET /api/shares": (req, res) => listShares(req, res),
+  "GET /api/received": (req, res) => listReceived(req, res),
+  "GET /api/search": (req, res, url) => searchRoute(req, res, url),
+};
+
+/**
+ * The public web surface. Three shapes of URL, and they are deliberately short
+ * because they get typed off a screenshot and read aloud:
+ *
+ *   /s/<code>      a link somebody made and can revoke
+ *   /@handle       a profile, only if its owner made their shelves public
+ *   /@handle/books one shelf of that profile
+ *
+ * A revoked link and a link that never existed render IDENTICALLY. Any
+ * difference between the two is an oracle for guessing codes.
+ */
+async function publicPage(req, res, url) {
+  const path = decodeURIComponent(url.pathname);
+
+  const shared = /^\/s\/([a-z0-9]{4,16})$/i.exec(path);
+  if (shared) {
+    const got = await resolveShare(shared[1], { count: true });
+    if (!got) return html(res, 404, renderGone());
+    const page = got.kind === "profile" ? renderProfile(got) : got.kind === "shelf" ? renderShelf(got) : renderItem(got);
+    return html(res, 200, page);
+  }
+
+  const at = /^\/@([A-Za-z0-9_]{2,24})(?:\/([a-z]+))?$/.exec(path);
+  if (at) {
+    const list = at[2] && ALL_PUBLIC_LISTS.includes(at[2]) ? at[2] : null;
+    if (at[2] && !list) return html(res, 404, renderGone());
+    const got = await resolveHandle(at[1], list);
+    if (!got) return html(res, 404, renderGone());
+    return html(res, 200, got.kind === "shelf" ? renderShelf(got) : renderProfile(got));
+  }
+  return null;
+}
+
+const ALL_PUBLIC_LISTS = ["books", "restaurants", "movies", "recipes"];
 
 async function handle(req, res, url) {
   const key = `${req.method} ${url.pathname}`;
@@ -79,7 +134,13 @@ async function handle(req, res, url) {
     return json(res, 200, { ok: true, token: got.token });
   }
 
-  if (key === "GET /api/items") return listItems(req, res, url);
+  const get = getRoutes[key];
+  if (get) return get(req, res, url);
+
+  if (req.method === "GET" || req.method === "HEAD") {
+    const served = await publicPage(req, res, url);
+    if (served !== null) return served;
+  }
 
   // Lets a cron ping drive the queue where a long-lived worker is awkward.
   if (key === "POST /api/worker/run") {

@@ -11,7 +11,7 @@ export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
   STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
-  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS, mix, placeholderOn, PLACEHOLDER_MIN,
 } = D;
 
 const sans = Platform.select(D.family.sans);
@@ -27,6 +27,15 @@ export const lists = {
 } as const;
 
 export const LIST_ORDER = ["books", "restaurants", "movies", "recipes"] as const;
+
+// Indexed by a string that came off the wire — a share target, a received
+// delivery, a search hit — where the type system cannot know it is one of the
+// five. Falling back to the raw key is right: a list we do not recognise is
+// still better rendered as its own name than as "undefined".
+const byKey = lists as Record<string, { label: string; one: string; n: string }>;
+export const labelOf = (key: string | null | undefined) => byKey[key ?? ""]?.label ?? String(key ?? "");
+export const oneOf = (key: string | null | undefined) => byKey[key ?? ""]?.one ?? "item";
+export const numberOf = (key: string | null | undefined) => byKey[key ?? ""]?.n ?? "00";
 
 const asText = (t: (typeof D.type)[keyof typeof D.type], extra: TextStyle = {}): TextStyle => ({
   fontFamily: sans,

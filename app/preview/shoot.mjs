@@ -29,6 +29,20 @@ const SHOTS = [
   // By LABEL, not by text: a jacket showing artwork has no text node at all,
   // which is exactly why getByText timed out here the first time.
   { name: "app-detail-art-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Piranesi, Susanna Clarke" },
+  // The three new destinations, plus the two states that only exist on a
+  // first run or with a provider switched off — neither is reachable by
+  // poking a live server, and both have real copy that needs looking at.
+  { name: "app-add-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Add something by name", type: ["piranesi"] },
+  { name: "app-add-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Add something by name", type: ["piranesi"] },
+  { name: "app-add-empty-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Add something by name" },
+  { name: "app-profile-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
+  { name: "app-profile-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card" },
+  { name: "app-profile-new-375-light", q: "?blankProfile=1", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
+  { name: "app-received-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "2 sent to you" },
+  { name: "app-share-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Share the Books shelf" },
+  { name: "app-share-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Share the Books shelf" },
+  { name: "app-profile-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Your card" },
+  { name: "app-add-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Add something by name", type: ["piranesi"] },
   { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
@@ -45,8 +59,20 @@ for (const s of SHOTS) {
   });
   const page = await ctx.newPage();
   const errors = [];
+  const blessed = new Set();
   page.on("pageerror", (e) => errors.push(String(e)));
-  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  // The message text does not name the URL, so filter at the request instead.
+  page.on("requestfailed", (r) => { if (/broken\.invalid/.test(r.url())) blessed.add(r.url()); });
+  // `broken.invalid` is a FIXTURE: it exists to 404 so the designed image
+  // fallback renders. Its failure is the check passing, so counting it as an
+  // error would make the harness red exactly when the thing under test works.
+  page.on("console", (m) => {
+    if (m.type() !== "error") return;
+    // A resource error whose only failed request was the fixture is the
+    // fallback working, not a defect. Anything else still counts.
+    if (/Failed to load resource/.test(m.text()) && blessed.size) return;
+    errors.push(m.text());
+  });
   await page.goto(URLBASE + s.q);
   await page.waitForTimeout(700);        // let the entrance stagger finish
   if (s.scroll) {
@@ -67,6 +93,13 @@ for (const s of SHOTS) {
       : page.getByText(step[1], { exact: false });
     await target.first().click();
     await page.waitForTimeout(600);      // and the transition after the tap
+  }
+  for (const text of s.type ?? []) {
+    await page.keyboard.type(text, { delay: 12 });
+    // Past the debounce, the round trip, AND the broken-image onError — a
+    // shot taken before the 404 lands shows an empty box instead of the
+    // designed fallback, which is the opposite of what it is there to prove.
+    await page.waitForTimeout(1400);
   }
   await page.screenshot({ path: OUT + s.name + ".png" });
   console.log(`${errors.length ? "ERR " : "ok  "} ${s.name}${errors.length ? "  " + errors.slice(0, 2).join(" | ") : ""}`);

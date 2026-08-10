@@ -49,3 +49,84 @@ export const flushQueue = async () => 0;
 export const pair = async () => "shelf_preview";
 export const pendingShareCount = async () => 0;
 export const API_BASE = "";
+
+// ── profile, sharing, search ─────────────────────────────────────────────────
+// The fixtures carry the states that are HARD to get to on a live server and
+// easy to get wrong: a profile with no handle yet, a link nobody has opened, a
+// provider that is switched off, and a result whose artwork 404s.
+export const SHARE_BASE = "https://shelf.club";
+export const shareUrl = (code) => `${SHARE_BASE}/s/${code}`;
+export const profileUrl = (h) => `${SHARE_BASE}/@${h}`;
+
+const blank = new URLSearchParams(location.search).get("blankProfile") === "1";
+let PROFILE = blank
+  ? { profile: null, needs_handle: true, public_shelves: false, counts: {} }
+  : {
+      profile: {
+        handle: "suren", display_name: "Suren Chaplot",
+        bio: "Mostly things I saw at 1am and could not stop thinking about. Peckham, mostly.",
+        plate_seed: "suren", since: "2026-03-02T00:00:00Z",
+      },
+      needs_handle: false, public_shelves: false,
+      counts: { books: 5, restaurants: 6, movies: 3, recipes: 4 },
+    };
+
+export const getProfile = async () => { await wait(40); return PROFILE; };
+export const saveProfile = async (patch) => {
+  await wait(60);
+  PROFILE = {
+    ...PROFILE, needs_handle: false,
+    profile: { ...(PROFILE.profile ?? { since: new Date().toISOString() }), ...patch, plate_seed: PROFILE.profile?.plate_seed ?? patch.handle },
+  };
+  return PROFILE;
+};
+
+let SHARES = [
+  { code: "k3f9xqm2", kind: "shelf", target: "restaurants", note: null, views: 12 },
+  { code: "b7ttpzc4", kind: "item", target: "i_1", note: null, views: 0 },
+];
+export const listShares = async () => { await wait(40); return SHARES; };
+export const makeShare = async (kind, target) => {
+  await wait(120);
+  const code = "n9wqk2ff";
+  SHARES = [{ code, kind, target: target ?? null, note: null, views: 0 }, ...SHARES.filter((x) => x.code !== code)];
+  return { share: SHARES[0], handle: "suren" };
+};
+export const revokeShare = async (code) => { SHARES = SHARES.filter((x) => x.code !== code); return { revoked: true }; };
+export const sendTo = async (to) => { await wait(200); return { sent_to: to, code: "n9wqk2ff", duplicate: false }; };
+
+export const listReceived = async () => {
+  await wait(40);
+  return [
+    { id: "sn_1", note: "The dosa place I keep going on about.", created_at: "", code: "aaa",
+      from_handle: "nadia", from_name: "Nadia Rahman", from_seed: "nadia", kind: "item", target: "i_9" },
+    { id: "sn_2", note: null, created_at: "", code: "bbb",
+      from_handle: "tom", from_name: null, from_seed: "tom", kind: "shelf", target: "movies" },
+  ];
+};
+export const actOnSend = async () => ({ copied: 1 });
+
+const HITS = [
+  { list: "books", key: "books:/works/OL1W", title: "Piranesi", subtitle: "Susanna Clarke · 2020",
+    image_url: ART.Piranesi, canonical: { key: "books:/works/OL1W" }, provider: "Open Library" },
+  { list: "restaurants", key: "restaurants:p1", title: "Ganapati", subtitle: "38 Holly Grove, Peckham",
+    image_url: null, canonical: { key: "restaurants:p1" }, provider: "Google Places" },
+  { list: "books", key: "books:/works/OL2W", title: "Piranesi's Prisons", subtitle: "Giovanni Battista Piranesi · 1750",
+    image_url: "https://broken.invalid/cover.jpg", canonical: { key: "books:/works/OL2W" }, provider: "Open Library" },
+  { list: "restaurants", key: "restaurants:p2", title: "Piranesi Bar", subtitle: "Rome",
+    image_url: null, canonical: { key: "restaurants:p2" }, provider: "Google Places" },
+];
+export const search = async (q) => {
+  await wait(180);
+  if (!q || q.trim().length < 2) return { results: [], unavailable: [] };
+  if (/^https?:/i.test(q)) {
+    return { results: [{ list: "recipes", key: "recipes:x", title: "Lemon dal", subtitle: "40 min", image_url: null, canonical: {}, provider: "the page itself" }], unavailable: [], mode: "url" };
+  }
+  return {
+    results: HITS.filter((h) => h.title.toLowerCase().includes(q.toLowerCase().slice(0, 4))),
+    // The state that only exists when nobody has set a key. It has to be
+    // visible in a screenshot or the sentence never gets designed.
+    unavailable: [{ list: "movies", provider: "TMDB" }],
+  };
+};
+export const addItem = async (hit) => { await wait(120); return { item: { ...hit, id: "new", status: "filed" } }; };

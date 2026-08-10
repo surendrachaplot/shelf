@@ -307,6 +307,33 @@ export const PAIRINGS = [
   ["warn", "bg"], ["warn", "surface"],
 ];
 
+/**
+ * Mix two hex colours in sRGB. Used for exactly one thing: a placeholder on a
+ * coloured field.
+ *
+ * On the share panel the placeholder was set in the full label colour, so an
+ * empty field read as a filled one — "Say something about it (optional)" looked
+ * like text somebody had typed. Dropping it toward the field is the fix, and it
+ * is a DERIVED value with a floor the gate checks (≥3:1), not a guessed
+ * opacity: placeholder text is not essential content, so 4.5 is the wrong bar,
+ * but invisible is the wrong answer too.
+ */
+export function mix(a, b, t) {
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.replace("#", "").slice(i - 1, i + 1), 16));
+  const [x, y] = [hex(a), hex(b)];
+  const out = x.map((v, i) => Math.round(v + (y[i] - v) * t));
+  return "#" + out.map((v) => v.toString(16).padStart(2, "0").toUpperCase()).join("");
+}
+
+// SOLVED, not picked. 0.42 was the first guess and the gate rejected it: red
+// and green fall to 2.3:1 there. Sweeping the mix against every list in both
+// schemes, 0.28 is the last step that still clears 3:1 everywhere — so take
+// the step before it and keep the margin.
+export const PLACEHOLDER_MIX = 0.26;
+export const PLACEHOLDER_MIN = 3;
+/** The placeholder colour for a label colour sitting on a list's field. */
+export const placeholderOn = (list, palette) => mix(listOn[list] ?? "#FFFFFF", palette[list] ?? palette.unsorted, PLACEHOLDER_MIX);
+
 // WCAG 2.1 relative luminance + contrast ratio. Exact, not approximated.
 export function luminance(hex) {
   const h = hex.replace("#", "");

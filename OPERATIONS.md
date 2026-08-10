@@ -97,6 +97,52 @@ If `/api/ingest` ever grows a `fetch`, that is the bug.
 - `metro.config.js` must wrap `withShareExtension`, or metro only ever builds
   the app bundle and the extension ships stale JS.
 
+## 4b. The public web surface
+
+Three URL shapes, and they are short because they get read aloud and typed off
+a screenshot:
+
+```
+/s/<code>        a link somebody made and can revoke
+/@handle         a profile, only if its owner turned their shelves public
+/@handle/books   one shelf of that profile
+```
+
+**The API deploy needs the REPOSITORY ROOT, not `api/`.** `api/page.js` renders
+those pages from `app/src/design.js` and `app/src/exlibris.js` — the same files
+the app imports, which is the only arrangement where a link you send somebody
+looks like the app it came from. `render.yaml` used to say `rootDir: api`, which
+would have shipped a server that dies on its first import. It now builds with
+`cd api && npm ci` and starts `node api/serve.js`, and
+`node api/page.js --selftest` fails if anyone puts `rootDir: api` back.
+
+**A revoked link and a link that never existed must render identically.** Any
+difference between the two is an oracle for guessing codes. `renderGone()` takes
+no argument for exactly that reason.
+
+**`SHELF_WEB_BASE` must match where the pages are actually served.** The app
+builds every URL it hands out from it; a mismatch produces links that 404 on
+arrival, and you will not notice until somebody tells you.
+
+## 4c. Search providers
+
+| List | Provider | Key | Notes |
+|---|---|---|---|
+| Books | Open Library | none | Works out of the box. |
+| Movies & TV | TMDB | `TMDB_API_KEY` | Free. Without it the Add screen SAYS films are switched off rather than returning nothing. |
+| Restaurants | Google Places Text Search | `GOOGLE_PLACES_KEY` | **Paid and metered.** |
+| Recipes | schema.org off the page itself | none | The query is a URL; pasting one is the interaction. |
+
+**Search results are cached, MISSES INCLUDED.** A search box is the worst thing
+to leave uncached against a metered provider: every keystroke past the debounce
+is a paid question, and "nothing matched 'ganapat'" is a real, reusable answer.
+This is the same omission that doubled soundcheck's YouTube bill (§10 there),
+arriving in a new shape.
+
+**Places results deliberately carry no photo.** A Places photo is a second
+billed request per result, and eight of those per keystroke is how a search box
+becomes a line item. The typographic jacket is the designed answer.
+
 ## 5. Deploy
 
 - API on Render: `node serve.js` as the web service, `node worker.js` as a
@@ -110,6 +156,15 @@ If `/api/ingest` ever grows a `fetch`, that is the bug.
   recorded in `schema_migrations`; nothing here drops or sweeps anything.
 
 ## 6. Traps already paid for
+
+- **`rootDir: api` breaks the public pages.** See §4b. Caught by a selftest, not
+  by a deploy.
+- **An empty `onError` is not an image fallback.** It passes a grep and leaves
+  the hole exactly where it was. The design gate now rejects the empty form
+  specifically, because the full form shipped in the Add screen's thumbnails.
+- **A placeholder in the full label colour reads as a typed value.** Derived by
+  mixing toward the field; the mix is solved against a 3:1 floor, not chosen.
+
 
 - **`process.argv` is global, so `--selftest` leaks across imports.** Every
   module here ends with a selftest block; `node items.js --selftest` imported
