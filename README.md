@@ -73,6 +73,13 @@ node worker.js            # the drain loop
 node auth.js --pair you@example.com   # prints a pairing code for the app
 ```
 
+Before trusting the caption path, run the spike **from the server** — it is the
+one measurement everything else depends on:
+
+```bash
+node spike-ig.mjs urls.txt     # ~20 reel URLs, one per line
+```
+
 Optional keys — each one missing degrades to `enriched: false`, never an error:
 `TMDB_API_KEY`, `GOOGLE_PLACES_KEY`, `IG_RESOLVER_KEY` + `IG_RESOLVER_URL`,
 `ADMIN_SECRET` (guards `POST /api/worker/run` for cron), `SHELF_MODEL`.

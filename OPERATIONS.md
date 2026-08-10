@@ -10,13 +10,23 @@ Nothing downstream changes shape based on the answer, but the **order of the
 resolver chain** does, and so does whether the paid resolver is a fallback or
 the primary. Until this has a number, the caption path is a guess.
 
-Collect ~20 real reel URLs across the four categories and run each through:
+Put ~20 real reel URLs (spread across the four categories, mixing big accounts
+with small — reach correlates with how aggressively Meta serves the embed page)
+in a file, then, **on the Render box**:
 
-1. `GET https://www.instagram.com/p/<code>/embed/captioned/` with browser headers
-2. `GET https://www.instagram.com/reel/<code>/` — any `og:description`?
-3. **Both of the above from the Render box, not your laptop.**
+```bash
+node spike-ig.mjs urls.txt
+```
 
-Write the hit rate into this file.
+It runs the real chain in the real order — embed page first, canonical `og:`
+only when the embed fails — and prints a **CHAIN USABLE** percentage plus a
+recommendation. Write that number and the date into this section.
+
+It distinguishes *usable* from *thin*: a 100% hit rate of 12-character
+truncated `og:` descriptions is not a working caption path, and a bare success
+count would hide exactly that. It also reports its own egress IP and warns when
+that is not a datacentre network, so a pasted result can never be ambiguous
+about where it was taken.
 
 - **Datacentre IPs are blocked far more aggressively than residential ones.** A
   spike that passes from a laptop and is never repeated from the server is the

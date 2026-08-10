@@ -1,0 +1,37 @@
+# Two processes, one database. The worker is not optional: without it every
+# share sits at "Working it out…" forever and /api/health goes 503 after ten
+# minutes, which is the whole point of that check.
+services:
+  - type: web
+    name: shelf-api
+    env: node
+    rootDir: api
+    buildCommand: npm ci
+    startCommand: node serve.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: shelf-db, property: connectionString }
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - { key: TMDB_API_KEY, sync: false }
+      - { key: GOOGLE_PLACES_KEY, sync: false }
+      - { key: ADMIN_SECRET, sync: false }
+
+  - type: worker
+    name: shelf-worker
+    env: node
+    rootDir: api
+    buildCommand: npm ci
+    startCommand: node worker.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: shelf-db, property: connectionString }
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - { key: TMDB_API_KEY, sync: false }
+      - { key: GOOGLE_PLACES_KEY, sync: false }
+
+databases:
+  - name: shelf-db
+    plan: free

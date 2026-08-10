@@ -1,0 +1,14 @@
+# One Instagram reel/post URL per line. Aim for ~20, spread across the four
+# categories, mixing big accounts with small ones — reach correlates with how
+# aggressively Meta serves the embed page.
+#
+#   node spike-ig.mjs spike-urls.example.txt
+#
+# books
+# https://www.instagram.com/reel/XXXXXXXXXXX/
+# restaurants
+# https://www.instagram.com/reel/XXXXXXXXXXX/
+# movies
+# https://www.instagram.com/reel/XXXXXXXXXXX/
+# recipes
+# https://www.instagram.com/reel/XXXXXXXXXXX/
