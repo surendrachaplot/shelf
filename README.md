@@ -67,7 +67,7 @@ npm install
 export DATABASE_URL=postgres://…
 export ANTHROPIC_API_KEY=sk-ant-…
 npm run migrate
-npm run selftest          # 80+ assertions, no network
+npm run selftest          # 100 assertions, no network
 node serve.js             # :8080
 node worker.js            # the drain loop
 node auth.js --pair you@example.com   # prints a pairing code for the app
@@ -93,6 +93,16 @@ npx eas build -p ios --profile development
 
 **Expo Go cannot host a share extension.** The first build is an EAS dev-client
 build, not a QR code. Discovering that late costs a rebuild cycle.
+
+```bash
+npm run verify    # design gate: contrast, type scale, 4pt grid,
+                  # and every transition simulated frame by frame at 120Hz
+npm run frames    # print the frame table for each spring
+```
+
+`DESIGN.md` is the bar and the rules. shelf is **iOS-only** — there is no web or
+Android surface, stated explicitly because soundcheck's standing rule is that
+every change ships everywhere unless you say which surface can't have it.
 
 ## Health
 

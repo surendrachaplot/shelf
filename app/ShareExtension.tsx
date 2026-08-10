@@ -1,25 +1,37 @@
 // ShareExtension.tsx — the sheet that appears over Instagram.
 //
-// This is the whole product in one screen, and its only job is to be FAST.
+// This is the whole product in one screen and its only job is to be FAST.
 // The interaction budget is: see it, tap a list, it is gone. Nothing here
 // waits on a caption being parsed or a book being looked up — the server
 // queues the share and the worker does the slow part while you carry on
 // scrolling.
 //
 // It closes optimistically. If the POST fails the share is written to the
-// shared Keychain queue and the main app flushes it on next launch, so a
-// tunnel or a dead zone costs you nothing. The one thing this screen must
-// never do is lose a save silently.
-import React, { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+// shared Keychain queue and the app flushes it on next launch, so a tunnel or
+// a dead zone costs you nothing. The one thing this screen must never do is
+// lose a save silently.
+//
+// It is also the surface people actually see — several times a day, for about
+// a second each time. Every value here comes from design.js and every
+// transition is audited frame by frame by verify-design.mjs.
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { close, type InitialProps } from "expo-share-extension";
 import * as FileSystem from "expo-file-system";
 import { ingestImage, ingestUrl, queueShare, type ListName, LISTS } from "./src/api";
-import { c, lists, radius, t, touch } from "./src/theme";
+import { Press } from "./src/Press";
+import { Reveal } from "./src/Reveal";
+import { glyph, lists, radius, sp, t, TOUCH, useTheme, type Palette } from "./src/theme";
 
-type Phase = { kind: "idle" } | { kind: "saving" } | { kind: "done"; offline: boolean } | { kind: "error"; message: string };
+type Phase =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "done"; offline: boolean }
+  | { kind: "error"; message: string };
 
 export default function ShareExtension({ url, text, images }: InitialProps) {
+  const { c } = useTheme();
+  const s = useMemo(() => styles(c), [c]);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
 
   // Instagram hands over a URL. Some apps put the link in `text` instead, so
@@ -49,7 +61,10 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
         return;
       }
       setPhase({ kind: "done", offline: false });
-      setTimeout(close, 450);
+      // Long enough to read the tick, short enough that it never feels like a
+      // wait. The confirmation is the reward for the tap; skipping it makes
+      // the sheet feel like it failed.
+      setTimeout(close, 480);
     } catch (e) {
       // A URL share can wait for signal. An image cannot — the file lives in a
       // temporary container that is gone by the time the app next opens, so a
@@ -57,7 +72,7 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
       if (sharedUrl) {
         await queueShare(sharedUrl, list);
         setPhase({ kind: "done", offline: true });
-        setTimeout(close, 900);
+        setTimeout(close, 1100);
       } else {
         setPhase({ kind: "error", message: (e as Error).message });
       }
@@ -67,67 +82,89 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
   if (phase.kind === "done") {
     return (
       <View style={[s.wrap, s.center]}>
-        <Text style={s.tick}>✓</Text>
-        <Text style={t.heading}>{phase.offline ? "Saved — will sync" : "Saved to shelf"}</Text>
-        {phase.offline ? <Text style={[t.meta, s.gap]}>No signal. It'll go up next time you open shelf.</Text> : null}
+        <Reveal>
+          <Text style={s.tick}>✓</Text>
+        </Reveal>
+        <Reveal index={1}>
+          <Text style={s.doneTitle}>{phase.offline ? "Saved — will sync" : "Saved to shelf"}</Text>
+        </Reveal>
+        {phase.offline ? (
+          <Reveal index={2}>
+            <Text style={s.doneHint}>No signal. It'll go up next time you open shelf.</Text>
+          </Reveal>
+        ) : null}
       </View>
     );
   }
 
   return (
     <View style={s.wrap}>
-      <Text style={t.tiny}>Save to</Text>
+      <Text style={s.eyebrow}>Save to</Text>
       <Text style={s.source} numberOfLines={1}>{label}</Text>
 
       <View style={s.grid}>
-        {LISTS.map((list) => (
-          <Pressable
-            key={list}
-            onPress={() => save(list)}
-            disabled={phase.kind === "saving"}
-            style={({ pressed }) => [s.tile, pressed && s.tilePressed]}
-          >
-            <Text style={s.glyph}>{lists[list].glyph}</Text>
-            <Text style={s.tileLabel}>{lists[list].label}</Text>
-          </Pressable>
+        {LISTS.map((list, i) => (
+          <Reveal key={list} index={i}>
+            <Press
+              onPress={() => save(list)}
+              disabled={phase.kind === "saving"}
+              style={s.tile}
+              size={140}
+            >
+              <Text style={s.glyph}>{lists[list].glyph}</Text>
+              <Text style={s.tileLabel}>{lists[list].label}</Text>
+            </Press>
+          </Reveal>
         ))}
       </View>
 
-      <Pressable
-        onPress={() => save("unsorted")}
-        disabled={phase.kind === "saving"}
-        style={({ pressed }) => [s.decide, pressed && s.tilePressed]}
-      >
-        {phase.kind === "saving"
-          ? <ActivityIndicator color={c.accent} />
-          : <Text style={s.decideLabel}>Decide for me</Text>}
-      </Pressable>
+      <Reveal index={LISTS.length}>
+        <Press
+          onPress={() => save("unsorted")}
+          disabled={phase.kind === "saving"}
+          style={s.decide}
+          size={TOUCH}
+        >
+          {phase.kind === "saving"
+            ? <ActivityIndicator color={c.accent} />
+            : <Text style={s.decideLabel}>Decide for me</Text>}
+        </Press>
+      </Reveal>
 
       {phase.kind === "error" ? <Text style={s.error}>{phase.message}</Text> : null}
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  wrap: { flex: 1, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 12, backgroundColor: c.bg },
+const styles = (c: Palette) => StyleSheet.create({
+  wrap: { flex: 1, paddingHorizontal: sp.lg, paddingTop: sp.lg, paddingBottom: sp.md, backgroundColor: c.bg },
   center: { alignItems: "center", justifyContent: "center" },
-  tick: { fontSize: 40, color: c.ok, marginBottom: 8 },
-  gap: { marginTop: 6, textAlign: "center" },
-  source: { ...t.meta, marginTop: 2, marginBottom: 14 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+
+  tick: { ...t.display, fontSize: glyph.mark, color: c.good, textAlign: "center" },
+  doneTitle: { ...t.heading, color: c.ink, textAlign: "center", marginTop: sp.sm },
+  doneHint: { ...t.meta, color: c.inkSoft, textAlign: "center", marginTop: sp.xs },
+
+  eyebrow: { ...t.micro, color: c.inkFaint },
+  source: { ...t.meta, color: c.inkSoft, marginTop: sp.xs, marginBottom: sp.md },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm },
   tile: {
-    flexGrow: 1, flexBasis: "45%", minHeight: touch + 20,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: c.card, borderRadius: radius,
-    borderWidth: 1, borderColor: c.line, gap: 4,
+    // A 2×2 picker, not a row of CTAs — §3's "never stretched buttons" governs
+    // `decide` below, which is the actual button.
+    width: "48%", minHeight: TOUCH + sp.xl,
+    alignItems: "center", justifyContent: "center", gap: sp.xs,
+    backgroundColor: c.surface, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2, borderColor: c.line,
   },
-  tilePressed: { backgroundColor: c.accentSoft, borderColor: c.accent },
-  glyph: { fontSize: 22 },
-  tileLabel: { ...t.body, fontWeight: "600" },
+  glyph: { fontSize: glyph.sm },
+  tileLabel: { ...t.bodyMed, color: c.ink },
+
   decide: {
-    marginTop: 10, minHeight: touch, alignItems: "center", justifyContent: "center",
-    borderRadius: radius, borderWidth: 1, borderColor: c.line, backgroundColor: "transparent",
+    marginTop: sp.md, minHeight: TOUCH, alignSelf: "center", paddingHorizontal: sp.xl,
+    alignItems: "center", justifyContent: "center",
+    borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth * 2, borderColor: c.line,
   },
-  decideLabel: { ...t.body, color: c.inkSoft, fontWeight: "600" },
-  error: { ...t.meta, color: c.accent, marginTop: 8, textAlign: "center" },
+  decideLabel: { ...t.bodyMed, color: c.inkSoft },
+
+  error: { ...t.meta, color: c.accent, marginTop: sp.sm, textAlign: "center" },
 });

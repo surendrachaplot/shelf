@@ -1,30 +1,43 @@
 // App.tsx — the four shelves, the Inbox, and pairing.
 //
-// Kept to one file deliberately: five screens' worth of state is less code
-// than a navigation library's configuration, and the whole app is a list with
-// a segmented control on top of it.
-import React, { useCallback, useEffect, useState } from "react";
+// One file on purpose: five screens' worth of state is less code than a
+// navigation library's configuration, and the whole app is a list with a
+// segmented control above it.
+//
+// Every colour, size, spacing and spring comes from design.js. Styles are
+// built from the live palette inside the component rather than frozen at
+// import time, so both schemes are first-class rather than one being an
+// afterthought that ships permanently wrong.
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, FlatList, Image, Pressable, RefreshControl,
-  SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, FlatList, Image, RefreshControl, SafeAreaView,
+  StatusBar, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import {
   fetchInbox, fetchList, flushQueue, pair, updateItem,
   type Item, type ListName, LISTS,
 } from "./src/api";
 import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
-import { c, lists, radius, t, touch } from "./src/theme";
+import { Press } from "./src/Press";
+import { Reveal } from "./src/Reveal";
+import { glyph, lists, numeric, radius, sp, t, TOUCH, TOUCH_MIN, useTheme, type Palette } from "./src/theme";
 
 type Tab = ListName | "inbox";
 const TABS: Tab[] = ["inbox", ...LISTS];
 
 export default function App() {
+  const { c, dark } = useTheme();
+  const s = useMemo(() => styles(c), [c]);
+
   const [ready, setReady] = useState(false);
   const [paired, setPaired] = useState(false);
   const [tab, setTab] = useState<Tab>("inbox");
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  // null means "the shelf really is empty". A string means "we could not look".
+  // Rendering those the same way tells the user their saves vanished.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -32,8 +45,6 @@ export default function App() {
       setPaired(!!token);
       setReady(true);
       if (token) {
-        // Anything the share extension could not send while offline goes up
-        // now. Silent when there is nothing to do.
         const sent = await flushQueue().catch(() => 0);
         if (sent) setFlash(`Synced ${sent} share${sent > 1 ? "s" : ""} saved offline`);
       }
@@ -45,8 +56,9 @@ export default function App() {
     setBusy(true);
     try {
       setItems(tab === "inbox" ? await fetchInbox() : await fetchList(tab));
+      setLoadError(null);
     } catch (e) {
-      setFlash((e as Error).message);
+      setLoadError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -70,12 +82,16 @@ export default function App() {
   }
 
   if (!ready) return <View style={s.boot}><ActivityIndicator color={c.accent} /></View>;
-  if (!paired) return <Pairing onPaired={() => { setPaired(true); }} />;
+  if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
   return (
     <SafeAreaView style={s.screen}>
-      <StatusBar barStyle="dark-content" />
-      <Text style={[t.title, s.h1]}>shelf</Text>
+      <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
+
+      <View style={s.header}>
+        <Text style={s.h1}>shelf</Text>
+        {items.length > 0 ? <Text style={s.count}>{items.length}</Text> : null}
+      </View>
 
       <FlatList
         horizontal
@@ -86,11 +102,11 @@ export default function App() {
         renderItem={({ item: name }) => {
           const on = tab === name;
           return (
-            <Pressable onPress={() => setTab(name)} style={[s.tab, on && s.tabOn]}>
+            <Press onPress={() => setTab(name)} style={[s.tab, on && s.tabOn]} size={100}>
               <Text style={[s.tabLabel, on && s.tabLabelOn]}>
                 {name === "inbox" ? "📥 Inbox" : `${lists[name].glyph} ${lists[name].label}`}
               </Text>
-            </Pressable>
+            </Press>
           );
         }}
       />
@@ -103,60 +119,79 @@ export default function App() {
         refreshControl={<RefreshControl refreshing={busy} onRefresh={load} tintColor={c.accent} />}
         contentContainerStyle={items.length ? s.list : s.listEmpty}
         ListEmptyComponent={
-          busy ? null : (
+          busy ? null : loadError ? (
+            <View style={s.empty}>
+              <Text style={s.emptyGlyph}>📡</Text>
+              <Text style={s.emptyTitle}>Couldn't reach your shelf</Text>
+              <Text style={s.emptyHint}>{loadError}. Nothing has been lost — pull down to try again.</Text>
+              <Press onPress={load} style={[s.btn, s.btnPrimary, s.retry]} size={TOUCH}>
+                <Text style={s.btnPrimaryLabel}>Try again</Text>
+              </Press>
+            </View>
+          ) : (
             <View style={s.empty}>
               <Text style={s.emptyGlyph}>{tab === "inbox" ? "📥" : lists[tab].glyph}</Text>
-              <Text style={t.heading}>
+              <Text style={s.emptyTitle}>
                 {tab === "inbox" ? "Nothing waiting" : `No ${lists[tab].label.toLowerCase()} yet`}
               </Text>
-              <Text style={[t.meta, s.emptyHint]}>
+              <Text style={s.emptyHint}>
                 Share a reel from Instagram and pick a list — it'll show up here.
               </Text>
             </View>
           )
         }
-        renderItem={({ item }) => <Row item={item} inbox={tab === "inbox"} onAct={act} />}
+        renderItem={({ item, index }) => (
+          <Reveal index={index}>
+            <Row item={item} inbox={tab === "inbox"} onAct={act} s={s} />
+          </Reveal>
+        )}
       />
     </SafeAreaView>
   );
 }
 
-function Row({ item, inbox, onAct }: {
-  item: Item; inbox: boolean;
+function Row({ item, inbox, onAct, s }: {
+  item: Item; inbox: boolean; s: ReturnType<typeof styles>;
   onAct: (i: Item, body: Record<string, unknown>) => void;
 }) {
   const pending = item.status === "pending";
+  // MISSING and FAILED are two different states and both need the same
+  // designed fallback. A cover URL that 404s (Open Library and TMDB both
+  // serve dead paths) otherwise leaves an empty box that reads as breakage.
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = !!item.image_url && !imageFailed;
+
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
-        {item.image_url
-          ? <Image source={{ uri: item.image_url }} style={s.thumb} />
+        {showImage
+          ? <Image source={{ uri: item.image_url! }} style={s.thumb} onError={() => setImageFailed(true)} />
           : <View style={[s.thumb, s.thumbBlank]}><Text style={s.glyph}>{lists[item.list].glyph}</Text></View>}
         <View style={s.cardText}>
           <Text style={s.cardTitle} numberOfLines={2}>
             {item.title ?? (pending ? "Working it out…" : "Couldn't read this one")}
           </Text>
-          {item.subtitle ? <Text style={t.meta} numberOfLines={1}>{item.subtitle}</Text> : null}
-          {item.note ? <Text style={[t.meta, s.note]} numberOfLines={2}>{item.note}</Text> : null}
+          {item.subtitle ? <Text style={s.cardSub} numberOfLines={1}>{item.subtitle}</Text> : null}
+          {item.note ? <Text style={s.note} numberOfLines={2}>{item.note}</Text> : null}
         </View>
       </View>
 
       {/* Pending rows show no buttons: there is nothing to confirm until the
-          worker has had its go, and offering "File" on a row with no title
+          worker has had its go, and offering "Keep" on a row with no title
           just files an empty item. */}
       {inbox && !pending ? (
         <View style={s.actions}>
-          <Pressable style={[s.btn, s.btnPrimary]} onPress={() => onAct(item, { action: "file" })}>
+          <Press onPress={() => onAct(item, { action: "file" })} style={[s.btn, s.btnPrimary]} size={TOUCH}>
             <Text style={s.btnPrimaryLabel}>Keep</Text>
-          </Pressable>
+          </Press>
           {LISTS.filter((l) => l !== item.list).map((l) => (
-            <Pressable key={l} style={s.btn} onPress={() => onAct(item, { list: l, action: "file" })}>
+            <Press key={l} onPress={() => onAct(item, { list: l, action: "file" })} style={s.btn} size={TOUCH}>
               <Text style={s.btnLabel}>{lists[l].glyph}</Text>
-            </Pressable>
+            </Press>
           ))}
-          <Pressable style={s.btn} onPress={() => onAct(item, { action: "discard" })}>
+          <Press onPress={() => onAct(item, { action: "discard" })} style={s.btn} size={TOUCH}>
             <Text style={s.btnLabel}>🗑</Text>
-          </Pressable>
+          </Press>
         </View>
       ) : null}
     </View>
@@ -164,6 +199,8 @@ function Row({ item, inbox, onAct }: {
 }
 
 function Pairing({ onPaired }: { onPaired: () => void }) {
+  const { c } = useTheme();
+  const s = useMemo(() => styles(c), [c]);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -189,76 +226,98 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
 
   return (
     <SafeAreaView style={[s.screen, s.pairWrap]}>
-      <Text style={t.title}>shelf</Text>
-      <Text style={[t.meta, s.pairHint]}>
-        Run{"  "}<Text style={s.mono}>node auth.js --pair you@email</Text>{"  "}on the server and type the code.
-      </Text>
-      <TextInput
-        value={code}
-        onChangeText={setCode}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        placeholder="PAIRING CODE"
-        placeholderTextColor={c.inkSoft}
-        style={s.input}
-        onSubmitEditing={submit}
-      />
-      <Pressable style={[s.btn, s.btnPrimary, s.pairBtn]} onPress={submit} disabled={busy || code.length < 4}>
-        {busy ? <ActivityIndicator color={c.card} /> : <Text style={s.btnPrimaryLabel}>Pair this phone</Text>}
-      </Pressable>
+      <Reveal><Text style={s.pairTitle}>shelf</Text></Reveal>
+      <Reveal index={1}>
+        <Text style={s.pairHint}>
+          Run{"  "}<Text style={s.mono}>node auth.js --pair you@email</Text>{"  "}on the server and type the code.
+        </Text>
+      </Reveal>
+      <Reveal index={2}>
+        <TextInput
+          value={code}
+          onChangeText={setCode}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          placeholder="PAIRING CODE"
+          placeholderTextColor={c.inkFaint}
+          style={s.input}
+          onSubmitEditing={submit}
+        />
+      </Reveal>
+      <Reveal index={3}>
+        <Press onPress={submit} disabled={busy || code.length < 4} style={[s.btn, s.btnPrimary, s.pairBtn]} size={TOUCH}>
+          {busy ? <ActivityIndicator color={c.accentInk} /> : <Text style={s.btnPrimaryLabel}>Pair this phone</Text>}
+        </Press>
+      </Reveal>
       {error ? <Text style={s.error}>{error}</Text> : null}
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+const styles = (c: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.bg },
   boot: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
-  h1: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 10 },
 
-  tabs: { paddingHorizontal: 18, gap: 8, paddingBottom: 12 },
+  header: {
+    flexDirection: "row", alignItems: "baseline", gap: sp.sm,
+    paddingHorizontal: sp.lg, paddingTop: sp.sm, paddingBottom: sp.md,
+  },
+  h1: { ...t.title, color: c.ink },
+  count: { ...t.meta, ...numeric, color: c.inkFaint },
+
+  tabs: { paddingHorizontal: sp.lg, gap: sp.sm, paddingBottom: sp.md },
   tab: {
-    paddingHorizontal: 14, height: 38, justifyContent: "center",
-    borderRadius: radius, borderWidth: 1, borderColor: c.line, backgroundColor: c.card,
+    paddingHorizontal: sp.md, minHeight: TOUCH_MIN, justifyContent: "center",
+    borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: c.line, backgroundColor: c.surface,
   },
   tabOn: { backgroundColor: c.ink, borderColor: c.ink },
-  tabLabel: { ...t.body, fontWeight: "600" },
+  tabLabel: { ...t.bodyMed, color: c.ink },
   tabLabelOn: { color: c.bg },
 
-  flash: { ...t.meta, color: c.accent, paddingHorizontal: 18, paddingBottom: 8 },
+  flash: { ...t.meta, color: c.accent, paddingHorizontal: sp.lg, paddingBottom: sp.sm },
 
-  list: { paddingHorizontal: 18, paddingBottom: 40, gap: 10 },
+  list: { paddingHorizontal: sp.lg, paddingBottom: sp.huge, gap: sp.md },
   listEmpty: { flexGrow: 1, justifyContent: "center" },
-  empty: { alignItems: "center", paddingHorizontal: 40, gap: 6 },
-  emptyGlyph: { fontSize: 34, marginBottom: 4 },
-  emptyHint: { textAlign: "center" },
+  empty: { alignItems: "center", paddingHorizontal: sp.xxl, gap: sp.xs },
+  emptyGlyph: { fontSize: glyph.lg, marginBottom: sp.xs },
+  emptyTitle: { ...t.heading, color: c.ink, textAlign: "center" },
+  emptyHint: { ...t.meta, color: c.inkSoft, textAlign: "center" },
+  retry: { marginTop: sp.md },
 
-  card: { backgroundColor: c.card, borderRadius: radius, borderWidth: 1, borderColor: c.line, padding: 12 },
-  cardTop: { flexDirection: "row", gap: 12 },
-  thumb: { width: 56, height: 76, borderRadius: 8, backgroundColor: c.accentSoft },
+  card: {
+    backgroundColor: c.surface, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2, borderColor: c.line, padding: sp.md,
+  },
+  cardTop: { flexDirection: "row", gap: sp.md },
+  thumb: { width: 56, height: 76, borderRadius: radius.sm, backgroundColor: c.surfaceSunk },
   thumbBlank: { alignItems: "center", justifyContent: "center" },
-  glyph: { fontSize: 24 },
-  cardText: { flex: 1, gap: 3 },
-  cardTitle: { ...t.body, fontWeight: "600" },
-  note: { fontStyle: "italic" },
+  glyph: { fontSize: glyph.sm },
+  cardText: { flex: 1, gap: 2 },
+  cardTitle: { ...t.bodyMed, color: c.ink },
+  cardSub: { ...t.meta, color: c.inkSoft },
+  note: { ...t.meta, color: c.inkFaint, fontStyle: "italic" },
 
-  actions: { flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.md },
   btn: {
-    minHeight: 40, minWidth: 44, paddingHorizontal: 12,
+    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN, paddingHorizontal: sp.md,
     alignItems: "center", justifyContent: "center",
-    borderRadius: radius, borderWidth: 1, borderColor: c.line, backgroundColor: c.bg,
+    borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: c.line, backgroundColor: c.bg,
   },
-  btnLabel: { ...t.body },
-  btnPrimary: { backgroundColor: c.ink, borderColor: c.ink },
-  btnPrimaryLabel: { ...t.body, color: c.bg, fontWeight: "600" },
+  btnLabel: { ...t.body, color: c.ink },
+  btnPrimary: { backgroundColor: c.accent, borderColor: c.accent },
+  btnPrimaryLabel: { ...t.bodyMed, color: c.accentInk },
 
-  pairWrap: { alignItems: "center", justifyContent: "center", paddingHorizontal: 28, gap: 14 },
-  pairHint: { textAlign: "center", lineHeight: 20 },
-  mono: { fontFamily: "Menlo", fontSize: 12, color: c.ink },
+  pairWrap: { alignItems: "center", justifyContent: "center", paddingHorizontal: sp.xxl, gap: sp.md },
+  pairTitle: { ...t.title, color: c.ink, textAlign: "center" },
+  pairHint: { ...t.meta, color: c.inkSoft, textAlign: "center" },
+  mono: { ...t.code, color: c.ink },
   input: {
-    ...t.body, width: "100%", height: touch, textAlign: "center", letterSpacing: 4,
-    borderRadius: radius, borderWidth: 1, borderColor: c.line, backgroundColor: c.card,
+    ...t.body, color: c.ink, width: 260, height: TOUCH, textAlign: "center", letterSpacing: 4,
+    borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: c.line, backgroundColor: c.surface,
   },
-  pairBtn: { width: "100%", height: touch },
+  pairBtn: { alignSelf: "center", paddingHorizontal: sp.xl, height: TOUCH },
   error: { ...t.meta, color: c.accent, textAlign: "center" },
 });

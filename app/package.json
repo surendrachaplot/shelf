@@ -8,7 +8,9 @@
     "prebuild": "expo prebuild -p ios --clean",
     "ios": "expo run:ios",
     "build:dev": "eas build -p ios --profile development",
-    "build:preview": "eas build -p ios --profile preview"
+    "build:preview": "eas build -p ios --profile preview",
+    "verify": "node verify-design.mjs && node verify-design.mjs --selftest",
+    "frames": "node verify-design.mjs --frames"
   },
   "dependencies": {
     "expo": "~52.0.0",
