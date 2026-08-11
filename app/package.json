@@ -19,7 +19,9 @@
     "preflight": "node preflight.mjs",
     "push": "node native-changed.mjs HEAD~1..HEAD && npx --yes eas-cli@latest update --branch preview --auto",
     "native-changed": "node native-changed.mjs",
-    "assets": "node assets/make-assets.mjs"
+    "assets": "node assets/make-assets.mjs",
+    "sync": "git -C .. checkout -- app && git -C .. pull && npm ci",
+    "ship": "npm run sync && npm run build:preview"
   },
   "dependencies": {
     "expo": "~52.0.0",

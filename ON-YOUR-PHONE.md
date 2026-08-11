@@ -105,6 +105,23 @@ Only set `EXPO_PUBLIC_SHELF_WEB` if you later put the pages on a custom domain.
 
 ## 3. Build the app (~20 min, mostly waiting)
 
+**Every time, from `app/`, use this and nothing else:**
+
+```bash
+npm run ship
+```
+
+That is `git checkout -- app && git pull && npm ci && eas build`. The reset is
+not optional: `eas build:configure`, `eas update:configure`, `expo install` and
+`expo prebuild` all rewrite `app.json` and `package.json` on the machine that
+runs them, so those files are permanently modified and **every `git pull`
+aborts**. Worse, when commands are chained with `&&`, the abort sends the rest
+of the line into the wrong directory — which produces a confusing `ENOENT:
+package.json` from the repository root and looks like a second, unrelated
+problem.
+
+Nothing is lost by the reset: everything those tools wrote is committed.
+
 **Expo Go cannot host a share extension.** This has to be a real build.
 
 **Build the `preview` profile, not `development`.** Both are real native builds
