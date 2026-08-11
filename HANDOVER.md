@@ -21,7 +21,7 @@ somebody. One repo, two folders: `api/` (plain `node:http` + Postgres) and
 | The design system | `node app/verify-design.mjs` → **20 rules + the theme bridge**; `--selftest` proves every one fires on a deliberate violation AND stays quiet on clean input |
 | Every screen, looked at | `node app/preview/shoot.mjs` → 25 PNGs, 320 + 375, both schemes |
 | The public pages, looked at | `node app/preview/shoot-public.mjs` → 10 PNGs, 320 + 390, both schemes, horizontal overflow MEASURED |
-| Tap targets | `node app/preview/measure.mjs` → **196 controls**, smallest effective 52pt, across every screen including the four that only open on a tap |
+| Tap targets | `node app/preview/measure.mjs` → **201 controls**, smallest effective 52pt, across every screen including the four that only open on a tap |
 
 ## Open, with the check that would close it
 

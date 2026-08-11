@@ -126,7 +126,7 @@ dedupe and the sender field each produce named failures. It is also where the
 design gate's own habit paid off twice — the harness used to die on an
 unexpected shape and silently skip every check after it.
 
-Every screen is rendered and looked at (`npm run preview` in `app/`), and 196
+Every screen is rendered and looked at (`npm run preview` in `app/`), and 201
 controls are measured off the live layout rather than eyeballed — including the
 four screens that only open on a tap, which were unverified until the audit
 learned to open them.

@@ -38,9 +38,10 @@ import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
 import {
-  BOARD, COVER_KEYLINE, coverFor, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
+  BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
+import * as D from "./src/design.js";
 
 // The pile is a tab like any other, not a section bolted above the shelves.
 // It is where a thing lives before it stands anywhere, which is a place — and
@@ -55,7 +56,7 @@ type Screen = "case" | "add" | "profile" | "received";
 type Sharing = { kind: ShareKind; target: string | null; list: string; title: string };
 
 export default function App() {
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
   const s = useMemo(() => styles(c), [c]);
 
   const [ready, setReady] = useState(false);
@@ -255,6 +256,7 @@ export default function App() {
             kind: "item", target: open.id, list: open.list,
             title: open.title ?? "This one",
           })}
+          dark={dark}
           s={s} c={c}
         />
       ) : null}
@@ -481,20 +483,36 @@ function PileRow({ item, onAct, onOpen, s, c }: {
  * top-aligned the block and left four fifths of the screen as an empty red
  * field, which is not "generous white space", it is a poster nobody finished.
  */
-function Detail({ item, onClose, onAct, onShare, s, c }: {
+function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
   item: Item; onClose: () => void;
   onAct: (i: Item, body: Record<string, unknown>) => void;
   onShare: () => void;
+  dark: boolean;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
   const list = (item.list ?? "unsorted") as ListName;
   const fill = c[list] ?? c.unsorted;
   const [failed, setFailed] = useState(false);
   const art = item.image_url && !failed ? item.image_url : null;
+  const [note, setNote] = useState(item.note ?? "");
+  const [editingNote, setEditingNote] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+
+  async function saveNote() {
+    setSavingNote(true);
+    try {
+      await updateItem({ id: item.id, note });
+      setEditingNote(false);
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
   // Every word on this panel is `on` over the list colour — the one pairing
   // `list-label-contrast` proves in both schemes. No opacities: a label at 86%
   // is a contrast ratio nobody computed.
   const on = listOn[list] ?? c.onList;
+  const ghost = placeholderOn(list, dark ? D.dark : D.light);
   return (
     <View style={[s.detail, { backgroundColor: fill }]}>
       <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false}>
@@ -524,7 +542,57 @@ function Detail({ item, onClose, onAct, onShare, s, c }: {
         ) : null}
 
         <View>
-          {item.note ? <Text style={[s.detailNote, { color: on }]}>{item.note}</Text> : null}
+          {/* YOUR note. The thing a catalogue cannot give you and the reason a
+              shelf you share is a part of yourself rather than a list of
+              titles — so it is editable in place, on the field, not behind an
+              edit screen. */}
+          {editingNote ? (
+            <>
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                autoFocus
+                multiline
+                maxLength={1000}
+                placeholder="What you thought about it"
+                placeholderTextColor={ghost}
+                style={[s.detailNoteInput, { color: on, borderColor: on }]}
+              />
+              <View style={s.detailActions}>
+                <Press onPress={saveNote} disabled={savingNote} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Save the note">
+                  {savingNote ? <ActivityIndicator color={fill} /> : <Text style={[s.detailBtnLabel, { color: fill }]}>Save note</Text>}
+                </Press>
+                <Press onPress={() => { setNote(item.note ?? ""); setEditingNote(false); }} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Cancel">
+                  <Text style={[s.detailBtnLabel, { color: on }]}>Cancel</Text>
+                </Press>
+              </View>
+            </>
+          ) : (
+            <Press onPress={() => setEditingNote(true)} containerStyle={s.detailNoteTap} size={TOUCH_MIN} label={note ? "Edit your note" : "Add a note"}>
+              <Text style={[s.detailNote, { color: note ? on : ghost }]}>
+                {note || "Add a note — what you thought, why you saved it"}
+              </Text>
+            </Press>
+          )}
+
+          {/* Auto-classification gets it wrong sometimes, and a thing on the
+              wrong shelf is the one defect the owner can see and nobody else
+              can fix. Four blocks, current one marked. */}
+          <Text style={[s.detailKicker, s.detailMoveLabel, { color: on }]}>Shelf</Text>
+          <View style={s.detailMove}>
+            {LISTS.map((l) => (
+              <Press
+                key={l}
+                onPress={() => onAct(item, { list: l })}
+                containerStyle={s.detailMoveSlot}
+                style={[s.detailMoveTab, { backgroundColor: c[l] }, l === list ? { borderColor: on } : null]}
+                size={TOUCH_MIN}
+                label={`Move to ${lists[l].label}`}
+              >
+                <Text style={[s.detailMoveNum, { color: listOn[l] }]}>{lists[l].n}</Text>
+              </Press>
+            ))}
+          </View>
 
           <View style={s.detailActions}>
             <Press onPress={onShare} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Share this">
@@ -696,6 +764,16 @@ const styles = (c: Palette) => StyleSheet.create({
   detailSub: { ...t.bodyMed, marginTop: sp.md },
   detailArt: { width: "100%", aspectRatio: 3 / 4, marginVertical: sp.xl, borderWidth: COVER_KEYLINE },
   detailNote: { ...t.body, marginTop: sp.md },
+  detailNoteTap: { minHeight: TOUCH_MIN, justifyContent: "center" },
+  detailNoteInput: {
+    ...t.body, minHeight: TOUCH_MIN + 32, marginTop: sp.md, padding: sp.md,
+    borderWidth: 2, textAlignVertical: "top",
+  },
+  detailMoveLabel: { marginTop: sp.xl },
+  detailMove: { flexDirection: "row", gap: 2, marginTop: sp.sm },
+  detailMoveSlot: { flex: 1 },
+  detailMoveTab: { minHeight: TOUCH_MIN, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "transparent" },
+  detailMoveNum: { ...t.micro },
   detailActions: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.xl },
   detailBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, alignItems: "center", justifyContent: "center" },
   detailBtnGhost: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, alignItems: "center", justifyContent: "center", borderWidth: 2 },
