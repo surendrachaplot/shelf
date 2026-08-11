@@ -135,6 +135,20 @@ Then, from the same folder, start the bundler and open the app:
 npx expo start --dev-client
 ```
 
+### Packages EAS will pull in, and why
+
+`eas.json` names an update channel for the development profile, so `eas build`
+installs **expo-updates** the first time and asks you to re-run. expo-updates
+in turn needs **expo-asset**, which it does not pull in itself — the failure is
+`The required package expo-asset cannot be found` after a successful-looking
+configure step. Both are pinned in `package.json` now at the versions Expo SDK
+52 specifies, so a fresh clone never sees either.
+
+expo-updates in a share extension would crash it —
+`AppController.sharedInstace was called before the module was initialized` —
+but `expo-share-extension` excludes it from the extension target
+unconditionally, in its own Podfile writer. Nothing to configure.
+
 ### If the first build fails
 
 The likely three, in order:
