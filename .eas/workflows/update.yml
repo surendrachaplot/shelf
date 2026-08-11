@@ -1,22 +1,29 @@
-# EAS Workflows — publish an update on every push, with NO token in this repo.
+# Publish an update on every push to main — with NO token in this repo.
 #
-# This is the Expo equivalent of how Render deploys atlas and soundcheck: you
-# connect the repository once at expo.dev, the credential lives at Expo's end,
-# and nothing secret is stored here. The GitHub Actions workflow in
-# .github/workflows/ does the same job the other way round — a runner here
-# authenticating outwards — and needs EXPO_TOKEN for exactly that reason.
+# This is the Expo equivalent of how Render deploys atlas and soundcheck. Render
+# PULLS: you connect the repo once, the credential lives at Render's end, and
+# nothing secret sits in the repository. EAS Workflows is the same arrangement —
+# Expo's GitHub App watches the repo and runs this on Expo's infrastructure.
 #
-# Use ONE of them, not both, or every push publishes twice.
+# The GitHub Actions file in .github/workflows/ is the same job in the opposite
+# direction (a runner here authenticating outward), which is the only reason
+# that one needs EXPO_TOKEN.
 #
-# TO TURN THIS ON:
-#   expo.dev → your account → Projects → shelf → GitHub → Connect
-#   (installs Expo's GitHub App on the repo; that is the whole setup)
+# TO TURN THIS ON, once:
+#   expo.dev → Projects → shelf → GitHub → Connect
 #
-# HONEST CAVEAT: this file's schema is written from the EAS Workflows docs and
-# has NOT been run — nothing in this sandbox can execute it. If `eas workflow:run`
-# rejects it, the shape is wrong, not the idea. The GitHub Actions path in
-# .github/workflows/eas-update.yml HAS had its logic tested here and is the
-# safer thing to fall back on.
+# The shape below is taken from the templates eas-cli itself ships
+# (commandUtils/new/templates/.eas/workflows/create-draft.yml), not from
+# memory: `type: update` with `params.branch`, and nothing else. An earlier
+# draft passed `params.message`, which appears in no official template and
+# would likely have been rejected by the schema — which is fetched live from
+# api.expo.dev and cannot be reached from the sandbox this was written in.
+#
+# WHAT THIS CANNOT DO: an update carries JavaScript and assets, never native
+# code. This workflow has no way to check that, so .github/workflows/eas-update.yml
+# stays switched on purely as the alarm — it needs no token to run
+# `native-changed.mjs`, and it goes red when a push needs a rebuild instead of
+# an update. Red there means: run `npm run ship`.
 name: Publish update
 
 on:
@@ -24,9 +31,8 @@ on:
     branches: ["main"]
 
 jobs:
-  update:
-    name: Publish to the preview channel
+  publish_update:
+    name: Publish update
     type: update
     params:
       branch: preview
-      message: ${{ github.event.head_commit.message }}

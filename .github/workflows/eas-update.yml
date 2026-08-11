@@ -5,7 +5,7 @@
 # when a change needs a rebuild. That refusal is the point: publishing anyway
 # succeeds, the app takes the update, and the native change is silently absent —
 # which is far harder to diagnose than a red tick here.
-name: Update the app
+name: Can this update travel over the air?
 
 on:
   push:
@@ -81,9 +81,7 @@ jobs:
       - name: Publishing from CI is not set up
         if: steps.native.outputs.code == '0' && env.EXPO_TOKEN == ''
         run: |
-          echo "::notice::This push is publishable, but EXPO_TOKEN is not set — nothing was published."
-          echo "Publish it yourself:  cd app && git pull && npm run push"
-          echo "Or set up CI: https://expo.dev/settings/access-tokens → repo Settings → Secrets → EXPO_TOKEN"
+          echo "::notice::Publishable. EAS Workflows publishes this if the repo is connected at expo.dev; otherwise run \`npm run update\` from app/."
 
       - uses: expo/expo-github-action@v8
         if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
