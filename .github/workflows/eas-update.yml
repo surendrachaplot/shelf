@@ -59,12 +59,22 @@ jobs:
           echo "::error::This push changes native code. Run \`npm run build:preview\` and install the new build — an over-the-air update cannot carry it."
           exit 1
 
+      # No token → skip, do not fail. An unconfigured optional workflow that
+      # goes red on every push trains you to ignore red, which costs more than
+      # the automation was worth.
+      - name: Publishing from CI is not set up
+        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN == ''
+        run: |
+          echo "::notice::This push is publishable, but EXPO_TOKEN is not set — nothing was published."
+          echo "Publish it yourself:  cd app && git pull && npm run push"
+          echo "Or set up CI: https://expo.dev/settings/access-tokens → repo Settings → Secrets → EXPO_TOKEN"
+
       - uses: expo/expo-github-action@v8
-        if: steps.native.outputs.code == '0'
+        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN != ''
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publish
-        if: steps.native.outputs.code == '0'
+        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN != ''
         run: eas update --branch preview --message "${{ github.event.head_commit.message }}"
