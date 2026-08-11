@@ -16,6 +16,10 @@ import { renderProfile, renderShelf, renderItem, renderGone, html, canonical } f
 
 const PORT = Number(process.env.PORT || 8080);
 
+// Free-tier Render has no worker service. See the block at the bottom.
+const WORKER_IN_PROCESS = /^(1|true|yes)$/i.test(process.env.WORKER_IN_PROCESS || "");
+const WORKER_MODE = WORKER_IN_PROCESS ? "in-process" : "separate (worker service or cron)";
+
 // 8MB: a downscaled screenshot as base64 plus headroom. Anything larger is
 // rejected before it is buffered, not after.
 const MAX_BODY = 8 * 1024 * 1024;
@@ -103,7 +107,11 @@ async function handle(req, res, url) {
     // Says what is actually true, in words. If the queue is backing up or the
     // worker died, this is where you find out — a bare {ok:true} that is
     // green while nothing resolves would be worse than no health check.
-    const out = { ok: true, db: dbReady(), model: process.env.SHELF_MODEL || "claude-opus-5" };
+    // Says what is actually true, in words — including WHICH worker arrangement
+    // this process believes it is in. "Shares are queued but not resolving"
+    // reads very differently depending on whether anything is meant to be
+    // draining them here.
+    const out = { ok: true, db: dbReady(), model: process.env.SHELF_MODEL || "claude-opus-5", worker: WORKER_MODE };
     out.providers = {
       claude: !!process.env.ANTHROPIC_API_KEY,
       tmdb: !!process.env.TMDB_API_KEY,
@@ -123,7 +131,9 @@ async function handle(req, res, url) {
         out.queue = r.rows[0];
         if (out.queue.oldest_pending_s > 600) {
           out.ok = false;
-          out.warn = "shares are queued but not resolving — is the worker running?";
+          out.warn = WORKER_IN_PROCESS
+            ? "shares are queued but the in-process drain is not clearing them — check the logs for a failing resolve"
+            : "shares are queued but not resolving — is the worker service running? (free-tier Render has no workers: set WORKER_IN_PROCESS=1 on this service instead)";
         }
       } catch (e) { out.ok = false; out.db_error = e.message; }
     }
@@ -173,4 +183,35 @@ const server = createServer(async (req, res) => {
 });
 
 await migrate();
-server.listen(PORT, () => console.log(`[shelf] listening on :${PORT}  db=${dbReady()}`));
+server.listen(PORT, () => console.log(`[shelf] listening on :${PORT}  db=${dbReady()}  worker=${WORKER_MODE}`));
+
+// ── the in-process drain ─────────────────────────────────────────────────────
+//
+// Render's free tier has no background workers, so `render.yaml`'s worker
+// service needs a paid instance. This is the free-tier path: the same drain,
+// on a timer, in the web process.
+//
+// It does NOT break the one architectural rule of this service. That rule is
+// that nothing slow happens ON THE REQUEST PATH — a share writes a row and
+// returns. A timer in the same process is not the request path. `for update
+// skip locked` already makes concurrent drains safe, so running this AND a
+// real worker is harmless rather than a race.
+//
+// It is off by default because a dedicated worker is better when you have one:
+// a long Claude call here competes with request handling for the event loop.
+if (WORKER_IN_PROCESS && dbReady()) {
+  const every = Number(process.env.WORKER_INTERVAL_MS || 15_000);
+  let running = false;
+  setInterval(async () => {
+    if (running) return;          // a slow drain must not stack up behind itself
+    running = true;
+    try {
+      const done = await drain(3);
+      if (done.length) console.log(`[shelf] drained ${done.length} in-process`);
+    } catch (e) {
+      console.error("[shelf] in-process drain failed:", e.message);
+    } finally {
+      running = false;
+    }
+  }, every).unref();
+}

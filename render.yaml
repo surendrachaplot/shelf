@@ -25,9 +25,20 @@ services:
       - { key: GOOGLE_PLACES_KEY, sync: false }
       - { key: ADMIN_SECRET, sync: false }
       # Where share links point. The app builds every URL it hands out from
-      # this, so a mismatch here produces links that 404 on arrival.
-      - { key: SHELF_WEB_BASE, value: "https://shelf.club" }
+      # this, so a mismatch here produces links that 404 on arrival. Set it to
+      # this service's own URL — the pages and the JSON come out of one process.
+      - { key: SHELF_WEB_BASE, sync: false }
+      # Set to 1 if you deleted the worker service (free tier). See below.
+      - { key: WORKER_IN_PROCESS, value: "0" }
 
+  # PAID INSTANCE REQUIRED. Render's free tier has no background workers.
+  #
+  # On the free tier, delete this service and set WORKER_IN_PROCESS=1 on
+  # shelf-api instead — the same drain runs on a timer inside the web process.
+  # That is not a violation of the "nothing slow on the request path" rule: a
+  # timer is not the request path, and `for update skip locked` makes running
+  # both at once safe rather than racy. /api/health reports which arrangement
+  # it believes it is in, so the two cannot silently disagree.
   - type: worker
     name: shelf-worker
     env: node

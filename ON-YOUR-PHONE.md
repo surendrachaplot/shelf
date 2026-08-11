@@ -17,7 +17,8 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
   Groups are unavailable to free personal teams. A free account will build the
   app and produce a share extension that cannot read your login.
 - An [Expo](https://expo.dev) account (free).
-- A [Render](https://render.com) account (free tier is fine to start).
+- A [Render](https://render.com) account. **The free tier has no background
+  workers** — see §1 for the one-variable way around that.
 - An Anthropic API key.
 - Optional now, easy later: a TMDB key (free) and a Google Places key (paid).
   Without them the app works and *says* those two shelves aren't searchable.
@@ -36,7 +37,8 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
    - `TMDB_API_KEY`, `GOOGLE_PLACES_KEY` — optional
 4. Set `SHELF_WEB_BASE` on `shelf-api` to whatever Render gives you, e.g.
    `https://shelf-api.onrender.com`. **No trailing slash.** This is the address
-   baked into every link the app hands out.
+   baked into every link the app hands out. (Render only knows the URL after the
+   first deploy, so this is a second save-and-redeploy — expected.)
 
 **Do not skip this check.** Migrations run on boot, so:
 
@@ -48,8 +50,22 @@ You want `"db": true`, and `providers.claude: true`. A 503 with a plain-English
 `warn` means the worker isn't running — that is the check doing its job, not a
 bug. `"ok": true` with `"db": false` means `DATABASE_URL` didn't attach.
 
-> **The free Render tier sleeps after ~15 minutes.** The first share after a
-> nap will be slow while the service wakes. That is the tier, not the app.
+### Free tier: two things to know
+
+**There are no background workers on the free tier.** `render.yaml` declares
+`shelf-worker`, and that needs a paid instance. If you are staying free: delete
+that service and set `WORKER_IN_PROCESS=1` on `shelf-api`. The same drain then
+runs on a 15-second timer inside the web process.
+
+That does not break the one architectural rule here — nothing slow may happen
+**on the request path**, and a timer is not the request path. `for update skip
+locked` makes running both at once safe rather than racy, so you can add a real
+worker later without turning anything off first. `/api/health` reports
+`"worker"` so the two arrangements can never silently disagree.
+
+**The service sleeps after ~15 minutes** and free Postgres expires after 30
+days. The first share after a nap is slow while the service wakes; that is the
+tier, not the app.
 
 ---
 
