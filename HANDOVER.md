@@ -25,16 +25,40 @@ arriving and coming back with no names, which is exactly what a blocked scrape
 looks like. It is also what a markup change and a caption-less reel look like,
 which is why the next action is a measurement and not a guess.
 
-### Do this first
+### Milestone 0, finally measured (2026-08-11)
 
-```bash
-curl -sS -H "x-shelf-secret: $ADMIN_SECRET" \
-  "https://shelf-api-u8xy.onrender.com/api/debug/reel?url=<a reel that came back blank>"
+Against a live reel, run from Render:
+
+```
+http 200 · 605,771 bytes · blocked: false · caption_chars: 0
 ```
 
-The `verdict` field answers it in one line. OPERATIONS §0a has the table of
-what each verdict means and what to do. **Do not skip to a fix.** The three
-causes need three different fixes and they are indistinguishable from the app.
+**Not an IP block.** Instagram served the full page and the extractor found
+nothing in it, because Meta now ships the caption as an OBJECT —
+`"caption":{"pk":…,"text":"…"}` — and `extractInstagram` read only bare
+strings. Four shapes are handled now (edges array → nested object → bare string
+→ `accessibility_caption`), each with a fixture. Whether that closes it on real
+reels is **still unconfirmed**: re-run the probe and look for
+`verdict: readable`.
+
+The lesson worth keeping is the sequencing. The plan named "datacentre IPs get
+blocked" as the load-bearing risk for four months; the measurement took ninety
+seconds and said it was a parser bug.
+
+### Asking the live service anything — without a laptop
+
+The sandbox this repo is written in has an **egress policy denying
+`onrender.com`, `api.expo.dev` and `instagram.com`** at the gateway. Reported,
+not routed around. So diagnosis runs on a GitHub runner instead:
+
+Actions → **Diagnose the deployed service** → Run workflow → `health` | `items`
+| `reel`. `health` needs no secret. The other two need the repository secret
+`SHELF_ADMIN_SECRET` (= Render's `ADMIN_SECRET`). See `SETUP-ONCE.md`.
+
+**Live reading, 2026-08-11 15:16Z:** `db: true`, `worker: "in-process"`,
+`web_base` self-resolved, `claude: true`, `tmdb: true`, **`places: false`**,
+`ig_resolver: false`, queue `{pending: 0, inbox: 0, filed: 2, stuck: 0}`.
+Nothing is stuck; two items are filed; the database holds two items in total.
 
 ## Shipped and verified
 
@@ -51,12 +75,15 @@ causes need three different fixes and they are indistinguishable from the app.
 
 ## Open, with the check that would close it
 
-- **Milestone 0 still has no number.** See "Do this first" above. Closes with a
-  verdict written into OPERATIONS §0.
-- **No provider has ever been called for real.** TMDB's key is set; Google
-  Places is not, so restaurants cannot enrich. Enrichment failing is not fatal
-  (`enriched:false`), but an un-enriched restaurant has no address. Closes with:
-  a Places key, then `GET /api/search?q=…` and reading the rows.
+- **Does the caption fix work on a real reel?** Measured once, fix shipped,
+  outcome unverified. Closes with: the `reel` workflow returning
+  `verdict: readable`. If it does not, the response now carries `markers` and a
+  220-character `samples` excerpt showing where the text actually is.
+- **`places: false` on the live service** — confirmed from health, not
+  inferred. Restaurants cannot enrich, so they file with a Claude-derived title
+  and no address. Not fatal (`enriched:false`), but it is why a restaurant
+  looks thinner than a book. Closes with: a `GOOGLE_PLACES_KEY` on Render, then
+  `GET /api/search?q=…` and reading the rows.
 - **The worker has never demonstrably resolved a real reel.** Closes with:
   `select list, title, confidence, resolver from items order by created_at desc`
   — check the TITLES are right, not that rows exist.
@@ -113,6 +140,13 @@ causes need three different fixes and they are indistinguishable from the app.
   Keychain; a curl gets typed on a laptop. Diagnostics take `ADMIN_SECRET` too,
   the same way `POST /api/admin/pair` does, and for the same reason: the free
   tier has no shell.
+- **Measure before theorising.** The blocked-datacentre-IP theory was written
+  into the plan, into OPERATIONS §0 and into two handovers, and was wrong. One
+  probe settled it. When a symptom has three candidate causes, build the
+  instrument that separates them before writing the fix for the likeliest.
+- **A human relaying terminal output is a broken pipe, not a workflow.** When
+  the sandbox cannot reach a host, put the command on a GitHub runner and read
+  the job log. `.github/workflows/diagnose.yml`.
 - **An entry box may never sit under the keyboard.** `KeyboardSafe` +
   `scrollKeyboardProps`, enforced by the `keyboard-safe` gate rule. (Suren's,
   after the pairing field shipped under it.)
