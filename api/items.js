@@ -198,6 +198,32 @@ export async function retryItem(req, res, body) {
 }
 
 /**
+ * POST /api/debug/retry-unread — re-read everything that never got a name.
+ *
+ * When the resolver chain is fixed, the fix is worth nothing to the items
+ * already sitting there unread. Tapping "Read again" on each is fine for
+ * three; it is not fine for thirty, and it is not something to ask for when
+ * the person is not at their phone.
+ *
+ * Only touches rows with NO TITLE. An item you named yourself, or one that
+ * resolved correctly, is never re-read — this cannot overwrite anything good.
+ */
+export async function retryUnread(req, res) {
+  const admin = process.env.ADMIN_SECRET
+    && secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET);
+  const me = admin ? null : await getUser(req);
+  if (!admin && !me) return json(res, 401, { ok: false, error: "not signed in" });
+
+  const r = await query(
+    `update items set status = 'pending', attempts = 0, last_error = null
+      where title is null and status <> 'discarded' ${me ? "and user_id = $1" : ""}
+      returning id, list`,
+    me ? [me.id] : []
+  );
+  return json(res, 200, { ok: true, requeued: r.rows.length, items: r.rows });
+}
+
+/**
  * GET /api/debug/items — the last 20 rows, as diagnosis rather than content.
  *
  * Answers "did it arrive, did it resolve, and if not what did it say" in one

@@ -4,7 +4,7 @@
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
 import { mintPairCode, redeemPairCode, secretMatches } from "./auth.js";
-import { listItems, updateItem, retryItem, probeRoute, debugItems, json } from "./items.js";
+import { listItems, updateItem, retryItem, probeRoute, debugItems, retryUnread, json } from "./items.js";
 import { ingestUrl, ingestImage } from "./ingest.js";
 import { drain } from "./worker.js";
 import {
@@ -47,6 +47,7 @@ const routes = {
   "POST /api/ingest/image": ingestImage,
   "POST /api/item": updateItem,
   "POST /api/item/retry": retryItem,
+  "POST /api/debug/retry-unread": retryUnread,
   "POST /api/profile": putProfile,
   "POST /api/share": createShare,
   "POST /api/share/revoke": revokeShare,

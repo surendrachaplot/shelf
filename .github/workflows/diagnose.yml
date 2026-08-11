@@ -20,7 +20,7 @@ on:
         required: true
         default: health
         type: choice
-        options: [health, items, reel]
+        options: [health, items, reel, retry]
       url:
         description: "Reel URL (only used when what=reel)"
         required: false
@@ -68,6 +68,13 @@ jobs:
           case "$WHAT" in
             health) path="/api/health" ;;
             items)  path="/api/debug/items" ;;
+            retry)
+              # Re-read every item that never got a name. Only touches rows
+              # with NO title, so it can never overwrite something good.
+              curl -sS -m 60 -X POST -H "x-shelf-secret: $SECRET" \
+                "$SHELF_API/api/debug/retry-unread" | tee /tmp/out.json | jq . || cat /tmp/out.json
+              exit 0
+              ;;
             reel)
               if [ -z "$URL" ]; then
                 echo "::error::what=reel needs a url input"; exit 1

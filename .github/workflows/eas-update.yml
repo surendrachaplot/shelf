@@ -62,7 +62,18 @@ jobs:
           esac
           echo "range: $RANGE"
           node native-changed.mjs "$RANGE"
-          echo "code=$?" >> "$GITHUB_OUTPUT"
+          CODE=$?
+          # 3 means "this push changed nothing under app/". On a PUSH that is
+          # correct and there is nothing to do. On a MANUAL run it is the wrong
+          # answer to the wrong question: somebody has asked for a publish, and
+          # what they want on the phone is the current state of app/, not the
+          # diff of the last commit. This is how a manual publish silently did
+          # nothing after four commits of API work.
+          if [ "$CODE" = "3" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run: publishing the current state of app/ regardless of this commit's diff"
+            CODE=0
+          fi
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
           set -e
 
       - name: Nothing to publish
