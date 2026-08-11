@@ -4,7 +4,7 @@
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
 import { mintPairCode, redeemPairCode, secretMatches } from "./auth.js";
-import { listItems, updateItem, retryItem, probeRoute, json } from "./items.js";
+import { listItems, updateItem, retryItem, probeRoute, debugItems, json } from "./items.js";
 import { ingestUrl, ingestImage } from "./ingest.js";
 import { drain } from "./worker.js";
 import {
@@ -64,6 +64,7 @@ const getRoutes = {
   // Not a feature — an instrument. It answers "why did that reel come back
   // with no name" from the machine whose IP address is the variable.
   "GET /api/debug/reel": (req, res, url) => probeRoute(req, res, url),
+  "GET /api/debug/items": (req, res) => debugItems(req, res),
 };
 
 /**

@@ -198,6 +198,36 @@ export async function retryItem(req, res, body) {
 }
 
 /**
+ * GET /api/debug/items — the last 20 rows, as diagnosis rather than content.
+ *
+ * Answers "did it arrive, did it resolve, and if not what did it say" in one
+ * request. Deliberately returns NO captions, notes or images: the question is
+ * always about the pipeline, and a debug endpoint that hands back what somebody
+ * wrote is a debug endpoint that should not exist.
+ */
+export async function debugItems(req, res) {
+  const admin = process.env.ADMIN_SECRET
+    && secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET);
+  const me = admin ? null : await getUser(req);
+  if (!admin && !me) return json(res, 401, { ok: false, error: "not signed in" });
+
+  const where = me ? `where user_id = $1` : ``;
+  const r = await query(
+    `select id, list, status, resolver, attempts, confidence, enriched,
+            title is not null as has_title,
+            raw_caption is not null as had_caption,
+            length(coalesce(raw_caption, '')) as caption_chars,
+            image_url is not null as has_image,
+            source_platform, last_error, created_at, resolved_at
+       from items ${where} order by created_at desc limit 20`,
+    me ? [me.id] : []
+  );
+  const byResolver = {};
+  for (const row of r.rows) byResolver[row.resolver ?? "unresolved"] = (byResolver[row.resolver ?? "unresolved"] ?? 0) + 1;
+  return json(res, 200, { ok: true, count: r.rows.length, by_resolver: byResolver, items: r.rows });
+}
+
+/**
  * GET /api/debug/reel?url=… — run the resolver chain out loud.
  *
  * Behind the device token, because it fetches on your behalf and because the

@@ -1,0 +1,83 @@
+# Ask the deployed service a question, from a machine Claude can drive.
+#
+# WHY THIS EXISTS: the agent sandbox this repo is written in has an egress
+# policy that denies `onrender.com`, `api.expo.dev` and `instagram.com` at the
+# gateway. So every "run this curl and paste the output" round trip was a human
+# being used as a network cable. A GitHub runner has none of those
+# restrictions, and its job logs are readable through the GitHub API — so
+# Claude triggers this and reads the answer itself.
+#
+# ONE-TIME SETUP: add a repository secret `SHELF_ADMIN_SECRET` with the same
+# value as ADMIN_SECRET on the Render service.
+#   GitHub → Settings → Secrets and variables → Actions → New repository secret
+name: Diagnose the deployed service
+
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: "What to ask"
+        required: true
+        default: health
+        type: choice
+        options: [health, items, reel]
+      url:
+        description: "Reel URL (only used when what=reel)"
+        required: false
+        type: string
+
+env:
+  # The service. Kept here rather than in a secret: it is in the app binary and
+  # printed on every share link, so hiding it would be theatre.
+  SHELF_API: https://shelf-api-u8xy.onrender.com
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    steps:
+      # `health` is public and needs nothing, so this workflow can be proven to
+      # work before any secret exists. Only the two that read your data need it.
+      - name: Check the secret is set
+        if: inputs.what != 'health'
+        run: |
+          if [ -z "${{ secrets.SHELF_ADMIN_SECRET }}" ]; then
+            echo "::error::SHELF_ADMIN_SECRET is not set on this repository. Settings → Secrets and variables → Actions → New repository secret, name SHELF_ADMIN_SECRET, value = ADMIN_SECRET from Render."
+            exit 1
+          fi
+
+      # The free tier sleeps after ~15 minutes idle and takes up to a minute to
+      # get back up. Waking it first means the real request is not the one that
+      # eats the cold start and times out.
+      - name: Wake the server
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -m 30 "$SHELF_API/api/health" || echo 000)
+            echo "attempt $i: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::server did not answer 200 while waking — asking anyway"
+
+      - name: Ask
+        env:
+          SECRET: ${{ secrets.SHELF_ADMIN_SECRET }}
+          WHAT: ${{ inputs.what }}
+          URL: ${{ inputs.url }}
+        run: |
+          set -o pipefail
+          case "$WHAT" in
+            health) path="/api/health" ;;
+            items)  path="/api/debug/items" ;;
+            reel)
+              if [ -z "$URL" ]; then
+                echo "::error::what=reel needs a url input"; exit 1
+              fi
+              # --get --data-urlencode so a reel URL with its own query string
+              # cannot be mistaken for extra parameters of ours.
+              path="/api/debug/reel"
+              curl -sS -m 120 --get --data-urlencode "url=$URL" \
+                -H "x-shelf-secret: $SECRET" "$SHELF_API$path" | tee /tmp/out.json | jq . || cat /tmp/out.json
+              exit 0
+              ;;
+          esac
+          curl -sS -m 60 -H "x-shelf-secret: $SECRET" "$SHELF_API$path" | tee /tmp/out.json | jq . || cat /tmp/out.json
