@@ -16,8 +16,25 @@ import { parseLd, extractWebPage } from "../resolve.js";
 
 // ── provider cache ───────────────────────────────────────────────────────────
 
+/**
+ * THE SHAPE VERSION. Bump it whenever an enricher starts returning fields it
+ * did not return before.
+ *
+ * The cache stores the PAYLOAD, so it happily serves last week's three-field
+ * answer to this week's code that knows how to ask for twelve. That is exactly
+ * what happened when trailers and runtimes were added: the enrichers were
+ * correct, the re-read ran, and every film came back with the old thin data
+ * because TMDB was never called again. Nothing errored, so nothing said why.
+ *
+ * A version in the key means new code asks a new question. The old rows stay
+ * in the table doing no harm.
+ *
+ *   v2 — trailers, runtime, cast, streaming, book pages, OSM places
+ */
+export const SHAPE = "v2";
+
 export const cacheKey = (parts) =>
-  parts.map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
+  [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
 
 async function cacheGet(provider, key) {
   if (!dbReady()) return undefined;
@@ -519,8 +536,10 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(b2.canonical.subjects.length === 2, "subjects deduplicated and trimmed", JSON.stringify(b2.canonical.subjects));
   ok(b2.canonical.first_sentence === "When the moon rose.", "the opening line survives");
 
-  ok(cacheKey(["Place", " Ganapati ", "London"]) === "place|ganapati|london", "cache key normalises");
-  ok(cacheKey(["book", "X", ""]) === "book|x", "cache key drops empties");
+  ok(cacheKey(["Place", " Ganapati ", "London"]) === `${SHAPE}|place|ganapati|london`, "cache key normalises and carries the shape version", cacheKey(["Place", " Ganapati ", "London"]));
+  ok(cacheKey(["book", "X", ""]) === `${SHAPE}|book|x`, "cache key drops empties");
+  // The whole point: a shape change must not read the previous shape back.
+  ok(!cacheKey(["movie", "Sinners"]).startsWith("movie|"), "no key is shape-less, so old rows can never be served to new code");
   ok(cacheKey(["place", "A", "London"]) !== cacheKey(["place", "A", "Lisbon"]), "city is part of the key");
 
   // The merge contract: provider wins on title, Claude's note always survives.
