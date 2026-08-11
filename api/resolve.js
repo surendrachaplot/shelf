@@ -22,7 +22,7 @@
 // resolver histogram tells you which link in the chain died — without it you
 // are guessing at Meta's mood.
 import { isMain } from "./ismain.js";
-import { fetchT, BROWSER_HEADERS, isBotWall } from "./net.js";
+import { fetchT, BROWSER_HEADERS, CRAWLER_HEADERS, isBotWall } from "./net.js";
 
 const EMPTY = () => ({
   caption: "", imageUrl: null, locationTag: null, authorHandle: null,
@@ -167,9 +167,9 @@ export function extractInstagram(html) {
   return out;
 }
 
-async function tryFetch(url, ms = 12000) {
+async function tryFetch(url, ms = 12000, headers = BROWSER_HEADERS) {
   try {
-    const r = await fetchT(url, { headers: BROWSER_HEADERS, redirect: "follow" }, ms);
+    const r = await fetchT(url, { headers, redirect: "follow" }, ms);
     const html = await r.text();
     // `status`/`bytes` are for `probeShare` and ignored by the resolvers. A
     // wall is NOT a fetch failure — 200 with a login page is the single most
@@ -192,6 +192,28 @@ async function viaCanonical(ig) {
   const { html } = await tryFetch(`https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`);
   const got = extractInstagram(html);
   return got.caption ? { ...got, via: "canonical-og" } : null;
+}
+
+/**
+ * Ask as a link-preview crawler instead of a browser.
+ *
+ * Measured, not assumed: as a browser, Meta returns 606kB with
+ * `<title>Instagram</title>`, zero og: tags and no caption in any form — an
+ * app shell rendered entirely client-side, with nothing in it to parse no
+ * matter how clever the parser. But every chat app that draws a preview card
+ * for a pasted reel is getting og: tags from somewhere, and it gets them by
+ * announcing itself as a crawler. So this asks the same way.
+ */
+async function viaCrawler(ig) {
+  for (const url of [
+    `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`,
+    embedUrl(ig),
+  ]) {
+    const { html } = await tryFetch(url, 12000, CRAWLER_HEADERS);
+    const got = extractInstagram(html);
+    if (got.caption) return { ...got, via: `crawler-${got.via ?? "og"}` };
+  }
+  return null;
 }
 
 // A paid resolver (Apify / RapidAPI / similar). Deliberately last and
@@ -290,7 +312,10 @@ export function extractWebPage(html, url) {
 export async function resolveShare(sourceUrl) {
   const ig = parseInstagramUrl(sourceUrl);
   if (ig) {
-    for (const step of [viaEmbed, viaCanonical, viaPaidResolver]) {
+    // Crawler BEFORE the paid resolver and after the free browser attempts:
+    // it is free, it is one request, and as of 2026-08-11 the two above it
+    // return a JavaScript shell with nothing in it.
+    for (const step of [viaEmbed, viaCanonical, viaCrawler, viaPaidResolver]) {
       const got = await step(ig);
       if (got && got.caption) return got;
     }
@@ -360,9 +385,9 @@ export async function probeShare(sourceUrl) {
   const ig = parseInstagramUrl(sourceUrl);
   const steps = [];
 
-  const record = async (step, url, extract) => {
+  const record = async (step, url, extract, headers) => {
     const t0 = Date.now();
-    const r = await tryFetch(url);
+    const r = await tryFetch(url, 12000, headers);
     const got = extract(r.html);
     const markers = {};
     for (const [k, re] of Object.entries(MARKERS)) if (re.test(r.html)) markers[k] = true;
@@ -387,9 +412,16 @@ export async function probeShare(sourceUrl) {
     return got;
   };
 
+  const canonicalIg = ig ? `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/` : null;
+
   if (ig) {
     await record("embed", embedUrl(ig), extractInstagram);
-    await record("canonical", `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`, extractInstagram);
+    await record("canonical", canonicalIg, extractInstagram);
+    // The same two URLs asked as a link-preview crawler. Reported separately
+    // so the difference between the two user agents is visible as a number
+    // rather than argued about.
+    await record("crawler-canonical", canonicalIg, extractInstagram, CRAWLER_HEADERS);
+    await record("crawler-embed", embedUrl(ig), extractInstagram, CRAWLER_HEADERS);
     steps.push({
       step: "paid",
       configured: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
@@ -413,9 +445,14 @@ export async function probeShare(sourceUrl) {
         ? "MARKUP MOVED — the caption is there but nested (\"caption\":{…}), and the extractor reads only a bare string. Fixable here; see samples.caption."
         : seen("edge_media_to_caption") || seen("caption_key") || seen("og_description")
           ? "MARKUP MOVED — something caption-shaped is in the page and the extractor missed it. See `samples`."
-          : (seen("login_form") || seen("login_redirect")) && !seen("og_title")
-            ? "LOGIN SHELL — 200 OK, but the page is the logged-out app shell with no metadata in it. No parser fixes this: it needs the paid resolver (IG_RESOLVER_KEY) or the screenshot path."
-            : "no caption — the page fetched and contains nothing caption-shaped at all. Either a reel with no caption, or a shell rendered entirely by JavaScript.";
+          : seen("login_form") || seen("login_redirect")
+            ? "LOGIN SHELL — 200 OK, but the page is the logged-out app shell. No parser fixes this: it needs the paid resolver (IG_RESOLVER_KEY) or the screenshot path."
+            // The measured 2026-08-11 case. Hundreds of kB, `<title>Instagram</title>`,
+            // `data-sjs` bootstrap blobs, and NOT ONE og: tag. There is nothing in the
+            // page to read, so no extractor will ever help.
+            : steps.some((x) => x.markers?.json_script) && !seen("og_title") && !seen("og_description")
+              ? "JAVASCRIPT SHELL — a few hundred kB of bootstrap script, <title>Instagram</title>, and no og: tags of any kind. The page is rendered client-side and carries NO metadata. Parsing cannot fix this. If even the crawler user-agent came back empty, the remaining routes are the paid resolver or the screenshot path."
+              : "no caption — the page fetched and contains nothing caption-shaped at all. Possibly a reel with no caption.";
 
   return {
     url: sourceUrl,

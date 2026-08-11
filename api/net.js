@@ -20,6 +20,29 @@ export const BROWSER_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
+/**
+ * A LINK-PREVIEW CRAWLER, not a browser. This is the opposite trick to the one
+ * above and it exists because of a measurement:
+ *
+ *   browser UA → 606,013 bytes, `<title>Instagram</title>`, no og: tags at all,
+ *   no caption anywhere. A JavaScript shell. Nothing to parse, ever.
+ *
+ * Meta renders posts client-side for a browser, but it still has to feed
+ * og: tags to the crawlers that draw link previews — otherwise a reel pasted
+ * into WhatsApp or Slack would show a blank card, and Meta cares about that.
+ * Those crawlers are recognised BY USER AGENT. So asking as one is not a
+ * circumvention of anything; it is asking for the preview metadata that every
+ * chat app is served, through the front door, for a link the user already has.
+ *
+ * `facebookexternalhit` is Meta's own, which is the one least likely to be
+ * treated as hostile by Meta.
+ */
+export const CRAWLER_HEADERS = {
+  "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+  Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
 // A bot wall is not an empty page — it is a page full of markup with no data in
 // it. Detecting it explicitly is what stops "Just a moment..." being parsed as
 // a title and filed as a book. Lifted from soundcheck-api/import.js, where it
