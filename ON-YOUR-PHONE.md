@@ -51,6 +51,24 @@ You want `"db": true`, and `providers.claude: true`. A 503 with a plain-English
 `warn` means the worker isn't running — that is the check doing its job, not a
 bug. `"ok": true` with `"db": false` means `DATABASE_URL` didn't attach.
 
+### "cannot have more than one active free tier database"
+
+Render allows one free Postgres per account. Three ways out, best first:
+
+1. **A free Postgres somewhere else.** [Neon](https://neon.tech) or Supabase,
+   free, takes two minutes. Paste its connection string as `DATABASE_URL` on
+   `shelf-api` (and the worker, if you kept it) and delete `shelf-db` from the
+   blueprint. Fully isolated, nothing else can be affected, no extra config.
+2. **Share the database you already have** — but you MUST set `DB_SCHEMA=shelf`
+   as well. Sharing it without that is destructive and silent: shelf's first
+   migration is `001_init.sql` like nearly everybody's, so if the database
+   already records that name shelf skips every migration and boots green with
+   no tables; and shelf's `users` table would quietly become the other app's.
+   With `DB_SCHEMA=shelf` everything shelf owns sits in its own namespace.
+   If you forget, the server refuses to start and tells you why. See
+   OPERATIONS §4a.
+3. **Upgrade** the Render database ($7/mo) and keep them separate.
+
 ### Free tier: two things to know
 
 **There are no background workers on the free tier.** `render.yaml` declares

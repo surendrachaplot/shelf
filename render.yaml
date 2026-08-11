@@ -32,6 +32,11 @@ services:
       # - { key: SHELF_WEB_BASE, sync: false }
       # Set to 1 if you deleted the worker service (free tier). See below.
       - { key: WORKER_IN_PROCESS, value: "0" }
+      # Only when DATABASE_URL points at a database another project owns —
+      # Render allows one free Postgres per account, so this is common. Without
+      # it shelf would collide on `schema_migrations` and `users`, and the
+      # server refuses to boot rather than let that happen. See OPERATIONS §4a.
+      # - { key: DB_SCHEMA, value: "shelf" }
 
   # PAID INSTANCE REQUIRED. Render's free tier has no background workers.
   #

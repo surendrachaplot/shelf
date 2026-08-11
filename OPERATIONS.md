@@ -150,6 +150,34 @@ arriving in a new shape.
 billed request per result, and eight of those per keystroke is how a search box
 becomes a line item. The typographic jacket is the designed answer.
 
+## 4a. Sharing a database with another project
+
+Render allows exactly **one free Postgres per account**, so the realistic setup
+is shelf living in a database that already belongs to something else. Doing
+that naively is destructive in a way that looks like success:
+
+- shelf's first migration is called `001_init.sql`. So is nearly everybody's.
+  If the database already records that name, shelf **skips every migration**,
+  creates no tables, and boots with a green health check.
+- shelf has a `users` table. So does almost every app. `create table if not
+  exists` then quietly no-ops and shelf starts writing rows into the other
+  application's users.
+
+**Set `DB_SCHEMA=shelf`.** Every shelf table — `schema_migrations` included —
+then lives in its own namespace, and the connection's `search_path` is that
+schema ALONE. Not `shelf,public`: including public would let shelf see the
+other application's `users` again, which is the entire thing being prevented.
+shelf uses no extensions, so it needs nothing from `public`.
+
+**And if you forget, it refuses to boot.** `guardSharedDatabase()` looks for a
+`001_init.sql` that shelf did not write and stops with a message naming the
+fix. A server that will not start is a far better outcome than one that starts
+and writes into somebody else's rows.
+
+Verified against a stand-in for a populated foreign database: without
+`DB_SCHEMA` it refuses; with it, all 62 end-to-end checks pass and the other
+application's users, events and migration rows are byte-for-byte untouched.
+
 ## 4d. The end-to-end suite
 
 ```bash
