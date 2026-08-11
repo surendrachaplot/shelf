@@ -15,6 +15,11 @@ const swap = {
     // silently reaches the real network in a harness that has none.
     b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?api(\.[tj]s)?$/ }, () => ({ path: here("./stubs.js") }));
     b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?tokenStore(\.[tj]s)?$/ }, () => ({ path: here("./tokenStub.js") }));
+    // SafeAreaView's insets are `env(safe-area-inset-*)`, which is ZERO in a
+    // browser — which is exactly how the header shipped underneath the status
+    // bar with a clean contact sheet behind it. Swapped for a stub carrying an
+    // iPhone's real numbers.
+    b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?Screen(\.[tj]sx?)?$/ }, () => ({ path: here("./screenStub.jsx") }));
     b.onResolve({ filter: /assets-registry/ }, () => ({ path: here("./assetStub.js") }));
   },
 };

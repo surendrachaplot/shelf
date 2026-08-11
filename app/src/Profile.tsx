@@ -21,6 +21,7 @@ import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { scrollKeyboardProps } from "./KeyboardSafe";
+import { Screen } from "./Screen";
 import {
   BOARD, labelOf, lists, listOn, LIST_ORDER, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./theme";
@@ -104,7 +105,7 @@ export function Profile({ onClose, onShare }: {
 
   if (loadError) {
     return (
-      <View style={s.screen}>
+      <Screen style={s.screen}>
         <Header onClose={onClose} s={s} title="Your card" />
         <View style={s.inset}>
           <Text style={s.h2}>Couldn't reach your card</Text>
@@ -113,15 +114,15 @@ export function Profile({ onClose, onShare }: {
             <Text style={s.micro}>Try again →</Text>
           </Press>
         </View>
-      </View>
+      </Screen>
     );
   }
   if (!state) {
     return (
-      <View style={s.screen}>
+      <Screen style={s.screen}>
         <Header onClose={onClose} s={s} title="Your card" />
         <ActivityIndicator color={c.inkFaint} style={s.spin} />
-      </View>
+      </Screen>
     );
   }
 
@@ -129,7 +130,7 @@ export function Profile({ onClose, onShare }: {
   const total = Object.values(state.counts).reduce((n, x) => n + x, 0);
 
   return (
-    <View style={s.screen}>
+    <Screen style={s.screen}>
       <Header onClose={onClose} s={s} title="Your card" />
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
         <View style={s.rule} />
@@ -268,7 +269,7 @@ export function Profile({ onClose, onShare }: {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 

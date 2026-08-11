@@ -36,7 +36,7 @@ import * as E from "./src/exlibris.js";
 const SOURCES = [
   "App.tsx", "ShareExtension.tsx",
   "src/Add.tsx", "src/Profile.tsx", "src/Received.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
-  "src/KeyboardSafe.tsx",
+  "src/KeyboardSafe.tsx", "src/Screen.tsx",
 ];
 
 // ─── static rules ────────────────────────────────────────────────────────────
@@ -171,6 +171,19 @@ const staticRules = [
       if (/KeyboardSafe|scrollKeyboardProps|KeyboardAvoidingView|automaticallyAdjustKeyboardInsets/.test(src)) return [];
       const n = src.slice(0, src.search(/<TextInput\b/)).split("\n").length;
       return [{ n, msg: "this file has a TextInput and no keyboard avoidance — the field can end up under the keyboard" }];
+    },
+  },
+  {
+    id: "safe-area",
+    why: "§0.2 — THE STATUS BAR IS NOT YOURS. A full-bleed root at y=0 starts at the top of the DISPLAY, so the header lands under the clock and the battery lands on whatever is top-right. This shipped: the wordmark sat on '15:48' and the signal bars sat on the Add button. It survived every check here because react-native-web renders SafeAreaView as a div whose env(safe-area-inset-*) are all zero in a headless browser — twenty-nine clean screenshots of a broken layout. A file defining a full-screen root (screen/panel/detail/boot) must go through Screen or KeyboardSafe.",
+    check: (src) => {
+      const re = /^ {2}(?:screen|panel|detail|boot):/m;
+      if (!re.test(src)) return [];
+      if (/\bScreen\b|\bKeyboardSafe\b/.test(src)) return [];
+      return [{
+        n: src.slice(0, src.search(re)).split("\n").length,
+        msg: "full-screen root with no safe-area inset — its content starts under the status bar",
+      }];
     },
   },
   {
@@ -580,6 +593,10 @@ const STATIC_PROBES = {
   "keyboard-safe": {
     bad: `const A = () => <View><TextInput value={x} /></View>;`,
     good: `const A = () => <KeyboardSafe><TextInput value={x} /></KeyboardSafe>;`,
+  },
+  "safe-area": {
+    bad: `const A = () => <View style={s.screen} />;\nconst s = {\n  screen: {\n    flex: 1,\n  },\n};`,
+    good: `const A = () => <Screen style={s.screen} />;\nconst s = {\n  screen: {\n    flex: 1,\n  },\n};`,
   },
   "rows-wrap": { bad: `const s = {\n  actions: {\n    flexDirection: "row",\n  },\n};`, good: `const s = {\n  actions: {\n    flexDirection: "row", flexWrap: "wrap",\n  },\n};` },
 };

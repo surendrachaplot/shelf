@@ -40,6 +40,7 @@ import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
 import { KeyboardSafe, scrollKeyboardProps } from "./src/KeyboardSafe";
+import { Screen } from "./src/Screen";
 import {
   BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
@@ -55,7 +56,9 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 
 // One screen at a time, held in one variable. A router for four destinations
 // would be a dependency that hides where you are; this is four words.
-type Screen = "case" | "add" | "profile" | "received";
+// Named Route, not Screen: `Screen` is the safe-area root component now, and
+// a type and a value cannot share a name.
+type Route = "case" | "add" | "profile" | "received";
 type Sharing = { kind: ShareKind; target: string | null; list: string; title: string };
 
 export default function App() {
@@ -71,7 +74,7 @@ export default function App() {
   const [open, setOpen] = useState<Item | null>(null);
   const [tab, setTab] = useState<TabName>("books");
   const [viewportH, setViewportH] = useState(0);
-  const [screen, setScreen] = useState<Screen>("case");
+  const [screen, setScreen] = useState<Route>("case");
   const [sharing, setSharing] = useState<Sharing | null>(null);
   const [seed, setSeed] = useState<string>("shelf");
   const [waiting, setWaiting] = useState(0);
@@ -186,7 +189,7 @@ export default function App() {
     }
   }
 
-  if (!ready) return <View style={s.boot}><ActivityIndicator color={c.ink} /></View>;
+  if (!ready) return <Screen style={s.boot}><ActivityIndicator color={c.ink} /></Screen>;
   if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
   const total = Object.values(shelves).reduce((n, xs) => n + (xs?.length ?? 0), 0);
@@ -195,7 +198,12 @@ export default function App() {
   const on = listOn[tab] ?? c.onList;
 
   return (
+    // The case is inset; the overlays below are NOT children of it. An
+    // absolutely-positioned overlay measures from the top of the display, so
+    // if it sat inside this it would be inset once here and again by its own
+    // root — the notch paid for twice.
     <View style={s.screen}>
+      <Screen>
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>shelf</Text>
         <View style={s.headTools}>
@@ -308,6 +316,7 @@ export default function App() {
 
         {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
       </ScrollView>
+      </Screen>
 
       {open ? (
         <Detail
@@ -617,7 +626,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
   const on = listOn[list] ?? c.onList;
   const ghost = placeholderOn(list, dark ? D.dark : D.light);
   return (
-    <View style={[s.detail, { backgroundColor: fill }]}>
+    <Screen style={[s.detail, { backgroundColor: fill }] as never}>
       <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
         <View>
           <View style={s.detailHead}>
@@ -729,7 +738,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 

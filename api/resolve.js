@@ -105,9 +105,21 @@ export function extractInstagram(html) {
   if (!html) return out;
 
   // 1. The GraphQL blob the embed page ships with. Complete and unescaped.
+  //
+  // FOUR shapes, because Meta has shipped four. The old `edge_media_to_caption`
+  // edges array, the bare `"caption":"…"` string, and — the one that broke this
+  // in production — `"caption":{"pk":…,"text":"…"}`, where the value is an
+  // OBJECT and a parser looking for a string finds nothing and reports the page
+  // as unreadable. The nested form is tried before the bare one so it cannot be
+  // shadowed by a `"caption"` that happens to appear earlier as a string.
   out.caption =
     jsonStringAfter(html, /"edge_media_to_caption":\s*\{\s*"edges":\s*\[\s*\{\s*"node":\s*\{\s*"text"/) ||
-    jsonStringAfter(html, /"caption"/) || "";
+    jsonStringAfter(html, /"caption"\s*:\s*\{[^{}]{0,400}?"text"/) ||
+    jsonStringAfter(html, /"caption"/) ||
+    // Last of the JSON forms: the alt text Meta generates. Worse than a caption
+    // and far better than nothing — "Photo by X on August 01, 2026. May be an
+    // image of pasta." still tells the classifier what it is looking at.
+    jsonStringAfter(html, /"accessibility_caption"/) || "";
   out.via = out.caption ? "embed-json" : null;
 
   // 2. The rendered caption block on /embed/captioned/.
@@ -309,6 +321,41 @@ export async function resolveShare(sourceUrl) {
  * "2.1kB and blocked" versus "310kB and a caption", and dumping Instagram's
  * HTML through an API response helps nobody.
  */
+/**
+ * What KIND of page came back. A 200 of 600kB with nothing extractable has at
+ * least three explanations — a login shell, a JS-only app shell, or real markup
+ * whose keys have moved — and they are three different fixes. Counting known
+ * markers is how you tell them apart without pasting a 600kB page around.
+ */
+const MARKERS = {
+  og_description: /<meta[^>]+og:description/i,
+  og_image: /<meta[^>]+og:image/i,
+  og_title: /<meta[^>]+og:title/i,
+  edge_media_to_caption: /"edge_media_to_caption"/,
+  caption_key: /"caption"\s*:/,
+  caption_text_object: /"caption"\s*:\s*\{/,
+  xdt_web_info: /xdt_api__v1__media__shortcode__web_info/,
+  polaris_post: /PolarisPostRoot|PolarisPost\b/,
+  caption_class: /class="[^"]*\bCaption\b/,
+  login_redirect: /accounts\/login/,
+  login_form: /loginForm|LoginAndSignupPage/,
+  challenge: /challenge-platform|cf-mitigated/i,
+  age_gate: /age_gate|restricted_by_age/i,
+  json_script: /<script[^>]+type="application\/json"/i,
+};
+
+/**
+ * A few hundred characters around the first occurrence of a key, so a moved
+ * field can be READ rather than guessed at. Deliberately short and deliberately
+ * stripped of newlines: this is evidence, not a page dump.
+ */
+function excerpt(html, re, span = 220) {
+  const m = re.exec(html);
+  if (!m) return null;
+  const at = Math.max(0, m.index - 40);
+  return html.slice(at, at + span).replace(/\s+/g, " ");
+}
+
 export async function probeShare(sourceUrl) {
   const ig = parseInstagramUrl(sourceUrl);
   const steps = [];
@@ -317,6 +364,8 @@ export async function probeShare(sourceUrl) {
     const t0 = Date.now();
     const r = await tryFetch(url);
     const got = extract(r.html);
+    const markers = {};
+    for (const [k, re] of Object.entries(MARKERS)) if (re.test(r.html)) markers[k] = true;
     steps.push({
       step, url, ms: Date.now() - t0,
       http: r.status, bytes: r.bytes, blocked: !!r.blocked, error: r.error ?? null,
@@ -324,6 +373,16 @@ export async function probeShare(sourceUrl) {
       via: got.via ?? null,
       image: !!got.imageUrl,
       author: got.authorHandle ?? null,
+      // Only the markers that are PRESENT, so the shape of the object is the
+      // finding rather than a wall of `false`.
+      markers,
+      // The two places a caption could be hiding, verbatim, when we failed to
+      // read one. Not sent when extraction worked — there is nothing to debug.
+      samples: (got.caption || "").length ? undefined : {
+        caption: excerpt(r.html, /"caption"\s*:/),
+        og_description: excerpt(r.html, /<meta[^>]+og:description/i),
+        title_tag: excerpt(r.html, /<title[^>]*>/i, 160),
+      },
     });
     return got;
   };
@@ -341,17 +400,29 @@ export async function probeShare(sourceUrl) {
   }
 
   const best = steps.filter((x) => x.caption_chars > 0).sort((a, b) => b.caption_chars - a.caption_chars)[0] ?? null;
+  const seen = (k) => steps.some((x) => x.markers?.[k]);
+
+  // Ordered most-specific first. A 200 that is really a login shell is the
+  // case the original bot-wall detector missed entirely — it looks for 403s
+  // and Cloudflare text, and Meta serves neither.
+  const verdict = best
+    ? `readable — ${best.step} returned ${best.caption_chars} characters via ${best.via}`
+    : steps.some((x) => x.blocked)
+      ? "BLOCKED — a wall, not a page. Datacentre IPs get this far more than residential ones, which is why this must be run from the server."
+      : seen("caption_text_object")
+        ? "MARKUP MOVED — the caption is there but nested (\"caption\":{…}), and the extractor reads only a bare string. Fixable here; see samples.caption."
+        : seen("edge_media_to_caption") || seen("caption_key") || seen("og_description")
+          ? "MARKUP MOVED — something caption-shaped is in the page and the extractor missed it. See `samples`."
+          : (seen("login_form") || seen("login_redirect")) && !seen("og_title")
+            ? "LOGIN SHELL — 200 OK, but the page is the logged-out app shell with no metadata in it. No parser fixes this: it needs the paid resolver (IG_RESOLVER_KEY) or the screenshot path."
+            : "no caption — the page fetched and contains nothing caption-shaped at all. Either a reel with no caption, or a shell rendered entirely by JavaScript.";
+
   return {
     url: sourceUrl,
     kind: ig ? "instagram" : "web",
     shortcode: ig?.shortcode ?? null,
     steps,
-    // The one-line answer. Everything above is the working.
-    verdict: best
-      ? `readable — ${best.step} returned ${best.caption_chars} characters via ${best.via}`
-      : steps.some((x) => x.blocked)
-        ? "BLOCKED — Instagram served this server a wall, not a page. A datacentre IP is the usual reason; a residential one often works, which is why this must be run from the server and not a laptop."
-        : "no caption — the pages fetched but nothing we know how to read was in them (a markup change, or a reel with no caption at all)",
+    verdict,   // the one-line answer; everything above is the working
   };
 }
 
@@ -379,6 +450,27 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(a.imageUrl === "https://cdn/x.jpg", "json image", a.imageUrl);
   ok(a.outboundUrls[0] === "https://example.com/dosa", "outbound url", a.outboundUrls);
   ok(a.via === "embed-json", "via json", a.via);
+
+  // THE SHAPE THAT BROKE IT IN PRODUCTION. `"caption"` is an object, not a
+  // string — a parser reading only bare strings finds nothing, and a 600kB page
+  // full of caption reports as "no caption". Verified against a live reel:
+  // HTTP 200, 605,771 bytes, zero characters extracted.
+  const nestedFix = `<html><script>{"xdt_api__v1__media__shortcode__web_info":{"items":[{"code":"AbC",
+    "user":{"username":"filmbro"},
+    "caption":{"pk":"18001","user_id":42,"text":"Sinners \\u2014 best thing I have seen this year."},
+    "image_versions2":{}}]}}</script></html>`;
+  const nested = extractInstagram(nestedFix);
+  ok(nested.caption === "Sinners — best thing I have seen this year.", "nested caption object is read", JSON.stringify(nested.caption));
+  ok(nested.authorHandle === "filmbro", "nested author", nested.authorHandle);
+
+  // The edges array still wins when both are present — it is the complete one.
+  const bothFix = `<html><script>{"caption":{"text":"short"},
+    "edge_media_to_caption":{"edges":[{"node":{"text":"the full caption"}}]}}</script></html>`;
+  ok(extractInstagram(bothFix).caption === "the full caption", "edges array beats the nested object");
+
+  // Meta's generated alt text: worse than a caption, far better than nothing.
+  const altFix = `<html><script>{"accessibility_caption":"Photo by suren on August 01, 2026. May be an image of pasta."}</script></html>`;
+  ok(/May be an image of pasta/.test(extractInstagram(altFix).caption), "falls back to accessibility_caption");
 
   const htmlFix = `<html><meta property="og:image" content="https://cdn/y.jpg">
     <div class="Caption"><a class="CaptionUsername" href="/x/">bookclub</a>

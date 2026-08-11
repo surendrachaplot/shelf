@@ -22,6 +22,7 @@
 // taps Save, nothing happens, and they tap it again.
 import React from "react";
 import { KeyboardAvoidingView, Platform, type ViewStyle } from "react-native";
+import { Screen } from "./Screen";
 
 export function KeyboardSafe({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return (
@@ -32,7 +33,11 @@ export function KeyboardSafe({ children, style }: { children: React.ReactNode; s
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={0}
     >
-      {children}
+      {/* INSIDE the avoider, not around it: the caller's background colour is
+          on the avoider, so the safe area is painted rather than left as a
+          white bar above a coloured panel. Every screen reaching for
+          KeyboardSafe gets the notch handled without having to ask. */}
+      <Screen>{children}</Screen>
     </KeyboardAvoidingView>
   );
 }

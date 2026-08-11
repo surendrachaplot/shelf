@@ -13,6 +13,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-nat
 import { actOnSend, listReceived, type Received as Delivery } from "./api";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
+import { Screen } from "./Screen";
 import { Reveal } from "./Reveal";
 import { labelOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
@@ -51,7 +52,7 @@ export function Received({ onClose, onAccepted }: { onClose: () => void; onAccep
       : "one thing";
 
   return (
-    <View style={s.screen}>
+    <Screen style={s.screen}>
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>Sent to you</Text>
         <Press onPress={onClose} style={s.close} size={TOUCH_MIN} label="Close">
@@ -104,7 +105,7 @@ export function Received({ onClose, onAccepted }: { onClose: () => void; onAccep
           </Reveal>
         ))}
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
