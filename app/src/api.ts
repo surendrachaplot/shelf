@@ -108,8 +108,16 @@ export type Received = {
   kind: ShareKind | null; target: string | null;
 };
 
-/** Where a share code becomes something you can paste into a message. */
-export const SHARE_BASE = process.env.EXPO_PUBLIC_SHELF_WEB ?? "https://shelf.club";
+/**
+ * Where a share code becomes something you can paste into a message.
+ *
+ * DEFAULTS TO THE API, because the API is what serves /s/<code> — the public
+ * pages and the JSON come out of the same process. A separate default (it used
+ * to be a domain nobody owns yet) means every link the app hands out is dead
+ * until somebody remembers to set a second variable, and you find out when a
+ * friend tells you the link you sent them 404s.
+ */
+export const SHARE_BASE = (process.env.EXPO_PUBLIC_SHELF_WEB ?? API_BASE).replace(/\/+$/, "");
 export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
 export const profileUrl = (handle: string) => `${SHARE_BASE}/@${handle}`;
 

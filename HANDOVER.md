@@ -23,6 +23,11 @@ somebody. One repo, two folders: `api/` (plain `node:http` + Postgres) and
 | The public pages, looked at | `node app/preview/shoot-public.mjs` → 10 PNGs, 320 + 390, both schemes, horizontal overflow MEASURED |
 | Tap targets | `node app/preview/measure.mjs` → **201 controls**, smallest effective 52pt, across every screen including the four that only open on a tap |
 
+## Getting it on a phone
+
+`ON-YOUR-PHONE.md` — the runbook. Every step in it needs an Apple account, a
+Render account or a real network, which is why none of it has run.
+
 ## Open, with the check that would close it
 
 - **Nothing has ever run on a device.** No iOS toolchain here. iOS fonts, native
