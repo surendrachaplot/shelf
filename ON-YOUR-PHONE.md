@@ -194,6 +194,40 @@ The likely three, in order:
 
 ---
 
+## 3b. Make it update itself
+
+Once the `preview` build is on your phone, JavaScript changes reach it over the
+air — no rebuild, no reinstall. Two ways:
+
+**Automatically, on every push.** `.github/workflows/eas-update.yml` publishes
+whenever `app/**` changes on `main`. It needs one secret, once:
+
+1. https://expo.dev/settings/access-tokens → create a token
+2. GitHub → the repo → Settings → Secrets and variables → Actions → New
+   repository secret → name it `EXPO_TOKEN`, paste the token
+
+**By hand**, from `app/`: `npm run push`.
+
+The app picks up an update on next launch. To force one immediately, quit it
+from the app switcher and reopen.
+
+### What an update CANNOT carry
+
+EAS Update ships JavaScript and assets. Native code needs a build. That covers
+`app.json`, anything in `plugins/`, dependencies, `eas.json` and
+`metro.config.js` — and the failure is nasty: publishing anyway succeeds, the
+app takes the update, and the change is silently absent.
+
+So `native-changed.mjs` classifies every push, and the workflow **refuses to
+publish** rather than shipping a half-change. When it stops with that error, run
+`npm run build:preview` and install the new build.
+
+One more: `runtimeVersion` is tied to the app version in `app.json`. Bump the
+version and existing installs stop receiving updates — deliberately, because a
+version bump usually means native changed too.
+
+---
+
 ## 4. Pair the phone (2 min)
 
 The app opens on a pairing screen. Mint a code:

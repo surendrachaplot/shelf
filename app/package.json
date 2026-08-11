@@ -16,7 +16,9 @@
     "e2e": "node ../api/e2e.mjs",
     "eas": "npx --yes eas-cli@latest",
     "android": "expo run:android",
-    "preflight": "node preflight.mjs"
+    "preflight": "node preflight.mjs",
+    "push": "node native-changed.mjs HEAD~1..HEAD && npx --yes eas-cli@latest update --branch preview --auto",
+    "native-changed": "node native-changed.mjs"
   },
   "dependencies": {
     "expo": "~52.0.0",

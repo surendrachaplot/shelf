@@ -1,0 +1,70 @@
+# Push to main → the app on the phone updates itself.
+#
+# EAS Update ships JavaScript and assets to an already-installed build. It
+# CANNOT ship native code, so this workflow checks first and refuses to publish
+# when a change needs a rebuild. That refusal is the point: publishing anyway
+# succeeds, the app takes the update, and the native change is silently absent —
+# which is far harder to diagnose than a red tick here.
+name: Update the app
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**"]
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # native-changed.mjs diffs this push against what came before it.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # `ci`, not `install` — the same strictness EAS itself uses, so a
+      # lockfile that has drifted fails here instead of on a build machine.
+      - run: npm ci
+
+      # Everything the local build gate checks: the expo-share-extension major
+      # against the Expo SDK, the Swift import that has failed three builds,
+      # lockfile sync, config-plugin order, the entry-point names, and whether
+      # eas.json and api.ts agree on a server.
+      - run: npm run preflight
+
+      - name: Can this travel over the air?
+        id: native
+        run: |
+          set +e
+          node native-changed.mjs "${{ github.event.before }}..${{ github.sha }}"
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Nothing to publish
+        if: steps.native.outputs.code == '3'
+        run: echo "No app changes in this push."
+
+      - name: Refuse to publish a native change as an update
+        if: steps.native.outputs.code == '1'
+        run: |
+          echo "::error::This push changes native code. Run \`npm run build:preview\` and install the new build — an over-the-air update cannot carry it."
+          exit 1
+
+      - uses: expo/expo-github-action@v8
+        if: steps.native.outputs.code == '0'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish
+        if: steps.native.outputs.code == '0'
+        run: eas update --branch preview --message "${{ github.event.head_commit.message }}"
