@@ -46,6 +46,7 @@ import {
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
 import * as D from "./src/design.js";
+import { factsFor } from "./src/facts.js";
 
 // The pile is a tab like any other, not a section bolted above the shelves.
 // It is where a thing lives before it stands anywhere, which is a place — and
@@ -653,6 +654,12 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
           />
         ) : null}
 
+        {/* What the catalogue knows. ABOVE your note and below the artwork:
+            the facts are why you can decide something about this thing, and
+            the note is why you kept it — they are different registers and the
+            order says which is yours. */}
+        <Facts item={item} on={on} fill={fill} s={s} />
+
         <View>
           {/* YOUR note. The thing a catalogue cannot give you and the reason a
               shelf you share is a part of yourself rather than a list of
@@ -739,6 +746,54 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
         </View>
       </ScrollView>
     </Screen>
+  );
+}
+
+/**
+ * The catalogue's half of an entry: a lede, a short table, and the links that
+ * do something — a trailer, a map, the recipe itself.
+ *
+ * Renders NOTHING when there is nothing known. A "Runtime —" row reads as
+ * broken data rather than absent data, and an empty rule above an empty table
+ * is a design apologising for itself.
+ */
+function Facts({ item, on, fill, s }: {
+  item: Item; on: string; fill: string; s: ReturnType<typeof styles>;
+}) {
+  const { lede, rows, links } = factsFor(item);
+  if (!lede && !rows.length && !links.length) return null;
+
+  return (
+    <View style={s.facts}>
+      <View style={[s.detailRule, { backgroundColor: on }]} />
+      {lede ? <Text style={[s.factsLede, { color: on }]}>{lede}</Text> : null}
+
+      {rows.map((r) => (
+        // Label left, value right, both on one baseline. The label column is
+        // fixed so the values line up down the panel — a table that does not
+        // align is a list of sentences.
+        <View key={r.label} style={s.factRow}>
+          <Text style={[s.factLabel, { color: on }]}>{r.label}</Text>
+          <Text style={[s.factValue, { color: on }]}>{r.value}</Text>
+        </View>
+      ))}
+
+      {links.length ? (
+        <View style={s.factLinks}>
+          {links.map((l) => (
+            <Press
+              key={l.label}
+              onPress={() => Linking.openURL(l.url)}
+              style={[s.detailBtnGhost, { borderColor: on }]}
+              size={TOUCH_MIN}
+              label={l.label}
+            >
+              <Text style={[s.detailBtnLabel, { color: on }]}>{l.label} →</Text>
+            </Press>
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -974,6 +1029,17 @@ const styles = (c: Palette) => StyleSheet.create({
   detailMoveSlot: { flex: 1 },
   detailMoveTab: { minHeight: TOUCH_MIN, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "transparent" },
   detailMoveNum: { ...t.micro },
+  // The catalogue block. `facts` owns its top margin so the rule sits clear of
+  // the artwork above it rather than touching it.
+  facts: { marginTop: sp.xl },
+  factsLede: { ...t.body, marginTop: sp.lg, opacity: 1 },
+  factRow: { flexDirection: "row", alignItems: "baseline", gap: sp.md, marginTop: sp.md },
+  // Fixed label column so every value starts on the same x. A ragged left edge
+  // on the values turns a table back into prose.
+  factLabel: { ...t.micro, width: 104 },
+  factValue: { ...t.bodyMed, flex: 1 },
+  factLinks: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.lg },
+
   detailActions: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.xl },
   detailBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, alignItems: "center", justifyContent: "center" },
   detailBtnGhost: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, alignItems: "center", justifyContent: "center", borderWidth: 2 },

@@ -34,6 +34,17 @@ const SHOTS = [
   // By LABEL, not by text: a jacket showing artwork has no text node at all,
   // which is exactly why getByText timed out here the first time.
   { name: "app-detail-art-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Piranesi, Susanna Clarke" },
+  // The catalogue block, per list. A trailer link, a runtime, an opening line,
+  // a set of opening hours — all of it renders empty unless the fixture has
+  // it, which is how a whole panel ships unlooked-at.
+  { name: "app-facts-movie-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Movies,", "Sinners"], scroll: 520 },
+  { name: "app-facts-movie-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Movies,", "Sinners"], scroll: 520 },
+  // Scrolled past the table to the LINKS — a trailer button nobody has looked
+  // at is the whole feature, unverified.
+  { name: "app-facts-links-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Movies,", "Sinners"], scroll: 900 },
+  { name: "app-facts-book-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Piranesi, Susanna Clarke", scroll: 520 },
+  { name: "app-facts-place-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Restaurants,", "St. John, Peckham"], scroll: 420 },
+  { name: "app-facts-recipe-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Recipes,", "Lemon dal"], scroll: 420 },
   // The three new destinations, plus the two states that only exist on a
   // first run or with a provider switched off — neither is reachable by
   // poking a live server, and both have real copy that needs looking at.
@@ -89,24 +100,35 @@ for (const s of SHOTS) {
   });
   await page.goto(URLBASE + s.q);
   await page.waitForTimeout(700);        // let the entrance stagger finish
-  if (s.scroll) {
-    // RNW's ScrollView is an overflow div, not the window — scrolling the
-    // window here silently does nothing and you screenshot the top twice.
-    await page.evaluate((y) => {
-      const el = [...document.querySelectorAll("div")].find((d) => d.scrollHeight > d.clientHeight + 40);
-      if (!el) throw new Error("no scrollable container found");
-      el.scrollTop = y;
-    }, s.scroll);
-    await page.waitForTimeout(200);
-  }
-  // Both, in order: reaching a jacket that is not on the default shelf takes
-  // two taps — pick the list, then pick the thing.
-  for (const step of [s.clickLabel && ["label", s.clickLabel], s.click && ["text", s.click]].filter(Boolean)) {
+
+  // TAPS FIRST, THEN SCROLL. Scrolling before opening a panel scrolls whatever
+  // happens to be on screen — which is how three "scrolled" screenshots of the
+  // facts block turned out to be screenshots of the shelf.
+  //
+  // `clickLabel` takes a string or a LIST of labels, because reaching a jacket
+  // that shows artwork needs two label clicks: getByText cannot find it — a
+  // cover with a poster on it has no text node at all.
+  const labelSteps = (Array.isArray(s.clickLabel) ? s.clickLabel : [s.clickLabel])
+    .filter(Boolean).map((l) => ["label", l]);
+  for (const step of [...labelSteps, ...(s.click ? [["text", s.click]] : [])]) {
     const target = step[0] === "label"
       ? page.getByLabel(step[1], { exact: false })
       : page.getByText(step[1], { exact: false });
     await target.first().click();
     await page.waitForTimeout(600);      // and the transition after the tap
+  }
+
+  if (s.scroll) {
+    // A REAL WHEEL EVENT over the middle of the screen, not a scrollTop poke.
+    // Two attempts at guessing the container both failed silently: the first
+    // scrollable div is the shelf UNDERNEATH an open detail panel, and setting
+    // scrollTop on it "succeeded" while the panel on top never moved — so
+    // every scrolled screenshot was a screenshot of the top, and I looked at
+    // two of them before noticing. A wheel event goes to whatever is actually
+    // under the cursor, which is the thing a thumb would move.
+    await page.mouse.move(s.w / 2, s.h / 2);
+    await page.mouse.wheel(0, s.scroll);
+    await page.waitForTimeout(400);
   }
   for (const text of s.type ?? []) {
     await page.keyboard.type(text, { delay: 12 });

@@ -35,6 +35,29 @@ const art = (bg, fg, txt) => "data:image/svg+xml;base64," + btoa(
   `<text x="100" y="250" font-family="Helvetica" font-size="22" font-weight="bold" fill="${fg}" text-anchor="middle">${txt}</text></svg>`);
 const ART = { Piranesi: art("#101010", "#F5C542", "PIRANESI"), Sinners: art("#2A0A0A", "#FF6B4A", "SINNERS"), Babel: art("#0E2A4A", "#FFFFFF", "BABEL") };
 
+// Rich canonical data, so the facts block is actually LOOKED AT rather than
+// assumed. Without a fixture carrying a trailer and a runtime, that whole
+// panel renders empty in every screenshot and ships unseen.
+const RICH = {
+  Sinners: { tmdb_id: 7, media_type: "movie", year: "2025", director: "Ryan Coogler",
+    runtime_min: 137, genres: ["Horror", "Thriller"], rating: 7.6,
+    overview: "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    cast: ["Michael B. Jordan", "Hailee Steinfeld", "Delroy Lindo", "Jack O'Connell"],
+    trailer_url: "https://www.youtube.com/watch?v=x", watch_url: "https://www.themoviedb.org/movie/7/watch",
+    streaming: ["Mubi"], region: "GB" },
+  Piranesi: { openlibrary_key: "/works/OL1W", isbn: "9781635575637", year: 2020,
+    author: "Susanna Clarke", pages: 245, subjects: ["Fantasy", "Labyrinths"], rating: 4.3,
+    first_sentence: "When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.",
+    read_url: "https://openlibrary.org/works/OL1W" },
+  "St. John": { osm_type: "node", osm_id: 42, address: "26 St John Street, Farringdon, London EC1M 4AY",
+    area: "Farringdon", lat: 51.52, lng: -0.1, website: "https://stjohnrestaurant.com",
+    phone: "+44 20 7251 0848", opening_hours: "Mo-Sa 12:00-23:00", cuisine: ["british"],
+    map_url: "geo:51.52,-0.1?q=St.%20John", osm_url: "https://www.openstreetmap.org/node/42",
+    source: "openstreetmap" },
+  "Lemon dal": { recipe_url: "https://food.example/dal", ingredients: ["1 cup toor dal", "2 lemons", "curry leaves"],
+    total_time: "45 min", serves: "4", steps: 6, author: "Meera Sodha", calories: "320 kcal" },
+};
+
 const SHELVED = {
   books: ["Piranesi", "Babel", "The Dispossessed", "Solenoid", "Checkout 19"],
   restaurants: ["Ganapati", "Kiln", "St. John", "Mangal II", "Brutto", "Toklas"],
@@ -45,8 +68,14 @@ export const fetchList = async (l) => {
   await wait(60);
   return (SHELVED[l] ?? []).map((title, i) => ({
     id: `${l}-${i}`, list: l, status: "filed", title,
-    subtitle: l === "books" ? "Susanna Clarke" : l === "restaurants" ? "Peckham" : "",
-    note: "", image_url: ART[title] ?? null, canonical: {}, confidence: 0.9, source_url: "x", enriched: true, created_at: "",
+    // The subtitle the enricher would really produce: a director and a year,
+    // not an empty string. A fixture thinner than production hides exactly the
+    // wrapping problems the harness exists to find.
+    subtitle: (RICH[title] && (l === "movies"
+      ? [RICH[title].director, RICH[title].year].filter(Boolean).join(" · ")
+      : l === "recipes" ? [RICH[title].total_time, RICH[title].serves].filter(Boolean).join(" · ") : null))
+      || (l === "books" ? "Susanna Clarke" : l === "restaurants" ? "Peckham" : ""),
+    note: "", image_url: ART[title] ?? null, canonical: RICH[title] ?? {}, confidence: 0.9, source_url: "x", enriched: true, created_at: "",
   }));
 };
 export const updateItem = async () => ({ item: {} });
