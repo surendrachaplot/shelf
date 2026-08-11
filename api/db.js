@@ -67,10 +67,16 @@ async function getPool() {
     ssl: isLocal(process.env.DATABASE_URL) ? false : { rejectUnauthorized: false },
     max: 8,
     idleTimeoutMillis: 30_000,
+    // Only when a non-default schema is actually asked for. `options` is a
+    // startup parameter, and connection poolers in transaction mode —
+    // including the PgBouncer behind Neon's `-pooler` endpoint — reject
+    // startup parameters they were not configured to allow. Sending
+    // `-c search_path=public` would be a no-op that could refuse to connect.
+    //
     // Deliberately NOT "schema,public": including public would let shelf see
     // the other application's `users` again, which is the whole thing this is
     // preventing. shelf uses no extensions, so it needs nothing from public.
-    options: `-c search_path=${DB_SCHEMA}`,
+    ...(DB_SCHEMA === "public" ? {} : { options: `-c search_path=${DB_SCHEMA}` }),
   });
   return pool;
 }

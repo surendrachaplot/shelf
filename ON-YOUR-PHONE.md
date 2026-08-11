@@ -56,9 +56,18 @@ bug. `"ok": true` with `"db": false` means `DATABASE_URL` didn't attach.
 Render allows one free Postgres per account. Three ways out, best first:
 
 1. **A free Postgres somewhere else.** [Neon](https://neon.tech) or Supabase,
-   free, takes two minutes. Paste its connection string as `DATABASE_URL` on
-   `shelf-api` (and the worker, if you kept it) and delete `shelf-db` from the
-   blueprint. Fully isolated, nothing else can be affected, no extra config.
+   free, takes two minutes. Delete `shelf-db` from the blueprint and paste the
+   connection string as `DATABASE_URL` on `shelf-api` (and the worker, if you
+   kept it). Fully isolated, nothing else can be affected.
+   - **Leave `DB_SCHEMA` unset.** It is a dedicated database; `public` is right.
+   - Either Neon endpoint works. The **pooled** one (`-pooler` in the host) is
+     the safer default; the direct one is required only if you ever set
+     `DB_SCHEMA`, because that sends a startup parameter and PgBouncer rejects
+     startup parameters it was not configured to allow.
+   - Keep `?sslmode=require` on the string. TLS is on for anything that is not
+     a unix socket or loopback, so this needs no configuration either way.
+   - Neon free suspends after ~5 minutes idle. The first query after a nap takes
+     roughly a second while it wakes — on top of Render's own cold start.
 2. **Share the database you already have** — but you MUST set `DB_SCHEMA=shelf`
    as well. Sharing it without that is destructive and silent: shelf's first
    migration is `001_init.sql` like nearly everybody's, so if the database
