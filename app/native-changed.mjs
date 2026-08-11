@@ -11,7 +11,19 @@
 // This is what the CI workflow consults before telling you an update is live.
 import { execSync } from "node:child_process";
 
-const range = process.argv[2] || "HEAD~1..HEAD";
+// Default: everything the last `git pull` brought in. `@{1}` is where HEAD was
+// before it moved, so this covers a pull of six commits as correctly as one —
+// `HEAD~1..HEAD` would silently miss five of them and tell you an update was
+// safe when a native change came in four commits ago.
+function defaultRange() {
+  try {
+    execSync("git rev-parse --verify --quiet @{1}", { stdio: "ignore" });
+    return "@{1}..HEAD";
+  } catch (_) {
+    return "HEAD~1..HEAD";   // no reflog entry yet (a fresh clone)
+  }
+}
+const range = process.argv[2] || defaultRange();
 
 // Paths whose changes CANNOT travel over the air.
 const NATIVE = [

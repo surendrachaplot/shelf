@@ -199,14 +199,30 @@ The likely three, in order:
 Once the `preview` build is on your phone, JavaScript changes reach it over the
 air — no rebuild, no reinstall. Two ways:
 
-**Automatically, on every push.** `.github/workflows/eas-update.yml` publishes
-whenever `app/**` changes on `main`. It needs one secret, once:
+**By hand — no token, nothing to set up.** From `app/`:
+
+```bash
+git pull && npm run push
+```
+
+`eas update` runs as you, using the login `eas login` already stored on your
+Mac. It works out for itself what the pull brought in (`@{1}..HEAD`, where HEAD
+was before it moved) so pulling six commits is checked as correctly as one, and
+it refuses to publish if any of them changed native code.
+
+**Automatically, on every push — needs one token.** A GitHub runner has no
+browser to log in with, so it needs an Expo access token to publish as you.
+That is the only reason for it. Once set, I push and your phone updates with
+nothing from you:
 
 1. https://expo.dev/settings/access-tokens → create a token
 2. GitHub → the repo → Settings → Secrets and variables → Actions → New
    repository secret → name it `EXPO_TOKEN`, paste the token
 
-**By hand**, from `app/`: `npm run push`.
+It is stored encrypted, only readable by workflows in this repo, and revocable
+from that same page at any time. What it can do is publish updates and start
+builds on your Expo account — nothing outside it. If that is not a trade you
+want, use the by-hand form; it publishes exactly the same update.
 
 The app picks up an update on next launch. To force one immediately, quit it
 from the app switcher and reopen.
