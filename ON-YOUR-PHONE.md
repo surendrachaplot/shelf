@@ -105,10 +105,18 @@ Only set `EXPO_PUBLIC_SHELF_WEB` if you later put the pages on a custom domain.
 
 ## 3. Build the app (~20 min, mostly waiting)
 
-**Every time, from `app/`, use this and nothing else:**
+**The first time only**, because `ship` is itself in the pull you have not done
+yet — a script cannot bootstrap the commit that defines it:
 
 ```bash
-npm run ship
+cd ~/shelf && git checkout -- app && git pull && cd app && npm ci && npm run build:preview
+```
+
+**Every time after that, from `app/`:**
+
+```bash
+npm run ship      # rebuild + install (needed whenever native code changed)
+npm run update    # publish over the air, no rebuild
 ```
 
 That is `git checkout -- app && git pull && npm ci && eas build`. The reset is
