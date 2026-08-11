@@ -7,7 +7,10 @@
 // flushed by the app on next launch.
 import { getToken } from "./tokenStore";
 
-export const API_BASE = process.env.EXPO_PUBLIC_SHELF_API ?? "https://shelf-api.onrender.com";
+// The deployed service. eas.json sets EXPO_PUBLIC_SHELF_API for real builds;
+// this default is what a bare `expo start` uses, and the two must agree or the
+// app talks to a different server depending on how it was launched.
+export const API_BASE = process.env.EXPO_PUBLIC_SHELF_API ?? "https://shelf-api-u8xy.onrender.com";
 
 export type ListName = "books" | "restaurants" | "movies" | "recipes" | "unsorted";
 export const LISTS: ListName[] = ["books", "restaurants", "movies", "recipes"];
