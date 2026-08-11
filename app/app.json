@@ -2,6 +2,7 @@
   "expo": {
     "name": "shelf",
     "slug": "shelf",
+    "owner": "surendrachaplot",
     "scheme": "shelf",
     "version": "0.1.0",
     "orientation": "portrait",

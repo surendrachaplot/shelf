@@ -45,6 +45,36 @@ try {
   process.exit(2);
 }
 
+/**
+ * app.json is on the native list because almost everything in it — plugins,
+ * entitlements, bundle id, icons — is baked at prebuild. But TWO of its keys
+ * are not: `owner` and `extra`, which only tell EAS which account and project
+ * this is. Changing those changes nothing a build produces.
+ *
+ * Worth the special case because the alternative is worse than it sounds:
+ * `owner` had to be added for a robot access token to publish at all, and
+ * without this, adding it would have blocked the very publish it enables, with
+ * "run a full rebuild" as the advice. A guard that fires on a change it knows
+ * to be harmless teaches you to bypass the guard.
+ *
+ * Anything else in app.json still counts as native. When the file cannot be
+ * read from either side, it counts as native too — unknown is not safe.
+ */
+function appJsonIsOnlyAccountKeys(range) {
+  const [base, head] = String(range).split("..");
+  if (!base || !head) return false;
+  const strip = (ref) => {
+    try {
+      const j = JSON.parse(execSync(`git show ${ref}:app/app.json`, { encoding: "utf8" }));
+      delete j?.expo?.owner;
+      delete j?.expo?.extra;
+      return JSON.stringify(j);
+    } catch (_) { return null; }
+  };
+  const a = strip(base), b = strip(head);
+  return a !== null && b !== null && a === b;
+}
+
 const app = files.filter((f) => f.startsWith("app/"));
 if (!app.length) {
   console.log("no app changes in this range — nothing to publish");
@@ -54,7 +84,12 @@ if (!app.length) {
 const hits = [];
 for (const f of app) {
   const rule = NATIVE.find((r) => r.re.test(f));
-  if (rule) hits.push({ f, why: rule.why });
+  if (!rule) continue;
+  if (f === "app/app.json" && appJsonIsOnlyAccountKeys(range)) {
+    console.log("app.json changed, but only `owner`/`extra` — EAS account routing, not the native project");
+    continue;
+  }
+  hits.push({ f, why: rule.why });
 }
 
 if (!hits.length) {
