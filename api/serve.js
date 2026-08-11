@@ -12,7 +12,7 @@ import {
   resolveShare, resolveHandle, sendToHandle, listReceived, actOnSend,
 } from "./profile.js";
 import { searchRoute, addRoute } from "./search.js";
-import { renderProfile, renderShelf, renderItem, renderGone, html } from "./page.js";
+import { renderProfile, renderShelf, renderItem, renderGone, html, canonical } from "./page.js";
 
 const PORT = Number(process.env.PORT || 8080);
 
@@ -76,7 +76,10 @@ async function publicPage(req, res, url) {
   if (shared) {
     const got = await resolveShare(shared[1], { count: true });
     if (!got) return html(res, 404, renderGone());
-    const page = got.kind === "profile" ? renderProfile(got) : got.kind === "shelf" ? renderShelf(got) : renderItem(got);
+    // A share link's canonical address is the SHARE, not the owner's profile —
+    // otherwise every card a person sends points at the same page.
+    const at = { ...got, url: canonical(`/s/${shared[1]}`) };
+    const page = at.kind === "profile" ? renderProfile(at) : at.kind === "shelf" ? renderShelf(at) : renderItem(at);
     return html(res, 200, page);
   }
 

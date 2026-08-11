@@ -37,12 +37,6 @@
               "max": 1
             }
           ],
-          "backgroundColor": {
-            "red": 250,
-            "green": 248,
-            "blue": 244,
-            "alpha": 1
-          },
           "height": 420
         }
       ]

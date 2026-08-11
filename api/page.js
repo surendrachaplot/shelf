@@ -19,6 +19,13 @@ import * as D from "../app/src/design.js";
 import { plateSvg, plateColours, plateFor } from "../app/src/exlibris.js";
 
 const LIST_LABEL = { books: "Books", restaurants: "Restaurants", movies: "Movies", recipes: "Recipes" };
+
+// Where these pages actually live. og:url has to be ABSOLUTE — a relative one
+// is ignored, and the preview card then has no canonical address to attach to,
+// which is how a link pasted into a message ends up as a grey rectangle.
+// render.yaml sets this; it defaulted to nothing and was read by nobody.
+export const WEB_BASE = (process.env.SHELF_WEB_BASE || "https://shelf.club").replace(/\/+$/, "");
+export const canonical = (path) => `${WEB_BASE}${path}`;
 const LIST_N = { books: "01", restaurants: "02", movies: "03", recipes: "04" };
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -199,7 +206,7 @@ ${body}
 
 // ── the three pages ──────────────────────────────────────────────────────────
 
-export function renderProfile({ owner, lists, note }) {
+export function renderProfile({ owner, lists, note, url }) {
   const total = Object.values(lists).reduce((n, xs) => n + xs.length, 0);
   const body = `${plateBlock(owner)}
     ${note ? `<div class="note">${esc(note)}</div>` : ""}
@@ -208,11 +215,12 @@ export function renderProfile({ owner, lists, note }) {
     title: `${owner.display_name} on shelf`,
     description: owner.bio || `${total} things ${owner.display_name} has shelved — books, restaurants, movies and recipes.`,
     image: firstImage(Object.values(lists).flat()),
+    url: url ?? canonical(`/@${owner.handle}`),
     body,
   });
 }
 
-export function renderShelf({ owner, list, items, note }) {
+export function renderShelf({ owner, list, items, note, url }) {
   const body = `${plateBlock(owner)}
     ${note ? `<div class="note">${esc(note)}</div>` : ""}
     ${bookcase(list, items)}`;
@@ -220,11 +228,12 @@ export function renderShelf({ owner, list, items, note }) {
     title: `${owner.display_name}'s ${LIST_LABEL[list] || list} · shelf`,
     description: `${items.length} ${items.length === 1 ? "thing" : "things"} on ${owner.display_name}'s ${(LIST_LABEL[list] || list).toLowerCase()} shelf.`,
     image: firstImage(items),
+    url: url ?? canonical(`/@${owner.handle}/${list}`),
     body,
   });
 }
 
-export function renderItem({ owner, item, note }) {
+export function renderItem({ owner, item, note, url }) {
   const list = LIST_LABEL[item.list] ? item.list : "unsorted";
   const body = `${plateBlock(owner)}
     ${note ? `<div class="note">${esc(note)}</div>` : ""}
@@ -244,6 +253,7 @@ export function renderItem({ owner, item, note }) {
     description: [item.subtitle, item.note].filter(Boolean).join(" — ")
       || `${owner.display_name} put this on their ${(LIST_LABEL[list] || "").toLowerCase()} shelf.`,
     image: item.image_url,
+    url,
     body,
   });
 }
@@ -304,6 +314,8 @@ if (isMain(import.meta.url)) {
     // The card IS the share. A link with no preview is a grey rectangle in a
     // message and no amount of design on the page fixes that.
     ok(/og:title/.test(profile) && /og:description/.test(profile), "a shared page shipped with no link preview");
+    ok(/og:url" content="https?:\/\//.test(profile), "og:url is missing or not absolute — a relative one is ignored and the card has nothing to attach to");
+    ok(canonical("/s/abc") === `${WEB_BASE}/s/abc`, "canonical url building");
     ok(profile.includes(D.light.books), "the page is not painting from the app's palette");
 
     // A revoked link and a link that never existed must be indistinguishable.
