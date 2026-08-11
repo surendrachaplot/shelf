@@ -1,0 +1,32 @@
+# EAS Workflows — publish an update on every push, with NO token in this repo.
+#
+# This is the Expo equivalent of how Render deploys atlas and soundcheck: you
+# connect the repository once at expo.dev, the credential lives at Expo's end,
+# and nothing secret is stored here. The GitHub Actions workflow in
+# .github/workflows/ does the same job the other way round — a runner here
+# authenticating outwards — and needs EXPO_TOKEN for exactly that reason.
+#
+# Use ONE of them, not both, or every push publishes twice.
+#
+# TO TURN THIS ON:
+#   expo.dev → your account → Projects → shelf → GitHub → Connect
+#   (installs Expo's GitHub App on the repo; that is the whole setup)
+#
+# HONEST CAVEAT: this file's schema is written from the EAS Workflows docs and
+# has NOT been run — nothing in this sandbox can execute it. If `eas workflow:run`
+# rejects it, the shape is wrong, not the idea. The GitHub Actions path in
+# .github/workflows/eas-update.yml HAS had its logic tested here and is the
+# safer thing to fall back on.
+name: Publish update
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  update:
+    name: Publish to the preview channel
+    type: update
+    params:
+      branch: preview
+      message: ${{ github.event.head_commit.message }}

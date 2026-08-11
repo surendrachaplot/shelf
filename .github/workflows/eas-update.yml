@@ -16,6 +16,13 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    # The `secrets` context is NOT available in a step's `if:` — only github,
+    # needs, env, steps and a few others are. Mapping it to an env var here is
+    # what makes "is this configured?" answerable at all; the first version
+    # checked `env.EXPO_TOKEN != ''` and would have silently never
+    # published.
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     defaults:
       run:
         working-directory: app
@@ -45,7 +52,16 @@ jobs:
         id: native
         run: |
           set +e
-          node native-changed.mjs "${{ github.event.before }}..${{ github.sha }}"
+          # `before` is all zeros on the first push to a branch, and a manual
+          # run has no `before` at all — fall back rather than diff against
+          # nothing and crash.
+          BEFORE="${{ github.event.before }}"
+          case "$BEFORE" in
+            ""|0000000000000000000000000000000000000000) RANGE="HEAD~1..HEAD" ;;
+            *) RANGE="$BEFORE..${{ github.sha }}" ;;
+          esac
+          echo "range: $RANGE"
+          node native-changed.mjs "$RANGE"
           echo "code=$?" >> "$GITHUB_OUTPUT"
           set -e
 
@@ -63,18 +79,18 @@ jobs:
       # goes red on every push trains you to ignore red, which costs more than
       # the automation was worth.
       - name: Publishing from CI is not set up
-        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN == ''
+        if: steps.native.outputs.code == '0' && env.EXPO_TOKEN == ''
         run: |
           echo "::notice::This push is publishable, but EXPO_TOKEN is not set — nothing was published."
           echo "Publish it yourself:  cd app && git pull && npm run push"
           echo "Or set up CI: https://expo.dev/settings/access-tokens → repo Settings → Secrets → EXPO_TOKEN"
 
       - uses: expo/expo-github-action@v8
-        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN != ''
+        if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publish
-        if: steps.native.outputs.code == '0' && secrets.EXPO_TOKEN != ''
+        if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
         run: eas update --branch preview --message "${{ github.event.head_commit.message }}"

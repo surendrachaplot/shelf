@@ -227,7 +227,18 @@ Mac. It works out for itself what the pull brought in (`@{1}..HEAD`, where HEAD
 was before it moved) so pulling six commits is checked as correctly as one, and
 it refuses to publish if any of them changed native code.
 
-**Automatically, on every push — needs one token.** A GitHub runner has no
+**Automatically, with NO token — the same shape as Render.** Render deploys
+atlas and soundcheck by PULLING: you connect the repo once, Render holds the
+credential, nothing secret sits in the repository. Expo has the same
+arrangement, and `.eas/workflows/update.yml` is written for it:
+
+> expo.dev → Projects → shelf → GitHub → **Connect**
+
+That installs Expo's GitHub App on the repo and is the entire setup. Caveat
+worth stating: that file's schema comes from the docs and has never been run
+from here, so if EAS rejects it the shape is wrong rather than the idea.
+
+**Automatically, via GitHub Actions — needs one token.** A GitHub runner has no
 browser to log in with, so it needs an Expo access token to publish as you.
 That is the only reason for it. Once set, I push and your phone updates with
 nothing from you:
@@ -236,8 +247,10 @@ nothing from you:
 2. GitHub → the repo → Settings → Secrets and variables → Actions → New
    repository secret → name it `EXPO_TOKEN`, paste the token
 
-It is stored encrypted, only readable by workflows in this repo, and revocable
-from that same page at any time. What it can do is publish updates and start
+This is the PUSH direction — a GitHub runner authenticating outwards to Expo —
+which is why it needs a credential where the Render integration does not. It is
+stored encrypted, only readable by workflows in this repo, and revocable from
+that same page at any time. What it can do is publish updates and start
 builds on your Expo account — nothing outside it. If that is not a trade you
 want, use the by-hand form; it publishes exactly the same update.
 
