@@ -109,17 +109,19 @@ Only set `EXPO_PUBLIC_SHELF_WEB` if you later put the pages on a custom domain.
 
 ```bash
 cd app
-npm install
-npm install -g eas-cli           # the package is eas-cli; `npx eas` looks for
-                                 # a package called "eas" and fails with
-                                 # "could not determine executable to run"
-eas login
-eas build:configure              # writes the projectId into app.json, once
-eas build -p ios --profile development
+npm ci
+npx --yes eas-cli@latest login
+npx --yes eas-cli@latest build:configure   # writes the projectId into app.json, once
+npm run build:dev
 ```
 
-Without the global install, prefix every command with the package name
-instead: `npx eas-cli@latest login`, and so on.
+**Not `npx eas`** — the package is `eas-cli` and the binary it installs is
+`eas`, so `npx eas` hunts for a package called "eas" and dies with "could not
+determine executable to run".
+
+**And not `npm install -g eas-cli`** either, unless you know `/usr/local/lib`
+is writable by your user — on a stock macOS node install it is not, and you get
+an EACCES wall of text. `npx --yes` needs no install and no permissions.
 
 EAS will ask to create credentials — say yes, let it manage them. It will
 register the App Group and Keychain group from `app.json` automatically.
