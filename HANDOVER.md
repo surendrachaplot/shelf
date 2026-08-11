@@ -19,11 +19,10 @@ claimed, and reels have been shared into it from Instagram. That is further
 than any previous handover — everything below is now reported behaviour, not
 speculation.
 
-**The open question is the one the plan named on day one and nobody measured:
-can the server read an Instagram caption from a datacentre IP?** Reels are
-arriving and coming back with no names, which is exactly what a blocked scrape
-looks like. It is also what a markup change and a caption-less reel look like,
-which is why the next action is a measurement and not a guess.
+**Reels resolve.** A shared reel gets a caption, a title, a cover and — for
+films — a TMDB match, verified on real rows below. Pushes publish themselves to
+the phone. The live service can be interrogated without anybody opening a
+terminal. What remains is a Places key and a run on the device itself.
 
 ### Milestone 0: measured, and the answer was none of the theories (2026-08-11)
 
@@ -83,27 +82,30 @@ resolver fix reaches what is already sitting there. See `SETUP-ONCE.md`.
 
 ## Open, with the check that would close it
 
-- **Does the caption fix work on a real reel?** Measured once, fix shipped,
-  outcome unverified. Closes with: the `reel` workflow returning
-  `verdict: readable`. If it does not, the response now carries `markers` and a
-  220-character `samples` excerpt showing where the text actually is.
 - **`places: false` on the live service** — confirmed from health, not
   inferred. Restaurants cannot enrich, so they file with a Claude-derived title
   and no address. Not fatal (`enriched:false`), but it is why a restaurant
   looks thinner than a book. Closes with: a `GOOGLE_PLACES_KEY` on Render, then
   `GET /api/search?q=…` and reading the rows.
-- **The worker has never demonstrably resolved a real reel.** Closes with:
-  `select list, title, confidence, resolver from items order by created_at desc`
-  — check the TITLES are right, not that rows exist.
-- **Automatic OTA publishing is not switched on.** `.eas/workflows/update.yml`
-  is committed and correct, but Expo's GitHub App has never been connected
-  (expo.dev → Projects → shelf → GitHub → Connect). Until then every push needs
-  `npm run update` from `app/`. The GitHub Actions file is only the alarm: it
-  goes red when a push needs a rebuild rather than an update.
+- **Nobody has watched a reel go in on the phone since the fix.** The rows
+  prove the pipeline; they do not prove the share sheet, the refresh, or the
+  cover rendering in iOS. Closes with: share one reel per category, then look.
+- **A caption-less reel is still untested.** `by_resolver` showed `none: 1` —
+  that row was discarded, so it proves nothing either way.
 - **The share extension in its real host, iOS fonts, native scroll and blur**
   remain unverified by anything but a device.
 
 ## Traps already paid for
+
+- **Four faults can hide behind one symptom.** "The app doesn't auto-update"
+  was, in order: no EXPO_TOKEN · `github.event.before` empty on a manual run so
+  the range said "nothing changed" · `github.event.head_commit` absent so
+  `--message ""` was rejected · a ROBOT token needing an explicit `owner` in
+  app.json. Each fix revealed the next. Never conclude from one green fix.
+- **A guard that blocks its own fix gets bypassed.** `owner` had to go in
+  app.json for a robot token to publish, and app.json was on the native list —
+  so adding it would have demanded a full rebuild. `native-changed.mjs` now
+  parses both sides and ignores `owner`/`extra` specifically.
 
 - **iOS does not remount a backgrounded app.** Every fetch on mount runs once,
   at cold start, and never again — so after sharing from another app and coming
