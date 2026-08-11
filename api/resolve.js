@@ -189,8 +189,13 @@ async function viaEmbed(ig) {
 }
 
 async function viaCanonical(ig) {
-  const { html } = await tryFetch(`https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`);
-  const got = extractInstagram(html);
+  const { html } = await tryFetch(canonicalOf(ig));
+  // SCOPED, for the same reason the crawler step reads the embed page: this
+  // URL can return a blob holding several of the account's posts, and an
+  // unscoped read picks whichever caption appears first.
+  const scoped = scopeToShortcode(html, ig.shortcode);
+  if (!scoped) return null;
+  const got = extractInstagram(scoped);
   return got.caption ? { ...got, via: "canonical-og" } : null;
 }
 
@@ -204,16 +209,51 @@ async function viaCanonical(ig) {
  * for a pasted reel is getting og: tags from somewhere, and it gets them by
  * announcing itself as a crawler. So this asks the same way.
  */
+/**
+ * THE EMBED PAGE FIRST, and it is not a preference — it is a correctness
+ * requirement, learned by filing a reel about "Willow and Wind" as
+ * "The Wicker Man".
+ *
+ * The canonical page comes back as ~930kB carrying SEVERAL of the account's
+ * posts in one JSON blob. Reading the first `"caption"` in document order
+ * therefore reads a NEIGHBOURING POST — and the result is not an obvious
+ * failure. It is a confident, well-formed, catalogue-matched entry for
+ * entirely the wrong film. That is worse than resolving nothing.
+ *
+ * `/embed/captioned/` is ~130kB and holds exactly one post by construction, so
+ * there is no wrong caption available to pick.
+ *
+ * The canonical page is still used for ONE thing: `og:image`. Meta's og: tags
+ * are page-level metadata describing the URL that was requested, so unlike the
+ * JSON blob they cannot belong to a different post.
+ */
 async function viaCrawler(ig) {
-  for (const url of [
-    `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`,
-    embedUrl(ig),
-  ]) {
-    const { html } = await tryFetch(url, 12000, CRAWLER_HEADERS);
-    const got = extractInstagram(html);
-    if (got.caption) return { ...got, via: `crawler-${got.via ?? "og"}` };
+  const { html } = await tryFetch(embedUrl(ig), 12000, CRAWLER_HEADERS);
+  const got = extractInstagram(html);
+  if (!got.caption) return null;
+
+  if (!got.imageUrl) {
+    const canon = await tryFetch(canonicalOf(ig), 12000, CRAWLER_HEADERS);
+    got.imageUrl = metaTag(canon.html, "og:image") || null;
   }
-  return null;
+  return { ...got, via: `crawler-${got.via ?? "og"}` };
+}
+
+export const canonicalOf = (ig) =>
+  `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`;
+
+/**
+ * Narrow a multi-post page to the post that was actually asked for.
+ *
+ * Returns null when the shortcode is nowhere in the page — which must be read
+ * as "do not trust anything here", not as "use the whole page". Being lenient
+ * about this is the exact bug above.
+ */
+export function scopeToShortcode(html, shortcode) {
+  if (!html || !shortcode) return null;
+  const at = html.indexOf(`"${shortcode}"`);
+  if (at < 0) return null;
+  return html.slice(at);
 }
 
 // A paid resolver (Apify / RapidAPI / similar). Deliberately last and
@@ -421,11 +461,18 @@ export async function probeShare(sourceUrl) {
 
   if (ig) {
     await record("embed", embedUrl(ig), extractInstagram);
-    await record("canonical", canonicalIg, extractInstagram);
+    // Reported BOTH ways: unscoped is what shipped and filed the wrong film,
+    // scoped is what the resolver now does. Seeing the two side by side is the
+    // only way to tell the difference is real on a given reel.
+    await record("canonical-unscoped", canonicalIg, extractInstagram);
+    await record("canonical", canonicalIg, (h) => {
+      const scoped = scopeToShortcode(h, ig.shortcode);
+      return scoped ? extractInstagram(scoped) : EMPTY();
+    });
     // The same two URLs asked as a link-preview crawler. Reported separately
     // so the difference between the two user agents is visible as a number
     // rather than argued about.
-    await record("crawler-canonical", canonicalIg, extractInstagram, CRAWLER_HEADERS);
+    await record("crawler-canonical-unscoped", canonicalIg, extractInstagram, CRAWLER_HEADERS);
     await record("crawler-embed", embedUrl(ig), extractInstagram, CRAWLER_HEADERS);
     steps.push({
       step: "paid",
@@ -509,6 +556,24 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   const bothFix = `<html><script>{"caption":{"text":"short"},
     "edge_media_to_caption":{"edges":[{"node":{"text":"the full caption"}}]}}</script></html>`;
   ok(extractInstagram(bothFix).caption === "the full caption", "edges array beats the nested object");
+
+  // THE WICKER MAN BUG, as a fixture. The canonical page returns several of
+  // the account's posts in one blob; the requested one is not first. Unscoped,
+  // the reader takes the neighbour and produces a confident, catalogue-matched
+  // entry for entirely the wrong film — which is worse than reading nothing,
+  // because nothing announces itself as wrong.
+  const twoPosts = `<html><script>{"items":[
+    {"code":"AAAneighbour","caption":{"text":"The Wicker Man (1973)"}},
+    {"code":"BBBwanted","caption":{"text":"Willow and Wind (1999)"}}
+  ]}</script></html>`;
+  ok(extractInstagram(twoPosts).caption === "The Wicker Man (1973)",
+     "unscoped really does read the neighbouring post — the bug is reproduced");
+  ok(extractInstagram(scopeToShortcode(twoPosts, "BBBwanted")).caption === "Willow and Wind (1999)",
+     "scoped to the requested shortcode reads the right post", JSON.stringify(extractInstagram(scopeToShortcode(twoPosts, "BBBwanted")).caption));
+  ok(scopeToShortcode(twoPosts, "CCCabsent") === null,
+     "a shortcode that is not on the page returns null — never the whole page");
+  ok(scopeToShortcode("", "BBBwanted") === null && scopeToShortcode(twoPosts, "") === null,
+     "empty input scopes to nothing");
 
   // Meta's generated alt text: worse than a caption, far better than nothing.
   const altFix = `<html><script>{"accessibility_caption":"Photo by suren on August 01, 2026. May be an image of pasta."}</script></html>`;
