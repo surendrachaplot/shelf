@@ -196,14 +196,26 @@ The likely three, in order:
 
 ## 4. Pair the phone (2 min)
 
-The app opens on a pairing screen. Mint a code on the server:
+The app opens on a pairing screen. Mint a code:
 
 ```bash
-# Render → shelf-api → Shell
-node api/auth.js --pair you@email.com
+curl -s -X POST https://YOUR-API.onrender.com/api/admin/pair \
+  -H "x-shelf-secret: YOUR_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@email.com"}'
 ```
 
-Type the 8 characters into the app. It is single-use and expires in 30 minutes.
+Type the 8 characters into the app. Single use, 30 minutes.
+
+There is a CLI form — `node api/auth.js --pair you@email.com` — but it needs a
+shell on the server, and **Render's Shell is a paid feature**. On the free tier
+that route does not exist, which would leave no way to sign in at all. Hence
+the endpoint: same `ADMIN_SECRET` guard as the worker route, same single-use
+short-lived code.
+
+The email is not verified and nothing is sent to it. It is the account's
+identity — the same address always reaches the same shelves, which is what lets
+you re-pair a replacement phone.
 
 The app checks one thing for you immediately: whether the **share extension can
 read the Keychain**. If it can't, you get a specific message about the app

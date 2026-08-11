@@ -3,7 +3,7 @@
 // dependency that hides where the request goes.
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
-import { redeemPairCode, secretMatches } from "./auth.js";
+import { mintPairCode, redeemPairCode, secretMatches } from "./auth.js";
 import { listItems, updateItem, json } from "./items.js";
 import { ingestUrl, ingestImage } from "./ingest.js";
 import { drain } from "./worker.js";
@@ -145,6 +145,28 @@ async function handle(req, res, url) {
       } catch (e) { out.ok = false; out.db_error = e.message; }
     }
     return json(res, out.ok ? 200 : 503, out, { priv: true });
+  }
+
+  // Mint a pairing code over HTTP, guarded by ADMIN_SECRET.
+  //
+  // `node auth.js --pair` needs a shell on the box, and Render's Shell is a
+  // PAID feature — so on the free tier there is otherwise no way to get your
+  // first code, and the app cannot be signed into at all. Same guard as the
+  // worker route, and the code it returns is still single-use and short-lived.
+  if (key === "POST /api/admin/pair") {
+    if (!process.env.ADMIN_SECRET) {
+      return json(res, 403, { ok: false, error: "ADMIN_SECRET is not set on this service" });
+    }
+    if (!secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET)) {
+      return json(res, 403, { ok: false, error: "nope" });
+    }
+    const body = await readBody(req);
+    const email = String(body?.email || "").trim();
+    if (!/^[^@\s]+@[^@\s]+$/.test(email)) {
+      return json(res, 400, { ok: false, error: "an email is required — it is what identifies the account" });
+    }
+    const { code } = await mintPairCode(email);
+    return json(res, 200, { ok: true, code, expires_in_minutes: 30, note: "single use" });
   }
 
   if (key === "POST /api/pair/redeem") {

@@ -247,6 +247,22 @@ Both are commented back in, in place, for when you outgrow them.
 `api/page.js --selftest` fails if either reappears uncommented, along with the
 `rootDir` trap — the deploy config is checked like anything else here.
 
+## 4f. Getting a pairing code without a shell
+
+```bash
+curl -s -X POST $BASE/api/admin/pair -H "x-shelf-secret: $ADMIN_SECRET" \
+  -H "Content-Type: application/json" -d '{"email":"you@email.com"}'
+```
+
+`node auth.js --pair` is the same thing from a shell — but Render's Shell is a
+PAID feature, so on the free tier there is otherwise no way to mint a first
+code and the app cannot be signed into at all.
+
+Guarded by `ADMIN_SECRET`, exactly like `POST /api/worker/run`. If that variable
+is unset the route answers 403 and says so, rather than minting codes for
+anybody who finds it. The code it returns is still single-use and expires in 30
+minutes, so the endpoint is not a standing key to the account.
+
 ## 5. Deploy
 
 - API on Render: `node serve.js` as the web service, `node worker.js` as a
