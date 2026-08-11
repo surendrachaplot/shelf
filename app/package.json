@@ -14,7 +14,8 @@
     "preview": "node preview/build.mjs && node preview/shoot.mjs && node preview/measure.mjs",
     "lab": "node design-lab/shoot.mjs",
     "e2e": "node ../api/e2e.mjs",
-    "eas": "npx --yes eas-cli@latest"
+    "eas": "npx --yes eas-cli@latest",
+    "android": "expo run:android"
   },
   "dependencies": {
     "expo": "~52.0.0",

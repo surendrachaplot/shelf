@@ -157,6 +157,11 @@ The likely three, in order:
    fails to compile, set it to `false` in `app.json` and rebuild. This is the
    one I'd bet on and cannot test from here.
 2. **App Group not provisioned.** Means the account is free, not paid. See §0.
+   The extension needs `keychain-access-groups` as well as the app group, and
+   `expo-share-extension` does not write it — `plugins/withShareExtensionKeychain.js`
+   adds it, and must stay listed BEFORE the share-extension plugin in
+   `app.json`. Without it the app builds, installs, pairs, and then every share
+   silently does nothing.
 3. **A native module missing from the extension bundle.** `metro.config.js`
    already wraps the config in `withShareExtension`; if a package still can't
    resolve, add it to `excludedPackages` in the plugin options.
