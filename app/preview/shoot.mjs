@@ -44,6 +44,7 @@ const SHOTS = [
   { name: "app-profile-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Your card" },
   { name: "app-add-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Add something by name", type: ["piranesi"] },
   { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
+  { name: "pair-claim-375-light", q: "?paired=0&unclaimed=1", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },

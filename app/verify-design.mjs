@@ -36,6 +36,7 @@ import * as E from "./src/exlibris.js";
 const SOURCES = [
   "App.tsx", "ShareExtension.tsx",
   "src/Add.tsx", "src/Profile.tsx", "src/Received.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
+  "src/KeyboardSafe.tsx",
 ];
 
 // ─── static rules ────────────────────────────────────────────────────────────
@@ -160,6 +161,16 @@ const staticRules = [
         if (m) out.push({ n: i + 1, msg: `emoji used as UI: ${[...new Set(m)].join(" ")}` });
       });
       return out;
+    },
+  },
+  {
+    id: "keyboard-safe",
+    why: "§4g — NOTHING YOU TYPE INTO MAY SIT UNDER THE KEYBOARD. The pairing screen shipped with the code field hidden behind it: the one screen you cannot get past, on first launch, so the app was unusable. And it is invisible to every check this project has — react-native-web has no keyboard, so the render harness cannot see it and no screenshot will ever show it. A file with a TextInput must wrap its screen in KeyboardSafe or spread scrollKeyboardProps onto the ScrollView holding it.",
+    check: (src) => {
+      if (!/<TextInput\b/.test(src)) return [];
+      if (/KeyboardSafe|scrollKeyboardProps|KeyboardAvoidingView|automaticallyAdjustKeyboardInsets/.test(src)) return [];
+      const n = src.slice(0, src.search(/<TextInput\b/)).split("\n").length;
+      return [{ n, msg: "this file has a TextInput and no keyboard avoidance — the field can end up under the keyboard" }];
     },
   },
   {
@@ -566,6 +577,10 @@ const STATIC_PROBES = {
   },
   "no-loose-colours": { bad: `const s = {\n  x: {\n    color: "#ff0000",\n  },\n};`, good: `const s = {\n  x: {\n    color: c.ink,\n  },\n};` },
   "no-emoji-ui": { bad: 'const s = { x: { label: "\u{1F4DA} Books" } };', good: 'const s = { x: { label: "Books" } };' },
+  "keyboard-safe": {
+    bad: `const A = () => <View><TextInput value={x} /></View>;`,
+    good: `const A = () => <KeyboardSafe><TextInput value={x} /></KeyboardSafe>;`,
+  },
   "rows-wrap": { bad: `const s = {\n  actions: {\n    flexDirection: "row",\n  },\n};`, good: `const s = {\n  actions: {\n    flexDirection: "row", flexWrap: "wrap",\n  },\n};` },
 };
 

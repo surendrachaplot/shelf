@@ -14,6 +14,7 @@ import { ActivityIndicator, Share, StyleSheet, Text, TextInput, View } from "rea
 import { getProfile, makeShare, revokeShare, sendTo, shareUrl, type ShareKind } from "./api";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
+import { KeyboardSafe } from "./KeyboardSafe";
 import * as D from "./design.js";
 import { labelOf, listOn, placeholderOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
@@ -95,7 +96,7 @@ export function ShareSheet({ kind, target, list, title, onClose }: {
   }
 
   return (
-    <View style={[s.panel, { backgroundColor: fill }]}>
+    <KeyboardSafe style={[s.panel, { backgroundColor: fill }] as never}>
       <View style={s.head}>
         <Text style={[s.kicker, { color: on }]}>
           {kind === "profile" ? "Share your shelves" : kind === "shelf" ? `Share the ${labelOf(list)} shelf` : "Share this"}
@@ -170,7 +171,7 @@ export function ShareSheet({ kind, target, list, title, onClose }: {
         {seed ? <ExLibris seed={seed} size={40} /> : null}
         <Text style={[s.kicker, { color: on }]}>{handle ? `Ex libris @${handle}` : "Ex libris"}</Text>
       </View>
-    </View>
+    </KeyboardSafe>
   );
 }
 

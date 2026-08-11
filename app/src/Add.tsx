@@ -14,6 +14,7 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, View
 import { addItem, search, type Item, type ListName, type SearchHit } from "./api";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
+import { KeyboardSafe, scrollKeyboardProps } from "./KeyboardSafe";
 import { lists, listOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 // Long enough that a normal typing burst is one request, short enough that it
@@ -80,7 +81,7 @@ export function Add({ onClose, onAdded }: { onClose: () => void; onAdded: (item:
   }
 
   return (
-    <View style={s.screen}>
+    <KeyboardSafe style={s.screen}>
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>Add</Text>
         <Press onPress={onClose} style={s.close} size={TOUCH_MIN} label="Close">
@@ -106,7 +107,7 @@ export function Add({ onClose, onAdded }: { onClose: () => void; onAdded: (item:
         {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
       </View>
 
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
         {error ? <Text style={[s.error, s.inset]}>{error}</Text> : null}
 
         {hits.map((hit, i) => (
@@ -149,7 +150,7 @@ export function Add({ onClose, onAdded }: { onClose: () => void; onAdded: (item:
           </View>
         ) : null}
       </ScrollView>
-    </View>
+    </KeyboardSafe>
   );
 }
 

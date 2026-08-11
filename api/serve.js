@@ -119,6 +119,15 @@ async function handle(req, res, url) {
       // 404s. An empty string means neither is set.
       web_base: WEB_BASE,
     };
+    if (dbReady()) {
+      try {
+        const d = await query("select count(*)::int as n from devices");
+        // Visible, not quiet: an unclaimed shelf can be claimed by the first
+        // person to open the app, and you should be able to see that it still
+        // can be.
+        out.unclaimed = d.rows[0].n === 0;
+      } catch (_) { /* the queue block below reports db trouble */ }
+    }
     out.providers = {
       claude: !!process.env.ANTHROPIC_API_KEY,
       tmdb: !!process.env.TMDB_API_KEY,
@@ -167,6 +176,38 @@ async function handle(req, res, url) {
     }
     const { code } = await mintPairCode(email);
     return json(res, 200, { ok: true, code, expires_in_minutes: 30, note: "single use" });
+  }
+
+  // FIRST RUN CLAIMS THE APP.
+  //
+  // A pairing code exists so that a public URL is not a public shelf. But on a
+  // brand-new deployment there is nobody to protect it from yet — the database
+  // has no devices at all — and requiring a code there means the first thing
+  // the app ever asks you to do is go and run a curl. So: while no device has
+  // ever paired, one may pair with no code.
+  //
+  // The window closes permanently the instant it is used. `devices` is checked
+  // on every call, so the second device gets the same 403 a stranger would,
+  // and reopening it takes deliberate action against the database. The whole
+  // exposure is the minutes between deploying and opening the app, and only
+  // for somebody who already knows the URL.
+  //
+  // /api/health reports `unclaimed` so this is a visible state, not a quiet one.
+  if (key === "POST /api/pair/claim") {
+    if (!dbReady()) return json(res, 503, { ok: false, error: "no database" });
+    const taken = await query("select count(*)::int as n from devices");
+    if (taken.rows[0].n > 0) {
+      return json(res, 403, {
+        ok: false,
+        error: "this shelf has already been claimed — ask its owner for a pairing code",
+      });
+    }
+    const body = await readBody(req);
+    const email = String(body?.email || "").trim() || "owner@shelf.local";
+    const { code } = await mintPairCode(email);
+    const got = await redeemPairCode(code, body?.device || "iPhone");
+    console.log(`[shelf] first device claimed this shelf as ${email}`);
+    return json(res, 200, { ok: true, token: got.token, claimed_as: email });
   }
 
   if (key === "POST /api/pair/redeem") {

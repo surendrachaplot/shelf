@@ -47,6 +47,10 @@ export const ingestImage = async () => ({ id: "1" });
 export const queueShare = async () => {};
 export const flushQueue = async () => 0;
 export const pair = async () => "shelf_preview";
+// ?unclaimed=1 renders the first-run screen, which is otherwise only reachable
+// against a server nobody has ever paired with.
+export const serverState = async () => ({ unclaimed: new URLSearchParams(location.search).get("unclaimed") === "1" });
+export const claim = async () => "shelf_preview";
 export const pendingShareCount = async () => 0;
 export const API_BASE = "";
 

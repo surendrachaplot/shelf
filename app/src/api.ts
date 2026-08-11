@@ -64,6 +64,27 @@ export const pair = async (code: string, device: string) => {
   return body.token;
 };
 
+/**
+ * Claim a brand-new shelf with no code at all. Succeeds only while no device
+ * has ever paired; after that it 403s like it would for a stranger.
+ */
+export const claim = async (device: string) => {
+  const res = await fetch(`${API_BASE}/api/pair/claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ device }),
+  });
+  const body = (await res.json()) as { ok: boolean; token?: string; error?: string };
+  if (!body.ok || !body.token) throw new Error(body.error ?? "could not claim");
+  return body.token;
+};
+
+/** Is this server still unclaimed? Decides which pairing screen you get. */
+export const serverState = async () => {
+  const res = await fetch(`${API_BASE}/api/health`);
+  return (await res.json()) as { unclaimed?: boolean };
+};
+
 export const fetchList = (list: ListName) =>
   req<{ items: Item[] }>(`/api/items?list=${list}`).then((r) => r.items);
 

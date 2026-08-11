@@ -115,6 +115,18 @@ That bar is only meaningful if it is falsifiable, so it is:
   field, and the mix is solved rather than picked: 0.42 was the first guess and
   the gate rejected it at 2.3:1 on red and green. 3:1 is the bar, not 4.5 —
   placeholder text is not essential content — but it is a bar.
+- **NOTHING YOU TYPE INTO MAY SIT UNDER THE KEYBOARD.** The pairing screen
+  shipped with the code field hidden behind it — the one screen you cannot get
+  past, on first launch, so the app was simply unusable. And it is invisible to
+  every automated check here: react-native-web has no keyboard, so no
+  screenshot and no rule could ever have shown it. Every file with a
+  `TextInput` now wraps its screen in `KeyboardSafe` or spreads
+  `scrollKeyboardProps` onto the ScrollView holding it, and the gate fails the
+  build otherwise.
+- **A style is only reusable in the axis it was written for.** The wordmark
+  carries `flex: 1` so it pushes the count to the right of a header ROW. Reused
+  in a column it ate 701 of 812 points and pinned everything else to the bottom
+  of the screen. Reaching for an existing style name is not free.
 - **A count of zero is not a badge.** "Sent to you" with nothing behind it is a
   dot that teaches people to ignore dots.
 - **Dark mode is not a v2 thing.** Styles are built from the live palette inside

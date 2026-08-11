@@ -19,6 +19,7 @@ import { handleProblem, normHandle } from "./exlibris.js";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
+import { scrollKeyboardProps } from "./KeyboardSafe";
 import {
   BOARD, labelOf, lists, listOn, LIST_ORDER, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./theme";
@@ -115,7 +116,7 @@ export function Profile({ onClose, onShare }: {
   return (
     <View style={s.screen}>
       <Header onClose={onClose} s={s} title="Your card" />
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
         <View style={s.rule} />
 
         <View style={[s.plateRow, s.inset]}>

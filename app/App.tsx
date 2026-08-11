@@ -26,7 +26,7 @@ import {
   ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import {
-  fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, updateItem,
+  claim, fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, serverState, updateItem,
   type Item, type ListName, type ShareKind, LISTS,
 } from "./src/api";
 import { Add } from "./src/Add";
@@ -37,6 +37,7 @@ import { ShareSheet } from "./src/ShareSheet";
 import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
+import { KeyboardSafe, scrollKeyboardProps } from "./src/KeyboardSafe";
 import {
   BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
@@ -515,7 +516,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
   const ghost = placeholderOn(list, dark ? D.dark : D.light);
   return (
     <View style={[s.detail, { backgroundColor: fill }]}>
-      <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
         <View>
           <View style={s.detailHead}>
             <Text style={[s.detailKicker, { color: on }]}>{lists[list].n} · {lists[list].label}</Text>
@@ -636,12 +637,24 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // undefined = we have not asked the server yet. A spinner is the honest
+  // rendering of that; showing the code field first and swapping it out under
+  // somebody's fingers is not.
+  const [unclaimed, setUnclaimed] = useState<boolean | undefined>(undefined);
 
-  async function submit() {
+  useEffect(() => {
+    let live = true;
+    serverState()
+      .then((r) => live && setUnclaimed(!!r.unclaimed))
+      .catch(() => live && setUnclaimed(false));   // can't ask → assume claimed
+    return () => { live = false; };
+  }, []);
+
+  async function finish(get: () => Promise<string>) {
     setBusy(true);
     setError(null);
     try {
-      setToken(await pair(code.trim().toUpperCase(), "iPhone"));
+      setToken(await get());
       // Confirm the extension can actually read what we just wrote. Finding
       // this out here is the difference between a one-line fix and a week of
       // "why does sharing do nothing".
@@ -651,30 +664,65 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
       onPaired();
     } catch (e) {
       setError((e as Error).message);
+      setUnclaimed(false);   // a failed claim usually means somebody got there first
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <View style={[s.screen, s.pairWrap]}>
-      <Text style={s.wordmark}>shelf</Text>
-      <Text style={s.pairHint}>Run <Text style={s.mono}>node auth.js --pair you@email</Text> on the server, then type the code.</Text>
-      <TextInput
-        value={code}
-        onChangeText={setCode}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        placeholder="PAIRING CODE"
-        placeholderTextColor={c.inkFaint}
-        style={s.input}
-        onSubmitEditing={submit}
-      />
-      <Press onPress={submit} disabled={busy || code.length < 4} style={s.pairBtn} size={TOUCH_MIN} label="Pair this phone">
-        {busy ? <ActivityIndicator color={c.onList} /> : <Text style={s.pairBtnLabel}>Pair this phone →</Text>}
-      </Press>
-      {error ? <Text style={s.errorNote}>{error}</Text> : null}
-    </View>
+    // The field you type the code into is the whole screen. It shipped under
+    // the keyboard once; that is the entire reason KeyboardSafe exists.
+    // ONE flex container, not two. Nesting a flex:1 View inside KeyboardSafe's
+    // own flex:1 broke the centring and dropped everything to the bottom of
+    // the screen — the render harness caught it immediately.
+    <KeyboardSafe style={[s.screen, s.pairWrap] as never}>
+        {/* NOT s.wordmark: that carries flex:1 so it pushes the count to the
+            right of the header ROW. In a column it ate 701 of 812 points and
+            pinned everything else to the bottom of the screen. A style is only
+            reusable in the axis it was written for. */}
+        <Text style={s.pairMark}>shelf</Text>
+
+        {unclaimed === undefined ? (
+          <ActivityIndicator color={c.inkFaint} />
+        ) : unclaimed ? (
+          <>
+            {/* Nobody has ever paired with this server, so there is nobody to
+                protect it from yet. One tap, no code, and the window shuts
+                permanently the moment it is used. */}
+            <Text style={s.pairHint}>
+              This shelf is new and nobody has claimed it. Take it — after this, any
+              other device needs a code from you.
+            </Text>
+            <Press onPress={() => finish(() => claim("iPhone"))} disabled={busy} style={s.pairBtn} size={TOUCH_MIN} label="Claim this shelf">
+              {busy ? <ActivityIndicator color={c.bg} /> : <Text style={s.pairBtnLabel}>This is my shelf →</Text>}
+            </Press>
+          </>
+        ) : (
+          <>
+            <Text style={s.pairHint}>Type the pairing code for this shelf.</Text>
+            <TextInput
+              value={code}
+              onChangeText={setCode}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="PAIRING CODE"
+              placeholderTextColor={c.inkFaint}
+              style={s.input}
+              onSubmitEditing={() => finish(() => pair(code.trim().toUpperCase(), "iPhone"))}
+            />
+            <Press
+              onPress={() => finish(() => pair(code.trim().toUpperCase(), "iPhone"))}
+              disabled={busy || code.length < 4}
+              style={s.pairBtn} size={TOUCH_MIN} label="Pair this phone"
+            >
+              {busy ? <ActivityIndicator color={c.bg} /> : <Text style={s.pairBtnLabel}>Pair this phone →</Text>}
+            </Press>
+          </>
+        )}
+
+        {error ? <Text style={s.errorNote}>{error}</Text> : null}
+    </KeyboardSafe>
   );
 }
 
@@ -789,6 +837,7 @@ const styles = (c: Palette) => StyleSheet.create({
   busy: { marginTop: sp.lg },
 
   pairWrap: { justifyContent: "center", paddingHorizontal: sp.xl, gap: sp.md },
+  pairMark: { ...t.wordmark, color: c.ink },
   pairHint: { ...t.meta, color: c.inkSoft },
   mono: { ...t.code, color: c.ink },
   input: {
