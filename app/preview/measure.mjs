@@ -24,7 +24,6 @@ const SCREENS = [
   { name: "card 375", q: "", w: 375, h: 812, open: "Your card" },
   { name: "card 320", q: "", w: 320, h: 700, open: "Your card" },
   { name: "card new 375", q: "?blankProfile=1", w: 375, h: 812, open: "Your card" },
-  { name: "sent 375", q: "", w: 375, h: 812, open: "2 sent to you" },
   { name: "share panel 375", q: "", w: 375, h: 812, open: "Share the Books shelf" },
   { name: "share panel 320", q: "", w: 320, h: 700, open: "Share the Books shelf" },
   { name: "detail 375", q: "", w: 375, h: 812, open: "Piranesi, Susanna Clarke" },

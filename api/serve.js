@@ -1,24 +1,34 @@
 // serve.js — the whole HTTP surface. Plain node:http, no framework: this is a
-// dozen routes and a router that fits on one screen is easier to audit than a
-// dependency that hides where the request goes.
+// handful of routes and a router that fits on one screen is easier to audit
+// than a dependency that hides where the request goes.
+//
+// WHAT THIS SERVICE IS, since it used to be something else entirely:
+//
+//   It resolves a link into a named thing, and it hosts what you deliberately
+//   publish. That is all. There are no users, no devices, no pairing codes and
+//   no shelves here — your shelves are on your phone.
+//
+//   The old design had all of it: an accounts table, a device-token handshake,
+//   a queue, a worker, and every item you ever saved. It existed because the
+//   share sheet cannot wait four seconds for Claude, so the work had to be
+//   queued somewhere durable — and "durable" quietly meant "a database holding
+//   everything you read". The share extension now writes to the shared
+//   Keychain and closes instantly, the app does the resolving with a row on
+//   screen, and none of the rest is needed.
+//
+//   What is left needs no login, because there is nothing here to log in to.
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
-import { mintPairCode, redeemPairCode, secretMatches } from "./auth.js";
-import { listItems, updateItem, retryItem, probeRoute, debugItems, retryUnread, json } from "./items.js";
-import { ingestUrl, ingestImage } from "./ingest.js";
-import { drain } from "./worker.js";
-import {
-  getProfile, putProfile, createShare, listShares, revokeShare,
-  resolveShare, resolveHandle, sendToHandle, listReceived, actOnSend,
-} from "./profile.js";
-import { searchRoute, addRoute } from "./search.js";
+import { json, appKeyOk } from "./http.js";
+import { secretMatches } from "./legacy.js";
+import { resolveRoute, resolveImageRoute } from "./resolveRoute.js";
+import { createPublish, revokePublish, publishStats, readPublished } from "./publish.js";
+import { searchRoute } from "./search.js";
+import { probeRoute } from "./probe.js";
+import { legacyExport, legacyWipe } from "./legacy.js";
 import { renderProfile, renderShelf, renderItem, renderGone, html, canonical, WEB_BASE } from "./page.js";
 
 const PORT = Number(process.env.PORT || 8080);
-
-// Free-tier Render has no worker service. See the block at the bottom.
-const WORKER_IN_PROCESS = /^(1|true|yes)$/i.test(process.env.WORKER_IN_PROCESS || "");
-const WORKER_MODE = WORKER_IN_PROCESS ? "in-process" : "separate (worker service or cron)";
 
 // 8MB: a downscaled screenshot as base64 plus headroom. Anything larger is
 // rejected before it is buffered, not after.
@@ -42,206 +52,104 @@ function readBody(req) {
   });
 }
 
+// Everything here needs the app key. It is not a user credential — it is the
+// turnstile in front of a service that spends money per request.
 const routes = {
-  "POST /api/ingest": ingestUrl,
-  "POST /api/ingest/image": ingestImage,
-  "POST /api/item": updateItem,
-  "POST /api/item/retry": retryItem,
-  "POST /api/debug/retry-unread": (req, res, body, url) => retryUnread(req, res, url),
-  "POST /api/profile": putProfile,
-  "POST /api/share": createShare,
-  "POST /api/share/revoke": revokeShare,
-  "POST /api/send": sendToHandle,
-  "POST /api/send/act": actOnSend,
-  "POST /api/add": addRoute,
+  "POST /api/resolve": resolveRoute,
+  "POST /api/resolve/image": resolveImageRoute,
+  "POST /api/publish": createPublish,
+  "POST /api/publish/revoke": revokePublish,
+  "POST /api/publish/stats": publishStats,
 };
 
 const getRoutes = {
-  "GET /api/items": (req, res, url) => listItems(req, res, url),
-  "GET /api/profile": (req, res) => getProfile(req, res),
-  "GET /api/shares": (req, res) => listShares(req, res),
-  "GET /api/received": (req, res) => listReceived(req, res),
   "GET /api/search": (req, res, url) => searchRoute(req, res, url),
-  // Not a feature — an instrument. It answers "why did that reel come back
-  // with no name" from the machine whose IP address is the variable.
   "GET /api/debug/reel": (req, res, url) => probeRoute(req, res, url),
-  "GET /api/debug/items": (req, res) => debugItems(req, res),
+  // The one-time move off the old server-side store. Removed once the phone
+  // has the rows; see legacy.js.
+  "GET /api/legacy/export": (req, res) => legacyExport(req, res),
 };
 
 /**
- * The public web surface. Three shapes of URL, and they are deliberately short
- * because they get typed off a screenshot and read aloud:
+ * The public web surface. ONE shape of URL now:
  *
- *   /s/<code>      a link somebody made and can revoke
- *   /@handle       a profile, only if its owner made their shelves public
- *   /@handle/books one shelf of that profile
+ *   /s/<code>   something somebody deliberately published
  *
- * A revoked link and a link that never existed render IDENTICALLY. Any
- * difference between the two is an oracle for guessing codes.
+ * `/@handle` is gone with the accounts that gave it meaning. A handle was a
+ * lookup into a users table; there is no users table, and a profile page is
+ * now just another published snapshot.
+ *
+ * A revoked link and a link that never existed render IDENTICALLY.
  */
 async function publicPage(req, res, url) {
-  const path = decodeURIComponent(url.pathname);
-
-  const shared = /^\/s\/([a-z0-9]{4,16})$/i.exec(path);
-  if (shared) {
-    const got = await resolveShare(shared[1], { count: true });
-    if (!got) return html(res, 404, renderGone());
-    // A share link's canonical address is the SHARE, not the owner's profile —
-    // otherwise every card a person sends points at the same page.
-    const at = { ...got, url: canonical(`/s/${shared[1]}`) };
-    const page = at.kind === "profile" ? renderProfile(at) : at.kind === "shelf" ? renderShelf(at) : renderItem(at);
-    return html(res, 200, page);
-  }
-
-  const at = /^\/@([A-Za-z0-9_]{2,24})(?:\/([a-z]+))?$/.exec(path);
-  if (at) {
-    const list = at[2] && ALL_PUBLIC_LISTS.includes(at[2]) ? at[2] : null;
-    if (at[2] && !list) return html(res, 404, renderGone());
-    const got = await resolveHandle(at[1], list);
-    if (!got) return html(res, 404, renderGone());
-    return html(res, 200, got.kind === "shelf" ? renderShelf(got) : renderProfile(got));
-  }
-  return null;
+  const shared = /^\/s\/([a-z0-9]{4,16})$/i.exec(decodeURIComponent(url.pathname));
+  if (!shared) return null;
+  const got = await readPublished(shared[1], { count: true });
+  if (!got) return html(res, 404, renderGone());
+  const at = { ...got, url: canonical(`/s/${shared[1]}`) };
+  const page = at.kind === "profile" ? renderProfile({ ...at, lists: at.lists })
+    : at.kind === "shelf" ? renderShelf(at)
+    : renderItem(at);
+  return html(res, 200, page);
 }
-
-const ALL_PUBLIC_LISTS = ["books", "restaurants", "movies", "recipes"];
 
 async function handle(req, res, url) {
   const key = `${req.method} ${url.pathname}`;
 
   if (key === "GET /api/health") {
-    // Says what is actually true, in words. If the queue is backing up or the
-    // worker died, this is where you find out — a bare {ok:true} that is
-    // green while nothing resolves would be worse than no health check.
-    // Says what is actually true, in words — including WHICH worker arrangement
-    // this process believes it is in. "Shares are queued but not resolving"
-    // reads very differently depending on whether anything is meant to be
-    // draining them here.
+    // Says what is actually true, in words. A bare {ok:true} that stays green
+    // while nothing resolves would be worse than no health check at all.
     const out = {
-      ok: true, db: dbReady(), model: process.env.SHELF_MODEL || "claude-opus-5", worker: WORKER_MODE,
-      // Where share links point. Reported because it is derived — from
-      // SHELF_WEB_BASE or Render's own RENDER_EXTERNAL_URL — and a wrong value
-      // here is invisible until somebody tells you the link you sent them
-      // 404s. An empty string means neither is set.
+      ok: true,
+      db: dbReady(),
+      model: process.env.SHELF_MODEL || "claude-opus-5",
+      // What this service holds. Named explicitly because the answer changed,
+      // and because "does the server have my shelves" is the question this
+      // rewrite exists to answer with a no.
+      stores: "published snapshots only — no accounts, no shelves",
       web_base: WEB_BASE,
+      app_key_required: !!process.env.SHELF_APP_KEY,
+      providers: {
+        claude: !!process.env.ANTHROPIC_API_KEY,
+        tmdb: !!process.env.TMDB_API_KEY,
+        places_google: !!process.env.GOOGLE_PLACES_KEY,
+        places_osm: true,   // free, keyless, always available
+        ig_resolver: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
+      },
     };
     if (dbReady()) {
       try {
-        const d = await query("select count(*)::int as n from devices");
-        // Visible, not quiet: an unclaimed shelf can be claimed by the first
-        // person to open the app, and you should be able to see that it still
-        // can be.
-        out.unclaimed = d.rows[0].n === 0;
-      } catch (_) { /* the queue block below reports db trouble */ }
-    }
-    out.providers = {
-      claude: !!process.env.ANTHROPIC_API_KEY,
-      tmdb: !!process.env.TMDB_API_KEY,
-      places: !!process.env.GOOGLE_PLACES_KEY,
-      ig_resolver: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
-    };
-    if (dbReady()) {
-      try {
-        const r = await query(
-          `select count(*) filter (where status = 'pending')::int as pending,
-                  count(*) filter (where status = 'needs_review')::int as inbox,
-                  count(*) filter (where status = 'filed')::int as filed,
-                  count(*) filter (where status = 'pending' and attempts >= 4)::int as stuck,
-                  extract(epoch from now() - min(created_at) filter (where status = 'pending'))::int as oldest_pending_s
-             from items`
-        );
-        out.queue = r.rows[0];
-        if (out.queue.oldest_pending_s > 600) {
-          out.ok = false;
-          out.warn = WORKER_IN_PROCESS
-            ? "shares are queued but the in-process drain is not clearing them — check the logs for a failing resolve"
-            : "shares are queued but not resolving — is the worker service running? (free-tier Render has no workers: set WORKER_IN_PROCESS=1 on this service instead)";
-        }
+        const r = await query(`select count(*)::int as n, coalesce(sum(views), 0)::int as views from published`);
+        out.published = { links: r.rows[0].n, opened: r.rows[0].views };
       } catch (e) { out.ok = false; out.db_error = e.message; }
     }
     return json(res, out.ok ? 200 : 503, out, { priv: true });
   }
 
-  // Mint a pairing code over HTTP, guarded by ADMIN_SECRET.
-  //
-  // `node auth.js --pair` needs a shell on the box, and Render's Shell is a
-  // PAID feature — so on the free tier there is otherwise no way to get your
-  // first code, and the app cannot be signed into at all. Same guard as the
-  // worker route, and the code it returns is still single-use and short-lived.
-  if (key === "POST /api/admin/pair") {
-    if (!process.env.ADMIN_SECRET) {
-      return json(res, 403, { ok: false, error: "ADMIN_SECRET is not set on this service" });
-    }
-    if (!secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET)) {
-      return json(res, 403, { ok: false, error: "nope" });
-    }
-    const body = await readBody(req);
-    const email = String(body?.email || "").trim();
-    if (!/^[^@\s]+@[^@\s]+$/.test(email)) {
-      return json(res, 400, { ok: false, error: "an email is required — it is what identifies the account" });
-    }
-    const { code } = await mintPairCode(email);
-    return json(res, 200, { ok: true, code, expires_in_minutes: 30, note: "single use" });
-  }
-
-  // FIRST RUN CLAIMS THE APP.
-  //
-  // A pairing code exists so that a public URL is not a public shelf. But on a
-  // brand-new deployment there is nobody to protect it from yet — the database
-  // has no devices at all — and requiring a code there means the first thing
-  // the app ever asks you to do is go and run a curl. So: while no device has
-  // ever paired, one may pair with no code.
-  //
-  // The window closes permanently the instant it is used. `devices` is checked
-  // on every call, so the second device gets the same 403 a stranger would,
-  // and reopening it takes deliberate action against the database. The whole
-  // exposure is the minutes between deploying and opening the app, and only
-  // for somebody who already knows the URL.
-  //
-  // /api/health reports `unclaimed` so this is a visible state, not a quiet one.
-  if (key === "POST /api/pair/claim") {
-    if (!dbReady()) return json(res, 503, { ok: false, error: "no database" });
-    const taken = await query("select count(*)::int as n from devices");
-    if (taken.rows[0].n > 0) {
-      return json(res, 403, {
-        ok: false,
-        error: "this shelf has already been claimed — ask its owner for a pairing code",
-      });
-    }
-    const body = await readBody(req);
-    const email = String(body?.email || "").trim() || "owner@shelf.local";
-    const { code } = await mintPairCode(email);
-    const got = await redeemPairCode(code, body?.device || "iPhone");
-    console.log(`[shelf] first device claimed this shelf as ${email}`);
-    return json(res, 200, { ok: true, token: got.token, claimed_as: email });
-  }
-
-  if (key === "POST /api/pair/redeem") {
-    const body = await readBody(req);
-    const got = await redeemPairCode(body?.code, body?.device);
-    if (!got) return json(res, 401, { ok: false, error: "bad or expired code" });
-    return json(res, 200, { ok: true, token: got.token });
-  }
-
-  const get = getRoutes[key];
-  if (get) return get(req, res, url);
-
+  // Public pages first: they are the one thing that must work with no key,
+  // because the whole point is handing a link to somebody who has no app.
   if (req.method === "GET" || req.method === "HEAD") {
     const served = await publicPage(req, res, url);
     if (served !== null) return served;
   }
 
-  // Lets a cron ping drive the queue where a long-lived worker is awkward.
-  if (key === "POST /api/worker/run") {
+  // Guarded, uniformly. `/api/legacy/wipe` takes the admin secret instead,
+  // because it destroys data and the app key is in every build.
+  if (key === "POST /api/legacy/wipe") {
     if (!secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET)) {
       return json(res, 403, { ok: false, error: "nope" });
     }
-    return json(res, 200, { ok: true, resolved: await drain(10) });
+    return legacyWipe(req, res);
   }
 
+  if (url.pathname.startsWith("/api/") && !appKeyOk(req)) {
+    return json(res, 401, { ok: false, error: "this build is not authorised to use this service" });
+  }
+
+  const get = getRoutes[key];
+  if (get) return get(req, res, url);
+
   const fn = routes[key];
-  // `url` rides along as a fourth argument so a POST can read a query string.
-  // Every existing handler takes three and ignores it.
   if (fn) return fn(req, res, await readBody(req), url);
 
   return json(res, 404, { ok: false, error: "no such route" });
@@ -252,44 +160,16 @@ const server = createServer(async (req, res) => {
   try {
     await handle(req, res, url);
   } catch (e) {
-    if (!res.headersSent) {
-      const bad = /body too large|invalid json/.test(e.message);
-      json(res, bad ? 400 : 500, { ok: false, error: bad ? e.message : "server error" });
-    }
-    if (!/body too large|invalid json/.test(e.message)) console.error("[serve]", req.method, url.pathname, e);
+    console.error(`[shelf] ${req.method} ${url.pathname}:`, e);
+    json(res, 500, { ok: false, error: e.message });
   }
 });
 
 await migrate();
-server.listen(PORT, () => console.log(`[shelf] listening on :${PORT}  db=${dbReady()}  worker=${WORKER_MODE}`));
-
-// ── the in-process drain ─────────────────────────────────────────────────────
-//
-// Render's free tier has no background workers, so `render.yaml`'s worker
-// service needs a paid instance. This is the free-tier path: the same drain,
-// on a timer, in the web process.
-//
-// It does NOT break the one architectural rule of this service. That rule is
-// that nothing slow happens ON THE REQUEST PATH — a share writes a row and
-// returns. A timer in the same process is not the request path. `for update
-// skip locked` already makes concurrent drains safe, so running this AND a
-// real worker is harmless rather than a race.
-//
-// It is off by default because a dedicated worker is better when you have one:
-// a long Claude call here competes with request handling for the event loop.
-if (WORKER_IN_PROCESS && dbReady()) {
-  const every = Number(process.env.WORKER_INTERVAL_MS || 15_000);
-  let running = false;
-  setInterval(async () => {
-    if (running) return;          // a slow drain must not stack up behind itself
-    running = true;
-    try {
-      const done = await drain(3);
-      if (done.length) console.log(`[shelf] drained ${done.length} in-process`);
-    } catch (e) {
-      console.error("[shelf] in-process drain failed:", e.message);
-    } finally {
-      running = false;
-    }
-  }, every).unref();
-}
+server.listen(PORT, () => {
+  console.log(`[shelf] listening on ${PORT}`);
+  console.log(`[shelf] stores published snapshots only — no accounts, no shelves`);
+  if (!process.env.SHELF_APP_KEY) {
+    console.warn(`[shelf] SHELF_APP_KEY is not set — anyone who finds this URL can spend your provider quota`);
+  }
+});

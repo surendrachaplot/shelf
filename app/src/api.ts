@@ -1,62 +1,49 @@
-// api.ts — every call the app and the extension make.
+// api.ts — the few things the app asks a server for.
 //
-// The offline queue at the bottom is not a nicety. The share extension runs in
-// a lift, on a train, on 1 bar of signal; if a failed POST just showed an error
-// and closed, the save would be gone and the user would never know which ones
-// they lost. A share that cannot reach the server is written to disk and
-// flushed by the app on next launch.
-import { getToken } from "./tokenStore";
+// It does NOT ask for your shelves. Those are in `store.ts`, on this phone.
+// This file exists for the three jobs a phone genuinely cannot do alone:
+//
+//   resolve   turn a link into a named thing (a scrape, then Claude, then a
+//             catalogue). Claude needs a key that must never ship in a build.
+//   search    the same catalogues, for adding something by name.
+//   publish   host a snapshot so a link you hand out opens for somebody with
+//             no app. Only what you explicitly share ever goes up.
+//
+// There is no login, because there is nothing to log in to. The build carries
+// an app key so a stranger who finds the URL cannot spend the provider quota;
+// it identifies the BUILD, not you, and it can read nothing.
+import * as SecureStore from "expo-secure-store";
 
-// The deployed service. eas.json sets EXPO_PUBLIC_SHELF_API for real builds;
-// this default is what a bare `expo start` uses, and the two must agree or the
-// app talks to a different server depending on how it was launched.
 export const API_BASE = process.env.EXPO_PUBLIC_SHELF_API ?? "https://shelf-api-u8xy.onrender.com";
+
+// Baked at build time by eas.json. Absent in a bare `expo start`, which is
+// fine: a dev server with no key set accepts everything.
+const APP_KEY = process.env.EXPO_PUBLIC_SHELF_KEY ?? "";
+
+// Where a published link points. Same host as the API unless a real domain is
+// configured — this is what people see, so it is worth having a name one day.
+export const SHARE_BASE = process.env.EXPO_PUBLIC_SHELF_WEB ?? API_BASE;
+export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
 
 export type ListName = "books" | "restaurants" | "movies" | "recipes" | "unsorted";
 export const LISTS: ListName[] = ["books", "restaurants", "movies", "recipes"];
 
-export type Item = {
-  id: string;
+/** What the resolver hands back. The device turns this into a stored Item. */
+export type Resolved = {
   list: ListName;
-  status: "pending" | "needs_review" | "filed" | "discarded";
   title: string | null;
-  subtitle: string | null;
-  note: string | null;
+  subtitle: string;
+  note: string;
   image_url: string | null;
   canonical: Record<string, unknown>;
   confidence: number | null;
-  source_url: string | null;
   enriched: boolean;
-  created_at: string;
-  // Why a thing has no name. `resolver` is which link in the chain answered
-  // ("none" means every one of them came back empty), `had_caption` says
-  // whether there was any text to reason about at all, and `last_error` is a
-  // thrown exception rather than an empty result. Together they are the
-  // difference between "Instagram wouldn't hand it over" and "we read it and
-  // it wasn't about anything" — which need different actions from you.
-  resolver: string | null;
-  attempts: number;
-  last_error: string | null;
-  had_caption: boolean;
+  source_url: string | null;
+  resolver: string;
+  caption: string;
 };
 
-/** Put an unread item back in the queue. Reads are retried, not re-shared. */
-export const retryItem = (id: string) =>
-  req<{ item: Pick<Item, "id" | "status"> }>(`/api/item/retry`, {
-    method: "POST", body: JSON.stringify({ id }),
-  });
-
-/**
- * The one failure the share extension must not mislabel. Every other error in
- * the sheet means "the network was bad, we kept it"; this one means "this
- * phone has no key", and keeping it would be a lie — the queue lives in the
- * same Keychain group the missing key lives in.
- */
-export const NOT_PAIRED = "not paired";
-
-async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<T> {
-  const token = await getToken();
-  if (!token) throw new Error(NOT_PAIRED);
+async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   try {
@@ -65,7 +52,7 @@ async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 8000): P
       signal: ac.signal,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        ...(APP_KEY ? { "x-shelf-key": APP_KEY } : {}),
         ...(init.headers ?? {}),
       },
     });
@@ -77,164 +64,86 @@ async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 8000): P
   }
 }
 
-export const pair = async (code: string, device: string) => {
-  const res = await fetch(`${API_BASE}/api/pair/redeem`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, device }),
-  });
-  const body = (await res.json()) as { ok: boolean; token?: string; error?: string };
-  if (!body.ok || !body.token) throw new Error(body.error ?? "pairing failed");
-  return body.token;
-};
-
 /**
- * Claim a brand-new shelf with no code at all. Succeeds only while no device
- * has ever paired; after that it 403s like it would for a stranger.
- */
-export const claim = async (device: string) => {
-  const res = await fetch(`${API_BASE}/api/pair/claim`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ device }),
-  });
-  const body = (await res.json()) as { ok: boolean; token?: string; error?: string };
-  if (!body.ok || !body.token) throw new Error(body.error ?? "could not claim");
-  return body.token;
-};
-
-/**
- * Is this server still unclaimed? Decides which pairing screen you get.
+ * Turn a shared link into things worth keeping.
  *
- * TIMED, and shorter than you'd think. This is the first network call the app
- * ever makes, and it is made while the only thing on screen is the wordmark
- * over a spinner — which is indistinguishable from the splash. Render's free
- * tier sleeps after ~15 minutes idle and can take a minute to wake, so an
- * untimed fetch here IS "the app is stuck on the splash screen". It was
- * reported as exactly that. One call may not wake the server; the caller
- * retries and says so out loud.
+ * SIXTY SECONDS, not eight. This is a scrape, a Claude call and a catalogue
+ * lookup in series, and on a sleeping free-tier server the first one of the
+ * day also pays a cold start. The old eight-second timeout was written for an
+ * endpoint that only wrote a queue row and returned; using it here would
+ * abandon work that was about to succeed.
+ */
+export const resolveLink = (url: string, list: ListName, homeCity?: string) =>
+  req<{ items: Resolved[]; resolver: string; caption_chars: number }>(
+    "/api/resolve",
+    { method: "POST", body: JSON.stringify({ url, list, home_city: homeCity || "" }) },
+    60000
+  );
+
+export const resolveImage = (imageB64: string, mediaType: string, list: ListName) =>
+  req<{ items: Resolved[] }>(
+    "/api/resolve/image",
+    { method: "POST", body: JSON.stringify({ image_b64: imageB64, media_type: mediaType, list }) },
+    60000
+  );
+
+export type SearchHit = {
+  list: ListName; title: string; subtitle: string; image_url: string | null;
+  canonical: Record<string, unknown>;
+  // A stable identity for the result — the catalogue's own key, and what the
+  // list is keyed on when rendering. Always present: the server builds it.
+  key: string;
+};
+export const search = (q: string, list?: ListName | null, city?: string) => {
+  const p = new URLSearchParams({ q });
+  if (list) p.set("list", list);
+  if (city) p.set("city", city);
+  return req<{ results: SearchHit[]; unavailable: { list: ListName; provider: string }[]; mode?: string }>(`/api/search?${p}`, {}, 15000);
+};
+
+// ── publishing: the only thing that ever leaves the phone ────────────────────
+
+export type PublishKind = "item" | "shelf" | "profile";
+export const publish = (body: Record<string, unknown>) =>
+  req<{ code: string; kind: string }>("/api/publish", { method: "POST", body: JSON.stringify(body) });
+
+export const revokePublish = (code: string) =>
+  req<{ revoked: boolean }>("/api/publish/revoke", { method: "POST", body: JSON.stringify({ code }) });
+
+/** How many times each link has been opened. Absent codes are no longer live. */
+export const publishStats = (codes: string[]) =>
+  req<{ views: Record<string, number> }>("/api/publish/stats", { method: "POST", body: JSON.stringify({ codes }) });
+
+/** One-time: pull anything the old server-side store still holds. */
+export const legacyExport = () =>
+  req<{ count: number; items: Record<string, unknown>[] }>("/api/legacy/export", {}, 30000);
+
+/**
+ * Is the server up? TIMED and short, because it is called while the app is
+ * still deciding what to draw. Render's free tier sleeps and can take a minute
+ * to wake — an untimed call here once WAS "stuck on the splash screen".
  */
 export const serverState = async (timeoutMs = 7000) => {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   try {
     const res = await fetch(`${API_BASE}/api/health`, { signal: ac.signal });
-    return (await res.json()) as { unclaimed?: boolean; db?: boolean };
+    return (await res.json()) as { ok?: boolean; db?: boolean };
   } finally {
     clearTimeout(timer);
   }
 };
 
-export const fetchList = (list: ListName) =>
-  req<{ items: Item[] }>(`/api/items?list=${list}`).then((r) => r.items);
-
-export const fetchInbox = () =>
-  req<{ items: Item[] }>(`/api/items?inbox=1`).then((r) => r.items);
-
-export const updateItem = (body: Record<string, unknown>) =>
-  req<{ item: Item }>(`/api/item`, { method: "POST", body: JSON.stringify(body) });
-
-// The share-time call. Short timeout on purpose: the sheet is over Instagram
-// and a spinner there is worse than an optimistic "saved" plus a retry.
-export const ingestUrl = (url: string, list: ListName) =>
-  req<{ id: string }>(`/api/ingest`, { method: "POST", body: JSON.stringify({ url, list }) }, 5000);
-
-export const ingestImage = (imageB64: string, mediaType: string, list: ListName) =>
-  req<{ id: string }>(
-    `/api/ingest/image`,
-    { method: "POST", body: JSON.stringify({ image_b64: imageB64, media_type: mediaType, list }) },
-    15000
-  );
-
-// ── who you are, and handing a shelf to someone ──────────────────────────────
-
-export type Profile = {
-  handle: string | null;
-  display_name: string;
-  bio: string | null;
-  plate_seed: string;
-  since: string;
-};
-
-export type ProfileState = {
-  profile: Profile | null;
-  needs_handle: boolean;
-  public_shelves: boolean;
-  counts: Record<string, number>;
-};
-
-export type ShareKind = "item" | "shelf" | "profile";
-export type Share = { code: string; kind: ShareKind; target: string | null; note: string | null; views: number };
-
-export type Received = {
-  id: string; note: string | null; created_at: string; code: string;
-  from_handle: string; from_name: string | null; from_seed: string;
-  kind: ShareKind | null; target: string | null;
-};
-
-/**
- * Where a share code becomes something you can paste into a message.
- *
- * DEFAULTS TO THE API, because the API is what serves /s/<code> — the public
- * pages and the JSON come out of the same process. A separate default (it used
- * to be a domain nobody owns yet) means every link the app hands out is dead
- * until somebody remembers to set a second variable, and you find out when a
- * friend tells you the link you sent them 404s.
- */
-export const SHARE_BASE = (process.env.EXPO_PUBLIC_SHELF_WEB ?? API_BASE).replace(/\/+$/, "");
-export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
-export const profileUrl = (handle: string) => `${SHARE_BASE}/@${handle}`;
-
-export const getProfile = () => req<{ ok: true } & ProfileState>(`/api/profile`);
-
-export const saveProfile = (patch: Partial<Profile> & { public_shelves?: boolean }) =>
-  req<{ ok: true } & ProfileState>(`/api/profile`, { method: "POST", body: JSON.stringify(patch) });
-
-export const makeShare = (kind: ShareKind, target?: string | null, note?: string) =>
-  req<{ share: Share; handle: string }>(`/api/share`, {
-    method: "POST", body: JSON.stringify({ kind, target: target ?? null, note: note ?? null }),
-  });
-
-export const revokeShare = (code: string) =>
-  req<{ revoked: boolean }>(`/api/share/revoke`, { method: "POST", body: JSON.stringify({ code }) });
-
-export const listShares = () => req<{ shares: Share[] }>(`/api/shares`).then((r) => r.shares);
-
-export const sendTo = (to: string, kind: ShareKind, target: string | null, note?: string) =>
-  req<{ sent_to: string; code: string; duplicate: boolean }>(`/api/send`, {
-    method: "POST", body: JSON.stringify({ to, kind, target, note: note ?? null }),
-  });
-
-export const listReceived = () => req<{ received: Received[] }>(`/api/received`).then((r) => r.received);
-
-export const actOnSend = (id: string, action: "accept" | "decline") =>
-  req<{ copied: number }>(`/api/send/act`, { method: "POST", body: JSON.stringify({ id, action }) });
-
-// ── search and add ───────────────────────────────────────────────────────────
-
-export type SearchHit = {
-  list: ListName; key: string; title: string; subtitle: string | null;
-  image_url: string | null; canonical: Record<string, unknown>; provider: string;
-};
-
-/**
- * `unavailable` is not an error and must not render as one. It is the honest
- * answer to "why are there no films here" when nobody has set TMDB_API_KEY —
- * and §8 says a zero and a couldn't-look must never look the same.
- */
-export const search = (q: string, list?: ListName) =>
-  req<{ results: SearchHit[]; unavailable: { list: ListName; provider: string }[]; mode?: string }>(
-    `/api/search?q=${encodeURIComponent(q)}${list ? `&list=${list}` : ""}`, {}, 12000
-  );
-
-export const addItem = (hit: Pick<SearchHit, "list" | "title" | "subtitle" | "image_url" | "canonical">) =>
-  req<{ item: Item }>(`/api/add`, { method: "POST", body: JSON.stringify(hit) });
-
-// ── offline queue ────────────────────────────────────────────────────────────
-// Stored in the shared Keychain rather than AsyncStorage for the same reason
-// the token is: the extension writes it and the app reads it, and they do not
-// otherwise share a filesystem.
-import * as SecureStore from "expo-secure-store";
+// ── the hand-off from the share extension ────────────────────────────────────
+//
+// THE EXTENSION NEVER TALKS TO THE SERVER NOW. It writes here and closes, in
+// well under a second, and the app does the slow part later with a row on
+// screen. That is better than the old design in every way that matters: the
+// sheet is instant, a share in a lift is not a lost share, and a four-second
+// resolve happens somewhere you can watch it.
+//
+// The Keychain is the channel because the two processes share nothing else —
+// separate sandboxes, separate filesystems, one Keychain access group.
 
 const QUEUE_KEY = "shelf.pending.shares";
 const queueOpts = {
@@ -243,7 +152,7 @@ const queueOpts = {
   keychainService: "shelf",
 } as unknown as SecureStore.SecureStoreOptions;
 
-type QueuedShare = { url: string; list: ListName; at: number };
+export type QueuedShare = { url: string; list: ListName; at: number };
 
 async function readQueue(): Promise<QueuedShare[]> {
   try {
@@ -256,17 +165,16 @@ async function readQueue(): Promise<QueuedShare[]> {
 }
 
 async function writeQueue(q: QueuedShare[]): Promise<void> {
-  // Keychain items are not meant to be large. 50 stranded shares means the
-  // server has been unreachable for a long time, and dropping the oldest is
-  // better than failing to record the newest.
+  // Keychain items are not meant to be large. 50 unread shares means the app
+  // has not been opened in a long time; dropping the oldest beats failing to
+  // record the newest.
   await SecureStore.setItemAsync(QUEUE_KEY, JSON.stringify(q.slice(-50)), queueOpts);
 }
 
 /**
- * Returns whether the share is really on disk. The extension shows "Queued" on
- * the strength of this, and a "Queued" that did not queue is the worst outcome
- * this app can produce: a receipt for something that was thrown away. So the
- * write is read back rather than assumed.
+ * Returns whether the share is really on disk. The sheet says "Saved" on the
+ * strength of this, and a receipt for something that was thrown away is the
+ * worst thing this app can produce — so the write is read back, not assumed.
  */
 export async function queueShare(url: string, list: ListName): Promise<boolean> {
   try {
@@ -279,22 +187,22 @@ export async function queueShare(url: string, list: ListName): Promise<boolean> 
   }
 }
 
-// Called on app launch. Returns how many stranded shares made it through.
-export async function flushQueue(): Promise<number> {
+/** Everything the extension left, oldest first. Emptied by the caller. */
+export const takeQueue = async (): Promise<QueuedShare[]> => {
   const q = await readQueue();
-  if (!q.length) return 0;
-  const stuck: QueuedShare[] = [];
-  let sent = 0;
-  for (const s of q) {
-    try {
-      await ingestUrl(s.url, s.list);
-      sent++;
-    } catch {
-      stuck.push(s);
-    }
-  }
-  await writeQueue(stuck);
-  return sent;
-}
+  if (q.length) await writeQueue([]);
+  return q;
+};
 
 export const pendingShareCount = () => readQueue().then((q) => q.length);
+
+/** Can the extension and the app see the same Keychain? */
+export async function sharedKeychainOk(): Promise<boolean> {
+  try {
+    const stamp = String(Math.random());
+    await SecureStore.setItemAsync("shelf.group.probe", stamp, queueOpts);
+    return (await SecureStore.getItemAsync("shelf.group.probe", queueOpts)) === stamp;
+  } catch {
+    return false;
+  }
+}

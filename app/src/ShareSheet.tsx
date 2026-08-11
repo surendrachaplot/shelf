@@ -1,9 +1,12 @@
 // ShareSheet.tsx — handing part of yourself to someone.
 //
-// Two verbs, one panel, because they are the same act with different reach: a
-// LINK anyone can open, and a SEND straight to another shelf user. Splitting
-// them across two screens would make you decide how you are sharing before you
-// have decided what you are sharing.
+// ONE verb now: a link anyone can open. Sending straight to another person
+// needed an account to address it to, and there are no accounts — your shelves
+// are on your phone.
+//
+// THIS SCREEN IS THE ONLY PLACE ANYTHING LEAVES THE DEVICE. Opening it uploads
+// a frozen snapshot of exactly what you are sharing — this item, or this
+// shelf, or your card — and nothing else. Turning the link off deletes it.
 //
 // The panel is the list's own colour at full bleed — the same field the jacket
 // and the detail use — so sharing a red thing happens on red. It is the last
@@ -11,27 +14,31 @@
 // the thing, not like a system dialog.
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Share, StyleSheet, Text, TextInput, View } from "react-native";
-import { getProfile, makeShare, revokeShare, sendTo, shareUrl, type ShareKind } from "./api";
+import { publish, revokePublish, shareUrl, type PublishKind } from "./api";
+import { shelfOf, type Item, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
 import { KeyboardSafe } from "./KeyboardSafe";
 import * as D from "./design.js";
 import { labelOf, listOn, placeholderOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
-export function ShareSheet({ kind, target, list, title, onClose }: {
-  kind: ShareKind;
-  target: string | null;
-  list: string;                 // which colour this happens on
+export function ShareSheet({ kind, item, list, title, shelf, onClose, onLinked }: {
+  kind: PublishKind;
+  item?: Item;                  // when sharing one thing
+  list?: string;                // which colour this happens on
   title: string;                // what the user thinks they are sharing
+  shelf: Shelf;                 // where the snapshot is built from
   onClose: () => void;
+  onLinked: (link: Link) => void;
 }) {
   const { c, dark } = useTheme();
   const s = styles(c);
-  const fill = (c as Record<string, string>)[list] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[list] ?? c.onList;
+  const listKey = list ?? item?.list ?? "unsorted";
+  const fill = (c as Record<string, string>)[listKey] ?? c.unsorted;
+  const on = (listOn as Record<string, string>)[listKey] ?? c.onList;
   // An empty field must READ as empty. Set in the full label colour, the
   // placeholder looked like something somebody had already typed.
-  const ghost = placeholderOn(list, dark ? D.dark : D.light);
+  const ghost = placeholderOn(listKey, dark ? D.dark : D.light);
 
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,29 +46,35 @@ export function ShareSheet({ kind, target, list, title, onClose }: {
   const [to, setTo] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [seed, setSeed] = useState<string | null>(null);
-  const [handle, setHandle] = useState<string | null>(null);
-
+  // THE SNAPSHOT IS BUILT AND UPLOADED WHEN THE PANEL OPENS, not when you
+  // press a button. By the time you decided to share something you had already
+  // decided; a "generate link" step is a button that exists to be pressed.
+  //
+  // Only what is named here goes up. A single item sends that item; a shelf
+  // sends that shelf; a card sends the four shelves and your name. Your notes
+  // travel with the thing they are about — that is the point of sharing a
+  // shelf rather than a list of titles — and nothing else is included.
   useEffect(() => {
     let live = true;
-    // Failing silently is right: the seal is a flourish, and a network hiccup
-    // must not stop you sharing the thing you came here to share.
-    getProfile()
-      .then((p) => { if (live && p.profile) { setSeed(p.profile.plate_seed || p.profile.handle); setHandle(p.profile.handle); } })
-      .catch(() => {});
-    return () => { live = false; };
-  }, []);
+    const owner = { name: shelf.profile.name, bio: shelf.profile.bio, seed: shelf.profile.seed };
+    const body =
+      kind === "item" ? { kind, owner, item }
+      : kind === "shelf" ? { kind, owner, target: listKey, items: shelfOf(shelf, listKey) }
+      : { kind, owner, lists: Object.fromEntries(
+            ["books", "restaurants", "movies", "recipes"].map((l) => [l, shelfOf(shelf, l)])) };
 
-  // The link is minted when the panel opens, not when you press a button. By
-  // the time you have decided to share something you have already decided; a
-  // "generate link" step is a button that exists to be pressed.
-  useEffect(() => {
-    let live = true;
-    makeShare(kind, target)
-      .then((r) => live && setCode(r.share.code))
+    publish(body)
+      .then((r) => {
+        if (!live) return;
+        setCode(r.code);
+        onLinked({ code: r.code, kind, target: kind === "shelf" ? listKey : null, title, at: new Date().toISOString() });
+      })
       .catch((e) => live && setError((e as Error).message));
     return () => { live = false; };
-  }, [kind, target]);
+    // Built once, on open. Rebuilding it as the shelf changes underneath would
+    // silently publish something the person never looked at.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const url = code ? shareUrl(code) : null;
 
@@ -73,25 +86,9 @@ export function ShareSheet({ kind, target, list, title, onClose }: {
     await Share.share({ message: note ? `${note}\n${url}` : url, url }).catch(() => {});
   }
 
-  async function send() {
-    const handle = to.trim().replace(/^@/, "");
-    if (!handle) return;
-    setWorking(true);
-    setStatus(null);
-    try {
-      const r = await sendTo(handle, kind, target, note || undefined);
-      setStatus(r.duplicate ? `@${r.sent_to} already has this one` : `Sent to @${r.sent_to}`);
-      setTo("");
-    } catch (e) {
-      setStatus((e as Error).message);
-    } finally {
-      setWorking(false);
-    }
-  }
-
   async function pull() {
     if (!code) return;
-    await revokeShare(code).catch(() => {});
+    await revokePublish(code).catch(() => {});
     onClose();
   }
 
@@ -140,37 +137,10 @@ export function ShareSheet({ kind, target, list, title, onClose }: {
       </View>
 
       <View style={[s.rule, s.ruleMid, { backgroundColor: on }]} />
-      <Text style={[s.kicker, { color: on }]}>Or straight to someone</Text>
-      <View style={s.sendRow}>
-        <TextInput
-          value={to}
-          onChangeText={setTo}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="@handle"
-          placeholderTextColor={ghost}
-          style={[s.input, s.inputFlex, { color: on, borderColor: on }]}
-          onSubmitEditing={send}
-        />
-        <Press onPress={send} disabled={working || to.trim().length < 2} style={[s.btn, { backgroundColor: on }]} size={TOUCH_MIN} label="Send it">
-          {working ? <ActivityIndicator color={fill} /> : <Text style={[s.btnLabel, { color: fill }]}>Send</Text>}
-        </Press>
-      </View>
-      {status ? <Text style={[s.body, { color: on }]}>{status}</Text> : null}
-
-      <Text style={[s.fine, { color: on }]}>
-        Nothing of yours is reachable until you make a link, and turning it off takes it down for everyone at once.
+      <Text style={[s.body, { color: on }]}>
+        Everything else stays on your phone. This link is the only copy that leaves it,
+        and turning it off deletes that copy.
       </Text>
-
-      {/* The seal. A bookplate is what you paste inside the cover before the
-          book leaves your hands, and this is the moment that happens — so the
-          mark belongs here, at the foot of the field, not only on the profile
-          screen where nobody is sending anything. */}
-      <View style={s.seal}>
-        <View style={[s.sealRule, { backgroundColor: on }]} />
-        {seed ? <ExLibris seed={seed} size={40} /> : null}
-        <Text style={[s.kicker, { color: on }]}>{handle ? `Ex libris @${handle}` : "Ex libris"}</Text>
-      </View>
     </KeyboardSafe>
   );
 }

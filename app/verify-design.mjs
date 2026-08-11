@@ -35,7 +35,7 @@ import * as E from "./src/exlibris.js";
 // size gets in, in the one file nobody thought to add.
 const SOURCES = [
   "App.tsx", "ShareExtension.tsx",
-  "src/Add.tsx", "src/Profile.tsx", "src/Received.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
+  "src/Add.tsx", "src/Profile.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
   "src/KeyboardSafe.tsx", "src/Screen.tsx",
 ];
 

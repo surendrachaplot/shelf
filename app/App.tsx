@@ -27,19 +27,19 @@ import {
   Text, TextInput, View,
 } from "react-native";
 import {
-  claim, fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, retryItem,
-  serverState, updateItem,
-  type Item, type ListName, type ShareKind, LISTS,
+  legacyExport, resolveLink, takeQueue, type ListName, LISTS,
 } from "./src/api";
+import {
+  load as loadShelf, save as saveShelf, upsert, patch, remove as removeItem,
+  shelfOf, pileOf, idFor, emptyShelf, type Item, type Shelf,
+} from "./src/store";
 import { Add } from "./src/Add";
 import { ExLibris } from "./src/ExLibris";
 import { Profile } from "./src/Profile";
-import { Received } from "./src/Received";
 import { ShareSheet } from "./src/ShareSheet";
-import { getToken, setToken, verifySharedAccess } from "./src/tokenStore";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
-import { KeyboardSafe, scrollKeyboardProps } from "./src/KeyboardSafe";
+import { scrollKeyboardProps } from "./src/KeyboardSafe";
 import { Screen } from "./src/Screen";
 import {
   BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
@@ -59,17 +59,17 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "profile" | "received";
-type Sharing = { kind: ShareKind; target: string | null; list: string; title: string };
+type Route = "case" | "add" | "profile";
+type Sharing = { kind: "item" | "shelf" | "profile"; item?: Item; list?: string; title: string };
 
 export default function App() {
   const { c, dark } = useTheme();
   const s = useMemo(() => styles(c), [c]);
 
-  const [ready, setReady] = useState(false);
-  const [paired, setPaired] = useState(false);
-  const [shelves, setShelves] = useState<Record<string, Item[]>>({});
-  const [inbox, setInbox] = useState<Item[]>([]);
+  // ONE PIECE OF STATE HOLDS EVERYTHING YOU HAVE SAVED, and it is a file on
+  // this phone. There is no `paired`, no token, no server list to be out of
+  // sync with — which removes an entire class of bug along with the login.
+  const [shelf, setShelf] = useState<Shelf | null>(null);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [open, setOpen] = useState<Item | null>(null);
@@ -77,86 +77,112 @@ export default function App() {
   const [viewportH, setViewportH] = useState(0);
   const [screen, setScreen] = useState<Route>("case");
   const [sharing, setSharing] = useState<Sharing | null>(null);
-  const [seed, setSeed] = useState<string>("shelf");
-  const [waiting, setWaiting] = useState(0);
-  // null means the shelves really are empty. A string means we could not look.
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const syncQueue = useCallback(async () => {
-    const sent = await flushQueue().catch(() => 0);
-    if (sent) setFlash(`Synced ${sent} share${sent > 1 ? "s" : ""} saved offline`);
+  const ready = shelf !== null;
+  const shelves = useMemo(
+    () => Object.fromEntries(LISTS.map((l) => [l, shelf ? shelfOf(shelf, l) : []])),
+    [shelf]
+  );
+  const inbox = useMemo(() => (shelf ? pileOf(shelf) : []), [shelf]);
+  const seed = shelf?.profile.seed || shelf?.profile.name || "shelf";
+
+  /**
+   * Every mutation goes through here: change it in memory, write the file.
+   *
+   * Saving on every change rather than on a timer or at background time is
+   * deliberate — iOS can kill a backgrounded app without warning, and a note
+   * you typed being gone because the write was still pending is not a trade
+   * worth making for a few milliseconds.
+   */
+  const commit = useCallback(async (next: Shelf) => {
+    setShelf(next);
+    await saveShelf(next).catch(() => {/* the in-memory copy is still right */});
+    return next;
   }, []);
 
+  /**
+   * Drain what the share extension left and resolve each one.
+   *
+   * The row appears IMMEDIATELY as "Working it out…" and is saved before any
+   * network happens — so a share is on your shelf the moment the app opens,
+   * even if the resolve then fails, and even if you kill the app mid-way.
+   * Resolving is the slow, optional half.
+   */
+  const drainShares = useCallback(async (base: Shelf) => {
+    const queued = await takeQueue().catch(() => []);
+    if (!queued.length) return base;
+
+    let cur = base;
+    const fresh: Item[] = queued.map((q) => ({
+      id: idFor(q.url),
+      list: q.list,
+      status: "pending" as const,
+      title: null, subtitle: "", note: "", image_url: null, canonical: {},
+      confidence: null, enriched: false, source_url: q.url, resolver: null,
+      created_at: new Date(q.at || Date.now()).toISOString(),
+    }));
+    for (const it of fresh) cur = upsert(cur, it);
+    await commit(cur);
+
+    for (const it of fresh) {
+      try {
+        const got = await resolveLink(it.source_url!, it.list as ListName, cur.profile.home_city);
+        const first = got.items[0];
+        cur = first
+          ? patch(cur, it.id, {
+              ...first,
+              status: "filed",
+              caption: undefined,           // the device does not need to keep it
+              resolved_at: new Date().toISOString(),
+              error: null,
+            })
+          // Read, and there was nothing nameable in it. It stays in the pile
+          // with its link, which is still a thing you saved.
+          : patch(cur, it.id, { status: "unread", resolver: got.resolver, resolved_at: new Date().toISOString() });
+
+        // A reel can hold several things — "5 books I read this month". The
+        // extras become siblings rather than being thrown away.
+        for (const extra of got.items.slice(1)) {
+          cur = upsert(cur, {
+            ...extra,
+            id: idFor(`${it.source_url}#${extra.title}`),
+            status: "filed",
+            caption: undefined,
+            created_at: it.created_at,
+            resolved_at: new Date().toISOString(),
+          } as Item);
+        }
+      } catch (e) {
+        cur = patch(cur, it.id, { status: "unread", error: (e as Error).message });
+      }
+      await commit(cur);
+    }
+    return cur;
+  }, [commit]);
+
+  // FIRST LAUNCH. Read the file, then take anything the extension left.
   useEffect(() => {
     (async () => {
-      // `ready` is set in a finally, not after the await. A Keychain read that
-      // throws would otherwise leave this screen on its boot spinner forever,
-      // and a boot spinner on this app looks exactly like the splash — which
-      // is what "stuck on the splash screen" turned out to mean.
-      let token: string | null = null;
-      try {
-        token = await getToken();
-      } finally {
-        setPaired(!!token);
-        setReady(true);
-      }
-      if (token) await syncQueue();
+      const loaded = await loadShelf();
+      setShelf(loaded);
+      await drainShares(loaded);
     })();
-  }, [syncQueue]);
+    // drainShares is stable; re-running this on every render would re-drain.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const load = useCallback(async () => {
-    if (!paired) return;
-    setBusy(true);
-    try {
-      const [ib, ...rest] = await Promise.all([fetchInbox(), ...LISTS.map((l) => fetchList(l))]);
-      setInbox(ib);
-      setShelves(Object.fromEntries(LISTS.map((l, i) => [l, rest[i]])));
-      setLoadError(null);
-    } catch (e) {
-      setLoadError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }, [paired]);
-
-  useEffect(() => { load(); }, [load]);
-
-  // The plate and the delivery count are the two things the header needs and
-  // the shelves do not, so they are fetched once rather than on every list
-  // change. Both fail SILENTLY: a header is not a place to report a network
-  // error, and neither is load-bearing for reading your own shelves.
-  const loadHeader = useCallback(async () => {
-    if (!paired) return;
-    const [me, inbound] = await Promise.all([
-      getProfile().catch(() => null),
-      listReceived().catch(() => []),
-    ]);
-    if (me?.profile) setSeed(me.profile.plate_seed || me.profile.handle || "shelf");
-    setWaiting(inbound.length);
-  }, [paired]);
-
-  useEffect(() => { loadHeader(); }, [loadHeader]);
-
-  // SHARING HAPPENS IN ANOTHER APP. You leave shelf, share a reel from
-  // Instagram, and come back — and iOS does not remount a backgrounded app, so
-  // every effect above ran once, at cold start, and never again. The shelves
-  // then show whatever they showed when you last launched, no matter how many
-  // reels went up in between. Reported, accurately, as "nothing is coming to
-  // the shelf when I share".
-  //
-  // Returning to the app is the one moment we KNOW something may have arrived,
-  // so it is the one moment worth spending a fetch on. The queue is flushed
-  // here too: a share sent with no signal is stranded until the app asks.
+  // COMING BACK FROM INSTAGRAM. iOS does not remount a backgrounded app, so
+  // without this the shelf shows whatever it showed at the last cold start no
+  // matter how many reels went in. This shipped once and was reported, exactly
+  // right, as "nothing is coming to the shelf when I share".
   useEffect(() => {
-    if (!paired) return;
     const sub = AppState.addEventListener("change", (next) => {
-      if (next !== "active") return;
-      load();
-      loadHeader();
-      syncQueue();
+      if (next !== "active" || !shelf) return;
+      setBusy(true);
+      drainShares(shelf).finally(() => setBusy(false));
     });
     return () => sub.remove();
-  }, [paired, load, loadHeader, syncQueue]);
+  }, [shelf, drainShares]);
 
   useEffect(() => {
     if (!flash) return;
@@ -164,34 +190,68 @@ export default function App() {
     return () => clearTimeout(id);
   }, [flash]);
 
+  // ONE-TIME: pull anything the old server-side store still holds onto this
+  // phone. Runs once, on an empty shelf, and never again — a shelf you have
+  // curated must never be overwritten by a five-month-old export.
+  useEffect(() => {
+    if (!shelf || shelf.items.length) return;
+    let live = true;
+    (async () => {
+      const got = await legacyExport().catch(() => null);
+      if (!live || !got?.count) return;
+      let cur = shelf;
+      for (const row of got.items as Record<string, any>[]) {
+        if (row.status === "discarded") continue;
+        cur = upsert(cur, {
+          id: String(row.id),
+          list: row.list, status: row.title ? "filed" : "unread",
+          title: row.title ?? null, subtitle: row.subtitle ?? "", note: row.note ?? "",
+          image_url: row.image_url ?? null, canonical: row.canonical ?? {},
+          confidence: row.confidence ?? null, enriched: !!row.enriched,
+          source_url: row.source_url ?? null, resolver: row.resolver ?? null,
+          created_at: row.created_at ?? new Date().toISOString(),
+          resolved_at: row.resolved_at ?? null,
+        });
+      }
+      await commit(cur);
+      setFlash(`Moved ${got.count} item${got.count > 1 ? "s" : ""} onto this phone`);
+    })();
+    return () => { live = false; };
+  }, [shelf, commit]);
+
   async function retry(item: Item) {
-    // Optimistic: the row flips to "Working it out…" immediately, because the
-    // queue is drained on an interval and a button that looks inert for five
-    // seconds gets pressed four more times.
-    setInbox((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "pending", last_error: null } : i)));
+    if (!shelf || !item.source_url) return;
+    let cur = await commit(patch(shelf, item.id, { status: "pending", error: null }));
     try {
-      await retryItem(item.id);
-      setFlash("Reading it again — pull down in a moment to see.");
+      const got = await resolveLink(item.source_url, item.list as ListName, cur.profile.home_city);
+      const first = got.items[0];
+      cur = first
+        ? patch(cur, item.id, { ...first, status: "filed", caption: undefined, error: null,
+                                resolved_at: new Date().toISOString() })
+        : patch(cur, item.id, { status: "unread", resolver: got.resolver });
     } catch (e) {
-      setFlash((e as Error).message);
-      load();
+      cur = patch(cur, item.id, { status: "unread", error: (e as Error).message });
     }
+    await commit(cur);
   }
 
+  /** Move it, rename it, note it, bin it. All local, all instant. */
   async function act(item: Item, body: Record<string, unknown>) {
-    setInbox((prev) => prev.filter((i) => i.id !== item.id)); // optimistic
+    if (!shelf) return;
     setOpen(null);
-    try {
-      await updateItem({ id: item.id, ...body });
-      load();
-    } catch (e) {
-      setFlash((e as Error).message);
-      load();
-    }
+    if (body.action === "discard") return void commit(removeItem(shelf, item.id));
+    const fields: Partial<Item> = {};
+    if (body.action === "file") fields.status = "filed";
+    if (typeof body.list === "string") { fields.list = body.list; fields.status = "filed"; }
+    if (typeof body.note === "string") fields.note = body.note;
+    if (typeof body.title === "string") fields.title = body.title;
+    await commit(patch(shelf, item.id, fields));
   }
 
+  // The only gate left is reading one file off the disk, which takes
+  // milliseconds. No pairing screen, no code, no account: install it and it is
+  // yours. That is the whole point of the shelves living here.
   if (!ready) return <Screen style={s.boot}><ActivityIndicator color={c.ink} /></Screen>;
-  if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
   const total = Object.values(shelves).reduce((n, xs) => n + (xs?.length ?? 0), 0);
   const showing = tab === "unsorted" ? inbox : (shelves[tab] ?? []);
@@ -211,20 +271,10 @@ export default function App() {
           <Press onPress={() => setScreen("add")} style={s.tool} size={TOUCH_MIN} label="Add something by name">
             <Text style={s.toolLabel}>Add</Text>
           </Press>
-          {/* A count of zero is not a badge. "Sent to you" with nothing behind
-              it is a dot that trains you to ignore dots. */}
-          {waiting > 0 ? (
-            <Press onPress={() => setScreen("received")} style={s.toolLive} size={TOUCH_MIN} label={`${waiting} sent to you`}>
-              <Text style={s.toolLiveLabel}>{waiting} sent you</Text>
-            </Press>
-          ) : (
-            /* NOT "Inbox". The fifth rail tab below is already where your own
-               unfiled things pile up, and two Inboxes on one screen means the
-               one you tap is the wrong one. This button is other people. */
-            <Press onPress={() => setScreen("received")} style={s.tool} size={TOUCH_MIN} label="Things sent to you">
-              <Text style={s.toolLabel}>Sent you</Text>
-            </Press>
-          )}
+          {/* "Sent you" is gone with the accounts that made it possible.
+              Receiving something from a person needed a users table to address
+              it to, and there is no users table — a shared link is now the
+              whole of how a thing travels between people. */}
           <Press onPress={() => setScreen("profile")} style={s.plateBtn} size={TOUCH_MIN} label="Your card">
             <ExLibris seed={seed} size={36} />
           </Press>
@@ -257,7 +307,7 @@ export default function App() {
             you have not decided about yet. */}
         {tab !== "unsorted" ? (
           <Press
-            onPress={() => setSharing({ kind: "shelf", target: tab, list: tab, title: `Your ${lists[tab].label.toLowerCase()} shelf` })}
+            onPress={() => setSharing({ kind: "shelf", list: tab, title: `Your ${lists[tab].label.toLowerCase()} shelf` })}
             style={s.bandShare} size={TOUCH_MIN} label={`Share the ${lists[tab].label} shelf`}
           >
             <Text style={[s.bandCount, { color: on }]}>Share</Text>
@@ -270,30 +320,26 @@ export default function App() {
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
         onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
-        // The gesture everybody already tries when a list looks stale. It is
-        // also the only way to ask again while the app stays in the
-        // foreground — a reel resolves seconds after it is shared, so "pull
-        // once more" is a real answer rather than a placebo.
+        // Your shelves are on this phone, so there is nothing to re-fetch —
+        // but pulling down still does the one useful thing left: takes
+        // anything the share extension has written since you last looked.
         refreshControl={
           <RefreshControl
             refreshing={busy}
-            onRefresh={() => { load(); loadHeader(); syncQueue(); }}
+            onRefresh={() => {
+              if (!shelf) return;
+              setBusy(true);
+              drainShares(shelf).finally(() => setBusy(false));
+            }}
             tintColor={c.inkFaint}
           />
         }
       >
         {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
 
-        {loadError ? (
-          <View style={[s.errorBlock, s.insetMargin]}>
-            <Text style={s.section}>Couldn't reach your shelves</Text>
-            <Text style={s.errorNote}>{loadError}. Nothing has been lost.</Text>
-            <Press onPress={load} style={s.retry} size={TOUCH_MIN} label="Try again">
-              <Text style={s.retryLabel}>Try again →</Text>
-            </Press>
-          </View>
-        ) : null}
-
+        {/* There is no "couldn't reach your shelves" any more. They are on
+            this phone; the only thing that can fail is resolving a new share,
+            and that failure belongs on the row it happened to. */}
         {tab === "unsorted" ? (
           /* The pile: things that came in but are not on a board yet. Flat
              rows, deliberately — a thing you have not filed is not standing
@@ -325,7 +371,7 @@ export default function App() {
           onClose={() => setOpen(null)}
           onAct={act}
           onShare={() => setSharing({
-            kind: "item", target: open.id, list: open.list,
+            kind: "item", list: open.list, item: open,
             title: open.title ?? "This one",
           })}
           dark={dark}
@@ -333,31 +379,37 @@ export default function App() {
         />
       ) : null}
 
-      {screen === "add" ? (
+      {screen === "add" && shelf ? (
         <View style={s.over}>
-          <Add onClose={() => { setScreen("case"); load(); }} onAdded={(it) => setTab(it.list)} />
-        </View>
-      ) : null}
-      {screen === "profile" ? (
-        <View style={s.over}>
-          <Profile
-            onClose={() => { setScreen("case"); loadHeader(); }}
-            onShare={(handle) => setSharing({ kind: "profile", target: null, list: "books", title: `Everything on @${handle}` })}
+          <Add
+            onClose={() => setScreen("case")}
+            city={shelf.profile.home_city}
+            onAdded={async (it) => {
+              await commit(upsert(shelf, it));
+              setTab(it.list as TabName);
+            }}
           />
         </View>
       ) : null}
-      {screen === "received" ? (
+      {screen === "profile" && shelf ? (
         <View style={s.over}>
-          <Received
-            onClose={() => { setScreen("case"); loadHeader(); }}
-            onAccepted={() => { load(); loadHeader(); }}
+          <Profile
+            shelf={shelf}
+            onClose={() => setScreen("case")}
+            onChange={commit}
+            onShare={() => setSharing({ kind: "profile", title: "Your whole card" })}
           />
         </View>
       ) : null}
 
-      {sharing ? (
+      {sharing && shelf ? (
         <View style={s.over}>
-          <ShareSheet {...sharing} onClose={() => setSharing(null)} />
+          <ShareSheet
+            {...sharing}
+            shelf={shelf}
+            onClose={() => setSharing(null)}
+            onLinked={(link) => commit({ ...shelf, links: [link, ...shelf.links] })}
+          />
         </View>
       ) : null}
     </View>
@@ -525,10 +577,10 @@ function EmptyShelf({ list, width, s, c }: { list: ListName; width: number; s: R
  * anything, which is how a blocked scrape and a caption-less reel spent a day
  * looking like the same bug.
  */
-export function whyUnread(item: Pick<Item, "title" | "resolver" | "last_error" | "had_caption">): string | null {
+export function whyUnread(item: Pick<Item, "title" | "resolver" | "error">): string | null {
   if (item.title) return null;
-  if (item.last_error) return `It threw an error while reading: ${item.last_error}`;
-  if (!item.had_caption) {
+  if (item.error) return `It went wrong while reading: ${item.error}`;
+  if (item.resolver === "none" || !item.resolver) {
     return "Instagram gave us nothing to read. Screenshot the reel and share the picture instead — that path never touches Instagram.";
   }
   return "We got the caption but couldn't tell what it was about.";
@@ -543,7 +595,7 @@ function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
   const pending = item.status === "pending";
   // A pending item has no shelf yet. Painting it in a list colour is a lie the
   // eye reads before the words do — it gets an outline instead.
-  const fill = pending ? "transparent" : (c[item.list] ?? c.unsorted);
+  const fill = pending ? "transparent" : ((c as Record<string, string>)[item.list] ?? c.unsorted);
   const why = pending ? null : whyUnread(item);
   return (
     <View style={s.pile}>
@@ -614,7 +666,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
   async function saveNote() {
     setSavingNote(true);
     try {
-      await updateItem({ id: item.id, note });
+      await onAct(item, { note });
       setEditingNote(false);
     } finally {
       setSavingNote(false);
@@ -797,137 +849,11 @@ function Facts({ item, on, fill, s }: {
   );
 }
 
-function Pairing({ onPaired }: { onPaired: () => void }) {
-  const { c } = useTheme();
-  const s = useMemo(() => styles(c), [c]);
-  const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  // undefined = we have not asked the server yet. A spinner is the honest
-  // rendering of that; showing the code field first and swapping it out under
-  // somebody's fingers is not.
-  const [unclaimed, setUnclaimed] = useState<boolean | undefined>(undefined);
-  // The server is asleep and we are waiting on it. Worth saying out loud.
-  const [waking, setWaking] = useState(false);
-
-  useEffect(() => {
-    let live = true;
-    (async () => {
-      // The API is on a free tier that sleeps after about fifteen minutes idle
-      // and takes up to a minute to get back up. ASK REPEATEDLY WITH A SHORT
-      // TIMEOUT rather than once with a long one: one long wait is a spinner
-      // that cannot tell you anything, and this screen — wordmark over a
-      // spinner — is visually identical to the splash, so a hang here reads as
-      // "the app never started". It did; it was waiting on a sleeping server.
-      for (let attempt = 0; live && attempt < 8; attempt++) {
-        try {
-          const r = await serverState();
-          if (live) { setUnclaimed(!!r.unclaimed); setWaking(false); }
-          return;
-        } catch {
-          if (!live) return;
-          setWaking(true);
-          await new Promise((r) => setTimeout(r, 2500));
-        }
-      }
-      // Eight tries, about eighty seconds. Whatever is wrong is not a nap.
-      // Fall through to the code field: a screen you can act on beats a screen
-      // that is still deciding.
-      if (live) { setUnclaimed(false); setWaking(false); }
-    })();
-    return () => { live = false; };
-  }, []);
-
-  async function finish(get: () => Promise<string>) {
-    setBusy(true);
-    setError(null);
-    try {
-      // AWAITED. Unawaited, the app moves on to its shelves while the write is
-      // still in flight — and if it fails, nothing catches it: the next launch
-      // is back on this screen with no explanation, and the share extension
-      // reads a key that was never written.
-      await setToken(await get());
-      // Confirm the extension can actually read what we just wrote. Finding
-      // this out here is the difference between a one-line fix and a week of
-      // "why does sharing do nothing".
-      if (!(await verifySharedAccess())) {
-        setError("Paired, but the share extension can't read the Keychain — check the app group entitlement.");
-      }
-      onPaired();
-    } catch (e) {
-      setError((e as Error).message);
-      setUnclaimed(false);   // a failed claim usually means somebody got there first
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    // The field you type the code into is the whole screen. It shipped under
-    // the keyboard once; that is the entire reason KeyboardSafe exists.
-    // ONE flex container, not two. Nesting a flex:1 View inside KeyboardSafe's
-    // own flex:1 broke the centring and dropped everything to the bottom of
-    // the screen — the render harness caught it immediately.
-    <KeyboardSafe style={[s.screen, s.pairWrap] as never}>
-        {/* NOT s.wordmark: that carries flex:1 so it pushes the count to the
-            right of the header ROW. In a column it ate 701 of 812 points and
-            pinned everything else to the bottom of the screen. A style is only
-            reusable in the axis it was written for. */}
-        <Text style={s.pairMark}>shelf</Text>
-
-        {unclaimed === undefined ? (
-          <>
-            <ActivityIndicator color={c.inkFaint} style={s.pairSpin} />
-            {/* Only once we KNOW it is asleep. Saying "waking the server" the
-                instant the screen appears would be a guess presented as a
-                fact, and on a warm server it would flash for 200ms. */}
-            {waking ? (
-              <Text style={s.pairHint}>
-                Waking the server. It sleeps when nobody has used it for a while —
-                this takes up to a minute.
-              </Text>
-            ) : null}
-          </>
-        ) : unclaimed ? (
-          <>
-            {/* Nobody has ever paired with this server, so there is nobody to
-                protect it from yet. One tap, no code, and the window shuts
-                permanently the moment it is used. */}
-            <Text style={s.pairHint}>
-              This shelf is new and nobody has claimed it. Take it — after this, any
-              other device needs a code from you.
-            </Text>
-            <Press onPress={() => finish(() => claim("iPhone"))} disabled={busy} style={s.pairBtn} size={TOUCH_MIN} label="Claim this shelf">
-              {busy ? <ActivityIndicator color={c.bg} /> : <Text style={s.pairBtnLabel}>This is my shelf →</Text>}
-            </Press>
-          </>
-        ) : (
-          <>
-            <Text style={s.pairHint}>Type the pairing code for this shelf.</Text>
-            <TextInput
-              value={code}
-              onChangeText={setCode}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              placeholder="PAIRING CODE"
-              placeholderTextColor={c.inkFaint}
-              style={s.input}
-              onSubmitEditing={() => finish(() => pair(code.trim().toUpperCase(), "iPhone"))}
-            />
-            <Press
-              onPress={() => finish(() => pair(code.trim().toUpperCase(), "iPhone"))}
-              disabled={busy || code.length < 4}
-              style={s.pairBtn} size={TOUCH_MIN} label="Pair this phone"
-            >
-              {busy ? <ActivityIndicator color={c.bg} /> : <Text style={s.pairBtnLabel}>Pair this phone →</Text>}
-            </Press>
-          </>
-        )}
-
-        {error ? <Text style={s.errorNote}>{error}</Text> : null}
-    </KeyboardSafe>
-  );
-}
+// `Pairing` used to live here: a whole screen, a claim path, a code path, a
+// "waking the server" state, and a keychain probe — all so that a public URL
+// was not a public shelf. None of it is needed now that the shelf is not on a
+// URL at all. Deleting it removed the first thing the app ever asked of a
+// person, which was a code.
 
 const styles = (c: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.bg },

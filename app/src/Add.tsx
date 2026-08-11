@@ -11,7 +11,8 @@
 // providers it could not reach and this screen says so in a sentence.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { addItem, search, type Item, type ListName, type SearchHit } from "./api";
+import { search, type ListName, type SearchHit } from "./api";
+import { idFor, type Item } from "./store";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { KeyboardSafe, scrollKeyboardProps } from "./KeyboardSafe";
@@ -23,7 +24,11 @@ import { lists, listOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from ".
 // rather than a search-on-every-change.
 const DEBOUNCE_MS = 320;
 
-export function Add({ onClose, onAdded }: { onClose: () => void; onAdded: (item: Item) => void }) {
+export function Add({ onClose, onAdded, city }: {
+  onClose: () => void;
+  onAdded: (item: Item) => void | Promise<void>;
+  city?: string;
+}) {
   const { c } = useTheme();
   const s = styles(c);
 
@@ -71,9 +76,26 @@ export function Add({ onClose, onAdded }: { onClose: () => void; onAdded: (item:
   async function add(hit: SearchHit) {
     setAdded((prev) => ({ ...prev, [hit.key]: "adding" }));
     try {
-      const r = await addItem(hit);
-      setAdded((prev) => ({ ...prev, [hit.key]: "done" }));
-      onAdded(r.item);
+      // NOTHING IS SENT ANYWHERE. You picked it; it goes straight onto this
+      // phone, filed, with a deterministic id off the catalogue key so adding
+      // the same book twice updates one row instead of growing a second.
+      const item: Item = {
+        id: idFor(hit.key ? `catalogue:${hit.key}` : `manual:${hit.list}:${hit.title.toLowerCase()}`),
+        list: hit.list,
+        status: "filed",
+        title: hit.title,
+        subtitle: hit.subtitle ?? "",
+        note: "",
+        image_url: hit.image_url ?? null,
+        canonical: hit.canonical ?? {},
+        confidence: 1,
+        enriched: !!hit.key,
+        source_url: null,
+        resolver: "search",
+        created_at: new Date().toISOString(),
+        resolved_at: new Date().toISOString(),
+      };
+      await onAdded(item);
     } catch (e) {
       setAdded((prev) => { const next = { ...prev }; delete next[hit.key]; return next; });
       setError((e as Error).message);

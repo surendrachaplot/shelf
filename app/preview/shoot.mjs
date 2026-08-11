@@ -54,7 +54,6 @@ const SHOTS = [
   { name: "app-profile-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
   { name: "app-profile-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card" },
   { name: "app-profile-new-375-light", q: "?blankProfile=1", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
-  { name: "app-received-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "2 sent to you" },
   { name: "app-share-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Share the Books shelf" },
   { name: "app-share-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Share the Books shelf" },
   { name: "app-profile-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Your card" },
@@ -63,12 +62,12 @@ const SHOTS = [
   // sharing from Instagram silently does nothing. It has to be legible and it
   // has to say what to do.
   { name: "app-profile-broken-375-light", q: "?keychain=0", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
-  { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
-  { name: "pair-claim-375-light", q: "?paired=0&unclaimed=1", w: 375, h: 980, scheme: "light" },
+  // There is no pairing screen any more, so there is nothing to shoot: the app
+  // opens onto your shelves. The three shots that used to live here — a code
+  // field, a claim button, and "waking the server" — went with the accounts.
   // Launch against a server that is still waking. This screen used to be an
   // indefinite spinner under the wordmark — indistinguishable from the splash,
   // and reported as "it is stuck on the splash screen".
-  { name: "pair-waking-375-light", q: "?paired=0&asleep=1", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },

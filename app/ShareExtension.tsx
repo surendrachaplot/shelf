@@ -15,8 +15,7 @@
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { close, type InitialProps } from "expo-share-extension";
-import * as FileSystem from "expo-file-system";
-import { ingestImage, ingestUrl, NOT_PAIRED, queueShare, type ListName, LISTS } from "./src/api";
+import { queueShare, type ListName, LISTS } from "./src/api";
 import { Press } from "./src/Press";
 import {
   BAND_BOARD, lists, listOn, sp, t, TOUCH_MIN, useTheme, type Palette,
@@ -42,7 +41,7 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
 
   const sharedUrl = url ?? text?.match(/https?:\/\/\S+/)?.[0] ?? null;
-  const sharedImage = images?.[0] ?? null;
+  const sharedImage = images?.[0] ?? null;   // reserved: the screenshot path
 
   // A shortcode means nothing to a human. Say what the thing IS.
   const source = sharedImage ? "Screenshot"
@@ -53,37 +52,30 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
   async function save(list: ListName) {
     if (phase.kind === "saving") return;
     setPhase({ kind: "saving", list });
-    try {
-      if (sharedUrl) {
-        await ingestUrl(sharedUrl, list);
-      } else if (sharedImage) {
-        const b64 = await FileSystem.readAsStringAsync(sharedImage, { encoding: FileSystem.EncodingType.Base64 });
-        await ingestImage(b64, "image/jpeg", list);
-      } else {
-        setPhase({ kind: "error", message: "Nothing was shared" });
-        return;
-      }
-      setPhase({ kind: "done", list, offline: false });
-      setTimeout(close, 520);
-    } catch (e) {
-      const why = (e as Error).message;
-      // No key on this phone. Queuing would be theatre: the queue lives in the
-      // same shared Keychain the key is missing from, so it would either fail
-      // too or land somewhere the app can never read — and the sheet would
-      // have said "Queued" either way. Say the true thing instead.
-      if (why === NOT_PAIRED) {
-        setPhase({ kind: "error", message: "Open shelf on this phone once, then share again." });
-        return;
-      }
-      // Anything else is the network. Keep it, but only claim to have kept it
-      // if the write is actually readable back.
-      if (sharedUrl && (await queueShare(sharedUrl, list))) {
-        setPhase({ kind: "done", list, offline: true });
-        setTimeout(close, 1200);
-      } else {
-        setPhase({ kind: "error", message: why });
-      }
+
+    // NO NETWORK IN HERE. This sheet is on top of Instagram and it has one
+    // job: record what you tapped and get out of the way. It writes to the
+    // Keychain group the app shares and closes — well under a second, on any
+    // signal, including none.
+    //
+    // The previous version POSTed to the server from this process, which meant
+    // the sheet's speed depended on a server waking up, and a share in a lift
+    // was a share you had to be told about. The slow part — scrape, Claude,
+    // catalogue — now happens in the app, where there is room to show it.
+    if (!sharedUrl) {
+      setPhase({ kind: "error", message: "Nothing to save — share a link" });
+      return;
     }
+    const kept = await queueShare(sharedUrl, list);
+    if (!kept) {
+      // The one honest failure left: this phone's Keychain group is not
+      // shared, so the app will never see what was written. Saying "Saved"
+      // here would be a receipt for nothing.
+      setPhase({ kind: "error", message: "Couldn't save — open shelf once, then try again." });
+      return;
+    }
+    setPhase({ kind: "done", list, offline: false });
+    setTimeout(close, 420);
   }
 
   // The confirmation is the band you just hit, filling the whole sheet. No
@@ -95,11 +87,9 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
     return (
       <View style={[s.wrap, { backgroundColor: fill }]}>
         <View style={s.doneInner}>
-          <Text style={[s.doneKicker, { color: label }]}>{phase.offline ? "Queued" : "Shelved"}</Text>
+          <Text style={[s.doneKicker, { color: label }]}>Saved</Text>
           <Text style={[s.doneLabel, { color: label }]}>{lists[phase.list].label}</Text>
-          {phase.offline ? (
-            <Text style={[s.doneNote, { color: label }]}>No signal — it goes up next time you open shelf</Text>
-          ) : null}
+          <Text style={[s.doneNote, { color: label }]}>shelf reads it next time you open the app</Text>
         </View>
         <View style={[s.board, { backgroundColor: darken(fill) }]} />
       </View>

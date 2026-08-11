@@ -14,7 +14,10 @@ const swap = {
     // src/ imports "./api". Matching only the first one is how a new screen
     // silently reaches the real network in a harness that has none.
     b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?api(\.[tj]s)?$/ }, () => ({ path: here("./stubs.js") }));
-    b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?tokenStore(\.[tj]s)?$/ }, () => ({ path: here("./tokenStub.js") }));
+    // The store is a FILE on the device. A browser has no documents
+    // directory, so the harness swaps in an in-memory shelf with real fixtures
+    // — same shape, same pure operations, no filesystem.
+    b.onResolve({ filter: /^\.{1,2}\/(?:src\/)?store(\.[tj]s)?$/ }, () => ({ path: here("./storeStub.js") }));
     // SafeAreaView's insets are `env(safe-area-inset-*)`, which is ZERO in a
     // browser — which is exactly how the header shipped underneath the status
     // bar with a clean contact sheet behind it. Swapped for a stub carrying an

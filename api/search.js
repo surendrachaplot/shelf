@@ -17,8 +17,7 @@
 import { isMain } from "./ismain.js";
 import { fetchT, BROWSER_HEADERS } from "./net.js";
 import { query, dbReady } from "./db.js";
-import { getUser } from "./auth.js";
-import { json, itemId, normList } from "./items.js";
+import { json, normList } from "./http.js";
 import { parseLd, extractWebPage } from "./resolve.js";
 
 export const PROVIDERS = {
@@ -236,43 +235,19 @@ export function interleave(rows) {
 // ── routes ───────────────────────────────────────────────────────────────────
 
 export async function searchRoute(req, res, url) {
-  const user = await getUser(req);
-  if (!user) return json(res, 401, { ok: false, error: "not paired" });
   const q = url.searchParams.get("q") || "";
   const only = url.searchParams.get("list");
-  const out = await searchAll(q, { city: user.home_city, only: only && PROVIDERS[only] ? only : null });
+  // The city comes from the request now, not from a user row — the device
+  // knows where you are and this service has no profile to look it up in.
+  const city = (url.searchParams.get("city") || "").slice(0, 80) || null;
+  const out = await searchAll(q, { city, only: only && PROVIDERS[only] ? only : null });
   return json(res, 200, { ok: true, ...out });
 }
 
-/** Add a search result to a shelf, filed immediately — you chose it yourself. */
-export async function addRoute(req, res, body) {
-  const user = await getUser(req);
-  if (!user) return json(res, 401, { ok: false, error: "not paired" });
-
-  const list = normList(body?.list);
-  const title = String(body?.title || "").trim();
-  if (!title) return json(res, 400, { ok: false, error: "an item needs a title" });
-  if (list === "unsorted") return json(res, 400, { ok: false, error: "pick a shelf" });
-
-  const canonical = { ...(body?.canonical || {}) };
-  // Hand-added items have no reel, so the deterministic id keys off the
-  // catalogue identity instead — which is what makes adding the same book
-  // twice update one row rather than grow a second.
-  const seed = canonical.key ? `catalogue:${canonical.key}` : `manual:${list}:${title.toLowerCase()}`;
-  const id = itemId(user.id, seed, 0);
-  const r = await query(
-    `insert into items (id, user_id, list, status, source_url, title, subtitle, image_url,
-                        canonical, confidence, enriched, added_by, filed_at)
-     values ($1, $2, $3, 'filed', null, $4, $5, $6, $7, 1.0, $8, 'search', now())
-     on conflict (id) do update
-       set title = excluded.title, subtitle = excluded.subtitle,
-           image_url = coalesce(excluded.image_url, items.image_url),
-           list = excluded.list, status = 'filed', filed_at = now()
-     returning id, list, title, subtitle, image_url, status, canonical, confidence, enriched, source_url, note, created_at`,
-    [id, user.id, list, title, body?.subtitle || null, body?.image_url || null, canonical, !!canonical.key]
-  );
-  return json(res, 200, { ok: true, item: r.rows[0] });
-}
+// `addRoute` used to live here and wrote a row into the server's items table.
+// It is gone with that table: a search is a stateless question now, and what
+// you do with the answer — keep it, name it, put it on a shelf — happens on
+// the phone. The server never learns which result you picked.
 
 // ── selftest ─────────────────────────────────────────────────────────────────
 

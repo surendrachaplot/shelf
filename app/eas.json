@@ -11,7 +11,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com"
+        "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
+        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
       },
       "channel": "development"
     },
@@ -21,7 +22,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com"
+        "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
+        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
       },
       "channel": "preview"
     }
