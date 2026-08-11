@@ -17,8 +17,9 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
   Groups are unavailable to free personal teams. A free account will build the
   app and produce a share extension that cannot read your login.
 - An [Expo](https://expo.dev) account (free).
-- A [Render](https://render.com) account. **The free tier has no background
-  workers** — see §1 for the one-variable way around that.
+- A [Render](https://render.com) account, plus a Postgres somewhere that is
+  *not* Render — [Neon](https://neon.tech) free is what §1 assumes. The
+  blueprint declares no database on purpose; see §1.
 - An Anthropic API key.
 - Optional now, easy later: a TMDB key (free) and a Google Places key (paid).
   Without them the app works and *says* those two shelves aren't searchable.
@@ -27,19 +28,31 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
 
 ## 1. Put the API up (~10 min)
 
-1. Push is already done — the repo is `surendrachaplot/shelf`, branch `main`.
-2. In Render: **New → Blueprint**, point it at the repo. It reads
-   `render.yaml` and creates three things: `shelf-api` (web), `shelf-worker`
-   (worker), `shelf-db` (Postgres).
-3. Set the secrets on **both** `shelf-api` and `shelf-worker`:
-   - `ANTHROPIC_API_KEY` — required, this is what reads captions
-   - `ADMIN_SECRET` — any long random string (api only)
-   - `TMDB_API_KEY`, `GOOGLE_PLACES_KEY` — optional
-4. **`SHELF_WEB_BASE`: leave it unset.** The service falls back to
-   `RENDER_EXTERNAL_URL`, which Render sets to this service's own address, so
-   share links are correct with no configuration. Set it only if you later put
-   the pages on a custom domain — and then it is the full origin with **no
-   trailing slash**, e.g. `https://shelf.club`.
+The blueprint declares **one free web service and no database**. The database
+is external and you paste its connection string in — Render allows one free
+Postgres per account, so a blueprint that declares its own cannot be imported
+by anybody who already has one.
+
+1. **Make a Postgres first.** [Neon](https://neon.tech) free tier, two minutes.
+   Copy the connection string; keep `?sslmode=require` on it. Take the
+   **pooled** endpoint (`-pooler` in the hostname) — it is the better default
+   for a persistent pool, and the direct one is needed only in the
+   share-a-database case (OPERATIONS §4a).
+2. In Render: **New → Blueprint**, point it at `surendrachaplot/shelf`, branch
+   `main`. It proposes exactly one service, `shelf-api`. Apply.
+3. Fill in the variables it asks for:
+
+   | Key | Value |
+   |---|---|
+   | `DATABASE_URL` | your Neon string |
+   | `ANTHROPIC_API_KEY` | your key |
+   | `ADMIN_SECRET` | any long random string |
+   | `TMDB_API_KEY`, `GOOGLE_PLACES_KEY` | optional, leave blank for now |
+
+   `WORKER_IN_PROCESS` is already set to `1`. `SHELF_WEB_BASE` and `DB_SCHEMA`
+   are deliberately absent — the first defaults to Render's own
+   `RENDER_EXTERNAL_URL`, the second is only for sharing a database with
+   another project (OPERATIONS §4a).
 
 **Do not skip this check.** Migrations run on boot, so:
 
@@ -47,53 +60,35 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
 curl -s https://YOUR-API.onrender.com/api/health | jq
 ```
 
-You want `"db": true`, and `providers.claude: true`. A 503 with a plain-English
-`warn` means the worker isn't running — that is the check doing its job, not a
-bug. `"ok": true` with `"db": false` means `DATABASE_URL` didn't attach.
+You want `"db": true`, `"providers": {"claude": true}` and
+`"worker": "in-process"`. `"db": true` means all seven tables exist, because
+migrations ran. `"ok": true` with `"db": false` means `DATABASE_URL` did not
+attach. A **503 with a plain-English `warn`** is that check working, not a
+failure — it fires when shares are queued and nothing is clearing them.
 
-### "cannot have more than one active free tier database"
+Then a smoke test that actually touches the database:
 
-Render allows one free Postgres per account. Three ways out, best first:
+```bash
+curl -s -X POST https://YOUR-API.onrender.com/api/pair/redeem \
+  -H 'Content-Type: application/json' -d '{"code":"NOPE","device":"x"}'
+```
 
-1. **A free Postgres somewhere else.** [Neon](https://neon.tech) or Supabase,
-   free, takes two minutes. Delete `shelf-db` from the blueprint and paste the
-   connection string as `DATABASE_URL` on `shelf-api` (and the worker, if you
-   kept it). Fully isolated, nothing else can be affected.
-   - **Leave `DB_SCHEMA` unset.** It is a dedicated database; `public` is right.
-   - Either Neon endpoint works. The **pooled** one (`-pooler` in the host) is
-     the safer default; the direct one is required only if you ever set
-     `DB_SCHEMA`, because that sends a startup parameter and PgBouncer rejects
-     startup parameters it was not configured to allow.
-   - Keep `?sslmode=require` on the string. TLS is on for anything that is not
-     a unix socket or loopback, so this needs no configuration either way.
-   - Neon free suspends after ~5 minutes idle. The first query after a nap takes
-     roughly a second while it wakes — on top of Render's own cold start.
-2. **Share the database you already have** — but you MUST set `DB_SCHEMA=shelf`
-   as well. Sharing it without that is destructive and silent: shelf's first
-   migration is `001_init.sql` like nearly everybody's, so if the database
-   already records that name shelf skips every migration and boots green with
-   no tables; and shelf's `users` table would quietly become the other app's.
-   With `DB_SCHEMA=shelf` everything shelf owns sits in its own namespace.
-   If you forget, the server refuses to start and tells you why. See
-   OPERATIONS §4a.
-3. **Upgrade** the Render database ($7/mo) and keep them separate.
+`{"ok":false,"error":"bad or expired code"}` means the router, the database and
+auth are all live. A 500 means the database did not attach.
 
-### Free tier: two things to know
+### Two free-tier facts, so you do not misread them
 
-**There are no background workers on the free tier.** `render.yaml` declares
-`shelf-worker`, and that needs a paid instance. If you are staying free: delete
-that service and set `WORKER_IN_PROCESS=1` on `shelf-api`. The same drain then
-runs on a 15-second timer inside the web process.
+**Render sleeps the service after ~15 minutes, and Neon suspends after ~5.**
+The first request after a quiet spell pays both cold starts — a second or two.
+Slow first share, normal afterwards. That is two free tiers stacking, not the
+app.
 
-That does not break the one architectural rule here — nothing slow may happen
-**on the request path**, and a timer is not the request path. `for update skip
-locked` makes running both at once safe rather than racy, so you can add a real
-worker later without turning anything off first. `/api/health` reports
-`"worker"` so the two arrangements can never silently disagree.
-
-**The service sleeps after ~15 minutes** and free Postgres expires after 30
-days. The first share after a nap is slow while the service wakes; that is the
-tier, not the app.
+**There is no worker service.** Render's free tier has none, so the same drain
+runs on a 15-second timer inside the web process. That does not break the one
+architectural rule here — nothing slow may happen **on the request path**, and
+a timer is not the request path. When you outgrow it, uncomment the worker in
+`render.yaml` and set `WORKER_IN_PROCESS=0`; `for update skip locked` makes
+running both at once safe, so there is no window to get wrong.
 
 ---
 

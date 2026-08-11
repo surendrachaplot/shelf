@@ -316,6 +316,12 @@ if (isMain(import.meta.url)) {
     ok(!/^\s*rootDir:\s*api\b/m.test(yaml),
       "render.yaml sets rootDir: api — page.js imports app/src/design.js, so the server will not boot");
     ok(/node api\/serve\.js/.test(yaml), "render.yaml no longer starts the server from the repository root");
+    // The blueprint must stay importable on a free account: Render allows one
+    // free Postgres and no background workers, so declaring either makes the
+    // import fail for the person most likely to be doing it.
+    ok(!/^databases:/m.test(yaml), "render.yaml declares a database — the blueprint will not import for anyone who already has a free one");
+    ok(!/^\s*-\s*type:\s*worker/m.test(yaml), "render.yaml declares a worker service — Render's free tier has none");
+    ok(/WORKER_IN_PROCESS, value: "1"/.test(yaml), "with no worker service, WORKER_IN_PROCESS must default to 1 or nothing ever drains");
 
     const profile = renderProfile({ owner, lists: { books: items, restaurants: [], movies: [], recipes: [] } });
     ok(/Ex libris/.test(profile), "the plate block is missing from a profile page");

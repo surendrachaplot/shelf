@@ -206,6 +206,24 @@ and two real defects fell out of doing this:
 socket or loopback has nothing on the wire to protect and refuses the
 handshake outright, which is what stopped this suite running at all.
 
+## 4e. The blueprint
+
+`render.yaml` declares **one free web service and nothing else** — no database,
+no worker. Both omissions are deliberate and both are about the import
+succeeding for the person most likely to be running it:
+
+- **No database.** Render allows one free Postgres per account, so a blueprint
+  that declares its own cannot be imported by anybody who already has one.
+  `DATABASE_URL` is pasted in and points at Neon, Supabase or anything that
+  speaks Postgres. It also means the database survives deleting and re-importing
+  the blueprint, which is exactly what iterating on it does.
+- **No worker.** The free tier has no background workers, so the service would
+  fail to create. `WORKER_IN_PROCESS=1` is the default in the blueprint instead.
+
+Both are commented back in, in place, for when you outgrow them.
+`api/page.js --selftest` fails if either reappears uncommented, along with the
+`rootDir` trap — the deploy config is checked like anything else here.
+
 ## 5. Deploy
 
 - API on Render: `node serve.js` as the web service, `node worker.js` as a

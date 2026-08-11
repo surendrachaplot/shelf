@@ -1,6 +1,26 @@
-# Two processes, one database. The worker is not optional: without it every
-# share sits at "Working it out…" forever and /api/health goes 503 after ten
-# minutes, which is the whole point of that check.
+# ONE service, and NO database.
+#
+# The database is external — Neon, Supabase, or anything that speaks Postgres —
+# and `DATABASE_URL` is pasted in by hand. Render allows exactly one free
+# Postgres per account, so a blueprint that declares its own fails to import
+# for anybody who already has one, which is most people with a second project.
+# An external database also survives this service being deleted and rebuilt,
+# which is exactly what a blueprint re-import does.
+#
+# TLS is on automatically for anything that is not a unix socket or loopback,
+# so a `?sslmode=require` string needs no further configuration. If the
+# database belongs to another project, ALSO set DB_SCHEMA — see below; without
+# it the server refuses to boot rather than collide.
+#
+# THE WORKER RUNS IN THIS PROCESS. Render's free tier has no background
+# workers, so the separate `type: worker` service that used to live here could
+# not be imported on a free account at all. `WORKER_IN_PROCESS=1` runs the same
+# drain on a timer inside the web process — which does not break the one
+# architectural rule of this service, because that rule is that nothing slow
+# happens ON THE REQUEST PATH, and a timer is not the request path. When you
+# outgrow it, uncomment the worker at the bottom, set WORKER_IN_PROCESS=0, and
+# give it the same DATABASE_URL: `for update skip locked` means running both at
+# once is safe rather than racy, so there is no window to get wrong.
 #
 # rootDir IS THE REPOSITORY ROOT, not `api`. It used to be `api`, and that would
 # have shipped a server that cannot boot: `api/page.js` renders the public
@@ -13,52 +33,50 @@ services:
   - type: web
     name: shelf-api
     env: node
+    plan: free
     buildCommand: cd api && npm ci
     startCommand: node api/serve.js
     healthCheckPath: /api/health
     envVars:
-      - key: DATABASE_URL
-        fromDatabase: { name: shelf-db, property: connectionString }
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      # Paste your Postgres connection string. Nothing else here needs it.
+      - { key: DATABASE_URL, sync: false }
+      # Required for the reel path — it is what turns a caption into a titled
+      # item. Everything else (search-and-add, profiles, sharing, the public
+      # pages) works without it; shares just land in the Inbox unnamed.
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: ADMIN_SECRET, sync: false }
+      # Drains the queue on a timer in this process. See the note above.
+      - { key: WORKER_IN_PROCESS, value: "1" }
+      # Optional. Missing keys are reported to the app as "switched off"
+      # rather than returning nothing, so the Add screen tells the truth.
       - { key: TMDB_API_KEY, sync: false }
       - { key: GOOGLE_PLACES_KEY, sync: false }
-      - { key: ADMIN_SECRET, sync: false }
-      # Where share links point. LEAVE THIS UNSET on Render: the service falls
-      # back to RENDER_EXTERNAL_URL, which Render sets to this service's own
-      # address. That matters because the host is not knowable until after the
-      # first deploy — anything you have to type here is a step you take while
-      # links are already being handed out. Set it only for a custom domain.
+      # Where share links point. LEAVE UNSET on Render: the service falls back
+      # to RENDER_EXTERNAL_URL, which Render sets to this service's own address.
+      # The host is not knowable until after the first deploy, so anything you
+      # have to type here is a step you take while links are already being
+      # handed out. Set it only for a custom domain.
       # - { key: SHELF_WEB_BASE, sync: false }
-      # Set to 1 if you deleted the worker service (free tier). See below.
-      - { key: WORKER_IN_PROCESS, value: "0" }
-      # Only when DATABASE_URL points at a database another project owns —
-      # Render allows one free Postgres per account, so this is common. Without
-      # it shelf would collide on `schema_migrations` and `users`, and the
-      # server refuses to boot rather than let that happen. See OPERATIONS §4a.
+      # ONLY when DATABASE_URL points at a database another project owns.
+      # shelf's first migration is `001_init.sql` like nearly everybody's, and
+      # shelf has a `users` table like nearly everybody's — so without this it
+      # would skip its own migrations, boot green with no tables, and write
+      # into the other application's rows. It refuses to start instead.
+      # Needs a DIRECT connection, not a pooled one: it sends a startup
+      # parameter and PgBouncer rejects those. See OPERATIONS §4a.
       # - { key: DB_SCHEMA, value: "shelf" }
 
-  # PAID INSTANCE REQUIRED. Render's free tier has no background workers.
+  # Uncomment when you outgrow the in-process drain (paid instance). Set
+  # WORKER_IN_PROCESS=0 above at the same time, and give this the same
+  # DATABASE_URL. Running both at once is safe, so the order does not matter.
   #
-  # On the free tier, delete this service and set WORKER_IN_PROCESS=1 on
-  # shelf-api instead — the same drain runs on a timer inside the web process.
-  # That is not a violation of the "nothing slow on the request path" rule: a
-  # timer is not the request path, and `for update skip locked` makes running
-  # both at once safe rather than racy. /api/health reports which arrangement
-  # it believes it is in, so the two cannot silently disagree.
-  - type: worker
-    name: shelf-worker
-    env: node
-    buildCommand: cd api && npm ci
-    startCommand: node api/worker.js
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase: { name: shelf-db, property: connectionString }
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - { key: TMDB_API_KEY, sync: false }
-      - { key: GOOGLE_PLACES_KEY, sync: false }
-
-databases:
-  - name: shelf-db
-    plan: free
+  # - type: worker
+  #   name: shelf-worker
+  #   env: node
+  #   buildCommand: cd api && npm ci
+  #   startCommand: node api/worker.js
+  #   envVars:
+  #     - { key: DATABASE_URL, sync: false }
+  #     - { key: ANTHROPIC_API_KEY, sync: false }
+  #     - { key: TMDB_API_KEY, sync: false }
+  #     - { key: GOOGLE_PLACES_KEY, sync: false }
