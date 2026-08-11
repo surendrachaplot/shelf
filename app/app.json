@@ -41,6 +41,17 @@
           "height": 420
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "fbcc18b2-4a0a-47ba-ac6b-bd331cd8dc92"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fbcc18b2-4a0a-47ba-ac6b-bd331cd8dc92"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
