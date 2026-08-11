@@ -153,16 +153,20 @@ unconditionally, in its own Podfile writer. Nothing to configure.
 
 The likely three, in order:
 
-1. **`newArchEnabled: true` vs expo-share-extension.** If the extension target
-   fails to compile, set it to `false` in `app.json` and rebuild. This is the
-   one I'd bet on and cannot test from here.
-2. **App Group not provisioned.** Means the account is free, not paid. See §0.
+1. **`no such module 'ReactAppDependencyProvider'`.** This one already
+   happened. `expo-share-extension` 5.x targets Expo SDK 54 and its Swift
+   imports a React Native 0.77+ module; this project is SDK 52 / RN 0.76.5. The
+   package's own README has the table — SDK 52 wants **3.x**, which is pinned
+   now. If you ever bump the Expo SDK, bump this together with it.
+2. **`newArchEnabled: true` vs expo-share-extension.** If the extension target
+   still fails to compile, set it to `false` in `app.json` and rebuild.
+3. **App Group not provisioned.** Means the account is free, not paid. See §0.
    The extension needs `keychain-access-groups` as well as the app group, and
    `expo-share-extension` does not write it — `plugins/withShareExtensionKeychain.js`
    adds it, and must stay listed BEFORE the share-extension plugin in
    `app.json`. Without it the app builds, installs, pairs, and then every share
    silently does nothing.
-3. **A native module missing from the extension bundle.** `metro.config.js`
+4. **A native module missing from the extension bundle.** `metro.config.js`
    already wraps the config in `withShareExtension`; if a package still can't
    resolve, add it to `excludedPackages` in the plugin options.
 
