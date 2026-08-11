@@ -22,7 +22,7 @@ on:
         type: choice
         options: [health, items, reel, retry]
       url:
-        description: "Reel URL (only used when what=reel)"
+        description: "what=reel: the reel URL. what=retry: a resolver name to re-read (blank = untitled rows only)."
         required: false
         type: string
 
@@ -69,10 +69,15 @@ jobs:
             health) path="/api/health" ;;
             items)  path="/api/debug/items" ;;
             retry)
-              # Re-read every item that never got a name. Only touches rows
-              # with NO title, so it can never overwrite something good.
+              # Re-read items. With no `url` input: only rows that never got a
+              # name, so nothing good can be overwritten. With `url` set to a
+              # RESOLVER NAME (e.g. crawler-embed-json): re-read everything
+              # that resolver produced, title or not — for when a resolver was
+              # wrong rather than empty.
+              Q=""
+              [ -n "$URL" ] && Q="?resolver=$URL"
               curl -sS -m 60 -X POST -H "x-shelf-secret: $SECRET" \
-                "$SHELF_API/api/debug/retry-unread" | tee /tmp/out.json | jq . || cat /tmp/out.json
+                "$SHELF_API/api/debug/retry-unread$Q" | tee /tmp/out.json | jq . || cat /tmp/out.json
               exit 0
               ;;
             reel)

@@ -208,19 +208,36 @@ export async function retryItem(req, res, body) {
  * Only touches rows with NO TITLE. An item you named yourself, or one that
  * resolved correctly, is never re-read — this cannot overwrite anything good.
  */
-export async function retryUnread(req, res) {
+export async function retryUnread(req, res, url) {
   const admin = process.env.ADMIN_SECRET
     && secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET);
   const me = admin ? null : await getUser(req);
   if (!admin && !me) return json(res, 401, { ok: false, error: "not signed in" });
 
+  // `?resolver=x` re-reads rows a NAMED resolver produced, title or no title.
+  //
+  // This exists because a resolver can be wrong rather than empty: the crawler
+  // step once read a neighbouring post and filed a reel about "Willow and
+  // Wind" as "The Wicker Man" — a row with a title, so the untitled-only sweep
+  // skipped it, and every item that resolver ever touched was quietly wrong.
+  //
+  // It CAN overwrite a title, which the default never does, so it is opt-in
+  // and names the resolver it is re-reading rather than taking everything.
+  const resolver = url?.searchParams?.get("resolver") || null;
+
+  const params = [];
+  const own = me ? ` and user_id = $${params.push(me.id)}` : "";
+  const which = resolver
+    ? ` and resolver = $${params.push(resolver)}`
+    : ` and title is null`;
+
   const r = await query(
     `update items set status = 'pending', attempts = 0, last_error = null
-      where title is null and status <> 'discarded' ${me ? "and user_id = $1" : ""}
-      returning id, list`,
-    me ? [me.id] : []
+      where status <> 'discarded'${which}${own}
+      returning id, list, resolver`,
+    params
   );
-  return json(res, 200, { ok: true, requeued: r.rows.length, items: r.rows });
+  return json(res, 200, { ok: true, matched_by: resolver ? `resolver=${resolver}` : "no title", requeued: r.rows.length, items: r.rows });
 }
 
 /**

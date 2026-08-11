@@ -47,7 +47,7 @@ const routes = {
   "POST /api/ingest/image": ingestImage,
   "POST /api/item": updateItem,
   "POST /api/item/retry": retryItem,
-  "POST /api/debug/retry-unread": retryUnread,
+  "POST /api/debug/retry-unread": (req, res, body, url) => retryUnread(req, res, url),
   "POST /api/profile": putProfile,
   "POST /api/share": createShare,
   "POST /api/share/revoke": revokeShare,
@@ -240,7 +240,9 @@ async function handle(req, res, url) {
   }
 
   const fn = routes[key];
-  if (fn) return fn(req, res, await readBody(req));
+  // `url` rides along as a fourth argument so a POST can read a query string.
+  // Every existing handler takes three and ignores it.
+  if (fn) return fn(req, res, await readBody(req), url);
 
   return json(res, 404, { ok: false, error: "no such route" });
 }
