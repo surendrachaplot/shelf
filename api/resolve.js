@@ -125,6 +125,56 @@ export function handlesIn(text) {
   return out;
 }
 
+/**
+ * WHO A TAGGED ACCOUNT IS — measured, and not what was planned.
+ *
+ * The plan was to read each tagged profile's BIO. Instagram does not give one
+ * up: `biography` is absent from the page for both a browser and a crawler,
+ * and to a browser the profile is the same empty JavaScript shell everything
+ * else is.
+ *
+ * What the crawler DOES get is og:description, and it carries the display
+ * name and, very often, the descriptor people put after a pipe or a dash:
+ *
+ *   "21K Followers, 875 Following, 543 Posts - See Instagram photos and
+ *    videos from Backstory | independent bookshop (@backstory.london)"
+ *
+ * "Backstory" and "independent bookshop" is enough to geocode and enough to
+ * classify — which is what the bio was wanted for. The follower counts are
+ * noise and are dropped.
+ */
+export function profileFromOg(og) {
+  const m = /from\s+([^()]+?)\s*\(@([A-Za-z0-9._]+)\)/i.exec(String(og || ""));
+  if (!m) return null;
+  const whole = m[1].trim();
+  // "Name | descriptor" and "Name - descriptor" are both common. Split on the
+  // FIRST separator only: a descriptor may well contain another one.
+  const sep = /\s+[|·—–-]\s+/.exec(whole);
+  const name = (sep ? whole.slice(0, sep.index) : whole).trim();
+  const descriptor = sep ? whole.slice(sep.index + sep[0].length).trim() : "";
+  if (!name) return null;
+  return { handle: m[2].toLowerCase(), name, descriptor };
+}
+
+/**
+ * The accounts a caption tags, turned into names.
+ *
+ * CAPPED AND SEQUENTIAL on purpose. A caption can tag thirty accounts; thirty
+ * fetches on the request path is a minute of somebody watching a spinner, and
+ * a list post worth saving names its ten. Sequential because these are
+ * unauthenticated fetches of somebody else's service and a burst of thirty
+ * parallel requests is how an IP stops being welcome.
+ */
+export async function resolveTaggedAccounts(handles, limit = 10) {
+  const out = [];
+  for (const handle of handles.slice(0, limit)) {
+    const { html } = await tryFetch(`https://www.instagram.com/${handle}/`, 8000, CRAWLER_HEADERS);
+    const got = profileFromOg(metaTag(html, "og:description"));
+    if (got) out.push(got);
+  }
+  return out;
+}
+
 export function embedUrl({ shortcode }) {
   // /p/<code>/embed/captioned/ serves the caption for reels as well as posts —
   // the /reel/ form of the embed path 302s to it anyway.

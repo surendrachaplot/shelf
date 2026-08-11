@@ -19,7 +19,7 @@
 // the app shows it rather than hiding it.
 import { isMain } from "./ismain.js";
 import { json, normList } from "./http.js";
-import { resolveShare } from "./resolve.js";
+import { resolveShare, handlesIn, resolveTaggedAccounts } from "./resolve.js";
 import { classifyCaption, classifyImage } from "./classify.js";
 import { enrich } from "./enrich/index.js";
 import { canonicalUrl } from "./url.js";
@@ -54,6 +54,23 @@ export async function resolveRoute(req, res, body) {
   const list = normList(body?.list);
 
   const envelope = await resolveShare(url);
+
+  // A LIST POST THAT TAGS RATHER THAN NAMES. Measured on a real one: the
+  // caption was "10 lovely bookshops … Bookshops featured: @a @b @c @d @e @f
+  // @g @h" — eight places, none of them written out. Read as text that is a
+  // headline and a row of usernames, and it yields nothing.
+  //
+  // Two or more handles is the signal; one is a credit or a friend. The
+  // poster's own account is dropped, because "follow @me for more" is on
+  // almost every one of these.
+  //
+  // Deliberately NOT unconditional: it costs one fetch per handle, and a
+  // caption that already names its places does not need it.
+  const handles = handlesIn(envelope.caption).filter((h) => h !== envelope.authorHandle);
+  if (handles.length >= 2) {
+    envelope.taggedAccounts = await resolveTaggedAccounts(handles).catch(() => []);
+  }
+
   const read = envelope.caption ? await classifyCaption(envelope, list) : [];
 
   const homeCity = String(body?.home_city || "").slice(0, 80) || null;
@@ -70,6 +87,7 @@ export async function resolveRoute(req, res, body) {
     url,
     resolver: envelope.via || "none",
     caption_chars: (envelope.caption || "").length,
+    tagged_accounts: (envelope.taggedAccounts || []).length,
     items,
   });
 }

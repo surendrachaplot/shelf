@@ -71,6 +71,8 @@ QUOTES. The thing being saved is THE WORDS THEMSELVES. Put the quote in "title",
 
 TRAVEL. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
 
+TAGGED ACCOUNTS. When the caption lists things by TAGGING them rather than naming them, the tagged accounts ARE the list — use the name given for each handle as the item's title, not the handle itself, and not the caption's headline. "10 lovely bookshops @a @b @c" with those three accounts named is three items, not one item called "10 lovely bookshops". Ignore the poster's own account and any account that is plainly not one of the things listed (a photographer credit, a friend, a brand doing a giveaway).
+
 RESTAURANTS vs TRAVEL: a place you would eat at, at home, is a restaurant. A place you would go to on a trip — including its restaurants — is travel. When the caption is about a trip, prefer travel.`;
 
 // The user's tap wins. Stated separately from SYSTEM so it is impossible to
@@ -88,6 +90,16 @@ export function buildPrompt(envelope, chosenList) {
   if (e.authorHandle) lines.push(`Posted by: @${e.authorHandle}`);
   if (e.locationTag) lines.push(`Location tag: ${e.locationTag}`);
   if (e.outboundUrls?.length) lines.push(`Links in caption: ${e.outboundUrls.join(" ")}`);
+  // WHO THE @HANDLES ARE. A list post very often names nothing in prose and
+  // tags eight accounts instead — "Bookshops featured: @a @b @c". Without
+  // this, the caption reads as a title and a wall of usernames and yields
+  // nothing. With it, each handle is a real name and a descriptor.
+  if (e.taggedAccounts?.length) {
+    lines.push("Accounts tagged in the caption (each is usually one of the things listed):");
+    for (const a of e.taggedAccounts) {
+      lines.push(`  @${a.handle} = ${a.name}${a.descriptor ? ` — ${a.descriptor}` : ""}`);
+    }
+  }
   lines.push("", "Caption:", e.caption ? String(e.caption).slice(0, 8000) : "(no caption could be read)");
   return lines.join("\n");
 }
