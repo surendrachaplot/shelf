@@ -14,6 +14,12 @@ const MIGRATIONS_DIR = join(ROOT, "migrations");
 
 let pool = null;
 
+/** A unix socket or loopback host — nothing on the wire to protect. */
+export function isLocal(url) {
+  const u = String(url || "");
+  return /host=%2F|host=\//.test(u) || /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(u) || /sslmode=disable/.test(u);
+}
+
 export function dbReady() {
   return !!process.env.DATABASE_URL;
 }
@@ -25,8 +31,14 @@ async function getPool() {
   pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     // Managed PG (Render/Neon/Supabase) requires TLS. rejectUnauthorized:false
-    // is acceptable here — the connection string host pins who we talk to.
-    ssl: { rejectUnauthorized: false },
+    // is acceptable there — the connection string host pins who we talk to.
+    //
+    // A local socket or loopback has no TLS and demanding it fails the
+    // connection outright ("The server does not support SSL connections"),
+    // which is what stopped the end-to-end suite from running at all. TLS is
+    // still the DEFAULT: this only stands down for a database that is by
+    // definition not crossing a network.
+    ssl: isLocal(process.env.DATABASE_URL) ? false : { rejectUnauthorized: false },
     max: 8,
     idleTimeoutMillis: 30_000,
   });

@@ -112,10 +112,24 @@ resolving — the failure that otherwise looks exactly like a working app.
 
 ## What is verified, and what is not
 
-Verified here: all module selftests, and 24 end-to-end checks against real
-Postgres — pairing, single-use codes, auth gating, the dedup claim (one reel
-re-shared with different tracking params = one row), multi-item reels, Inbox
-routing, cross-account isolation.
+Verified here: all module selftests, and 62 end-to-end checks against real
+Postgres (`node api/e2e.mjs`) — pairing, single-use codes, auth gating, the
+dedup claim (one reel re-shared with different tracking params = one row),
+multi-item reels, Inbox routing, cross-account isolation, handles and their
+reserved words, the ex-libris seed surviving a rename, catalogue dedupe on
+search-and-add, link minting and revoking, a revoked link being
+indistinguishable from one that never existed, the public pages rendering real
+rows, and a send arriving as a COPY that records who sent it.
+
+That suite has been mutation-tested: breaking the user filter, the catalogue
+dedupe and the sender field each produce named failures. It is also where the
+design gate's own habit paid off twice — the harness used to die on an
+unexpected shape and silently skip every check after it.
+
+Every screen is rendered and looked at (`npm run preview` in `app/`), and 196
+controls are measured off the live layout rather than eyeballed — including the
+four screens that only open on a tap, which were unverified until the audit
+learned to open them.
 
 **Not verified from this sandbox** (the agent proxy blocks `instagram.com`, and
 there is no iOS toolchain here): live caption extraction, the Claude call, the

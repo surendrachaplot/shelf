@@ -143,6 +143,34 @@ arriving in a new shape.
 billed request per result, and eight of those per keystroke is how a search box
 becomes a line item. The typographic jacket is the designed answer.
 
+## 4d. The end-to-end suite
+
+```bash
+createdb shelf_e2e
+DATABASE_URL='postgres://…/shelf_e2e' PORT=8791 node api/e2e.mjs
+```
+
+62 checks against real Postgres, through the real HTTP server, with bearer
+tokens — then it reads the ROWS rather than the status codes. It refuses to run
+against a `DATABASE_URL` whose name does not contain `e2e`/`test`/`scratch`,
+because a suite that can be pointed at production by a typo eventually is, and
+it truncates every table on the way in so a count assertion means what it says.
+
+**It has been mutation-tested.** Deliberately breaking the user filter on the
+list query, the catalogue dedupe, and the "who sent me this" field each produce
+named failures. A suite nobody has watched fail is a suite nobody should trust,
+and two real defects fell out of doing this:
+
+- The groups let an exception escape, so one unexpected shape ended the run with
+  a stack trace and silently skipped every check after it — indistinguishable
+  from those checks passing.
+- An assertion that dereferenced `json.items.length` turned a clear FAIL into a
+  crash the moment the endpoint returned an error body instead of a list.
+
+**`db.js` only demands TLS off-box.** Managed Postgres requires it; a unix
+socket or loopback has nothing on the wire to protect and refuses the
+handshake outright, which is what stopped this suite running at all.
+
 ## 5. Deploy
 
 - API on Render: `node serve.js` as the web service, `node worker.js` as a
