@@ -239,7 +239,12 @@ export async function debugItems(req, res) {
 
   const where = me ? `where user_id = $1` : ``;
   const r = await query(
+    // `title` and `subtitle` are catalogue metadata the pipeline DERIVED — a
+    // film name, a director — not anything you wrote, and without them
+    // "resolved successfully" cannot be told apart from "resolved to the wrong
+    // film". `note` and the caption stay out; the reel probe returns those.
     `select id, list, status, resolver, attempts, confidence, enriched,
+            title, subtitle, canonical,
             title is not null as has_title,
             raw_caption is not null as had_caption,
             length(coalesce(raw_caption, '')) as caption_chars,

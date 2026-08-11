@@ -395,6 +395,11 @@ export async function probeShare(sourceUrl) {
       step, url, ms: Date.now() - t0,
       http: r.status, bytes: r.bytes, blocked: !!r.blocked, error: r.error ?? null,
       caption_chars: (got.caption || "").length,
+      // THE TEXT ITSELF, not just its length. A character count told me the
+      // chain worked and told me nothing about why the classifier then named
+      // the wrong film — and the caption is precisely the classifier's input.
+      // Truncated because these run to hashtag walls.
+      caption_text: (got.caption || "").slice(0, 900) || null,
       via: got.via ?? null,
       image: !!got.imageUrl,
       author: got.authorHandle ?? null,
