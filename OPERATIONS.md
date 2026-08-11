@@ -36,6 +36,41 @@ about where it was taken.
   proxy (`CONNECT tunnel failed, 403`), so the numbers were never taken. Do not
   read the resolver order in `resolve.js` as evidence that it was measured.
 
+### 0a. Taking the measurement without a shell (2026-08-11)
+
+`spike-ig.mjs` needs a shell on the box and Render's free tier does not have
+one, which is why the number above stayed untaken until reels started arriving
+with no names on them. So the probe is an endpoint. One reel at a time, run
+from the machine whose IP address is the entire question:
+
+```bash
+curl -sS -H "x-shelf-secret: $ADMIN_SECRET" \
+  "$SHELF_API/api/debug/reel?url=https://www.instagram.com/reel/XXXXXXX/"
+```
+
+Per link in the chain it reports HTTP status, bytes returned, whether it was a
+**bot wall**, how many characters of caption came out and which extractor got
+them — plus a one-line `verdict`:
+
+| `verdict` | What it means | What to do |
+|---|---|---|
+| `readable — …` | The chain works from this IP. | Thin items are a classifier or enrichment problem, not a scrape problem. Look at `resolver` on the rows. |
+| `BLOCKED — …` | Meta served this server a wall, not a page. | Set `IG_RESOLVER_KEY` + `IG_RESOLVER_URL`, or use the screenshot path. Nothing in `resolve.js` can fix this. |
+| `no caption — …` | The pages fetched; nothing we know how to parse was in them. | Meta moved the markup. Add a fixture, fix `extractInstagram`, `--selftest`. |
+
+Authenticated by **either** a device token or `ADMIN_SECRET` — the device token
+lives in an iPhone Keychain and a curl gets typed on a laptop.
+
+**The screenshot path does not depend on Meta at all.** Share a screenshot of
+the reel instead of the link and it goes straight to vision (`/api/ingest/image`
+→ `classifyImage`). When the verdict is `BLOCKED`, that is the working answer
+today, not a workaround to apologise for.
+
+Items that came back unread are recoverable: **Read again** on the row calls
+`POST /api/item/retry`, which puts it back in the queue with `attempts` reset.
+A resolver fix that could only be applied by re-sharing every reel by hand
+would not be a fix.
+
 ## 1. The request path
 
 **Nothing slow happens while the share sheet is on screen.** `POST /api/ingest`

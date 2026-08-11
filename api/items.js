@@ -3,7 +3,7 @@
 import { isMain } from "./ismain.js";
 import { createHash } from "node:crypto";
 import { query } from "./db.js";
-import { getUser } from "./auth.js";
+import { getUser, secretMatches } from "./auth.js";
 import { LISTS } from "./classify.js";
 import { probeShare } from "./resolve.js";
 
@@ -206,8 +206,13 @@ export async function retryItem(req, res, body) {
  * to a machine Render's free tier does not give you one of.
  */
 export async function probeRoute(req, res, url) {
-  const me = await getUser(req);
-  if (!me) return json(res, 401, { ok: false, error: "not signed in" });
+  // Either credential. The device token lives in an iPhone Keychain and cannot
+  // be got at from a laptop, which is where a curl gets typed — so the same
+  // ADMIN_SECRET that mints a pairing code opens this, for exactly the same
+  // reason that route exists: Render's free tier has no Shell.
+  const admin = process.env.ADMIN_SECRET
+    && secretMatches(req.headers["x-shelf-secret"], process.env.ADMIN_SECRET);
+  if (!admin && !(await getUser(req))) return json(res, 401, { ok: false, error: "not signed in" });
   const target = url.searchParams.get("url");
   if (!target) return json(res, 400, { ok: false, error: "url required" });
   return json(res, 200, { ok: true, ...(await probeShare(target)) });
