@@ -54,27 +54,24 @@ by anybody who already has one.
    `RENDER_EXTERNAL_URL`, the second is only for sharing a database with
    another project (OPERATIONS §4a).
 
-**Do not skip this check.** Migrations run on boot, so:
+**Do not skip this check.** One command, and it reports in sentences:
 
 ```bash
-curl -s https://YOUR-API.onrender.com/api/health | jq
+node api/smoke.mjs https://YOUR-API.onrender.com
 ```
 
-You want `"db": true`, `"providers": {"claude": true}` and
-`"worker": "in-process"`. `"db": true` means all seven tables exist, because
-migrations ran. `"ok": true` with `"db": false` means `DATABASE_URL` did not
-attach. A **503 with a plain-English `warn`** is that check working, not a
-failure — it fires when shares are queued and nothing is clearing them.
+It checks: reachable, database attached and migrated, queue readable, which
+provider keys are present, which drain arrangement is running, that an
+unauthenticated read is refused, that a bad pairing code is refused (which
+proves the router, database and auth are all live at once), that an unknown
+share link renders the designed 404 rather than a stack trace, and where your
+share links will point.
 
-Then a smoke test that actually touches the database:
+Every check names its own fix. A cold start is called out as a cold start
+rather than a failure, and a missing TMDB/Places key is a note rather than a
+FAIL, because the app is honest about those being off.
 
-```bash
-curl -s -X POST https://YOUR-API.onrender.com/api/pair/redeem \
-  -H 'Content-Type: application/json' -d '{"code":"NOPE","device":"x"}'
-```
-
-`{"ok":false,"error":"bad or expired code"}` means the router, the database and
-auth are all live. A 500 means the database did not attach.
+If you would rather look at it raw: `curl -s https://YOUR-API.onrender.com/api/health | jq`.
 
 ### Two free-tier facts, so you do not misread them
 

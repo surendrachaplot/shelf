@@ -12,7 +12,7 @@ import {
   resolveShare, resolveHandle, sendToHandle, listReceived, actOnSend,
 } from "./profile.js";
 import { searchRoute, addRoute } from "./search.js";
-import { renderProfile, renderShelf, renderItem, renderGone, html, canonical } from "./page.js";
+import { renderProfile, renderShelf, renderItem, renderGone, html, canonical, WEB_BASE } from "./page.js";
 
 const PORT = Number(process.env.PORT || 8080);
 
@@ -111,7 +111,14 @@ async function handle(req, res, url) {
     // this process believes it is in. "Shares are queued but not resolving"
     // reads very differently depending on whether anything is meant to be
     // draining them here.
-    const out = { ok: true, db: dbReady(), model: process.env.SHELF_MODEL || "claude-opus-5", worker: WORKER_MODE };
+    const out = {
+      ok: true, db: dbReady(), model: process.env.SHELF_MODEL || "claude-opus-5", worker: WORKER_MODE,
+      // Where share links point. Reported because it is derived — from
+      // SHELF_WEB_BASE or Render's own RENDER_EXTERNAL_URL — and a wrong value
+      // here is invisible until somebody tells you the link you sent them
+      // 404s. An empty string means neither is set.
+      web_base: WEB_BASE,
+    };
     out.providers = {
       claude: !!process.env.ANTHROPIC_API_KEY,
       tmdb: !!process.env.TMDB_API_KEY,

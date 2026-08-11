@@ -178,6 +178,29 @@ Verified against a stand-in for a populated foreign database: without
 `DB_SCHEMA` it refuses; with it, all 62 end-to-end checks pass and the other
 application's users, events and migration rows are byte-for-byte untouched.
 
+## 4c2. After any deploy
+
+```bash
+node api/smoke.mjs https://shelf-api.onrender.com
+```
+
+Read-only — no rows written, no pairing code spent. The one mutating-looking
+call is a deliberately invalid pair redemption, which proves the router, the
+database and auth are all alive in a single request without side effects.
+
+It exists because every one of those checks has a failure mode that looks fine
+in a browser, and because "db: false" is a fact while "DATABASE_URL did not
+attach" is the thing you needed to know.
+
+It was written against a running server and then run against four deliberately
+broken ones — no DATABASE_URL, nothing listening, a typo'd host, and a healthy
+one — so its failure messages are ones that have actually been seen. Writing it
+also caught two things: an over-long fake share code falls through the 4–16
+character route to the generic JSON 404 (so the check was wrong, not the
+server), and `/api/health` had no way to report where share links point, which
+made a derived, invisible, easily-wrong value unverifiable. It reports
+`web_base` now.
+
 ## 4d. The end-to-end suite
 
 ```bash
