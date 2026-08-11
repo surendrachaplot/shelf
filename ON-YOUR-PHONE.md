@@ -109,11 +109,24 @@ Only set `EXPO_PUBLIC_SHELF_WEB` if you later put the pages on a custom domain.
 
 ```bash
 cd app
-npm ci
+npm ci                                     # NOT `npm install` — ci is what EAS runs
 npx --yes eas-cli@latest login
 npx --yes eas-cli@latest build:configure   # writes the projectId into app.json, once
 npm run build:dev
 ```
+
+`npm run build:dev` runs `preflight.mjs` first and refuses to upload if
+anything is wrong. Every check in it is one that has already cost a failed
+remote build: the expo-share-extension major against the Expo SDK, the Swift
+import that produces `no such module 'ReactAppDependencyProvider'`, a lockfile
+out of sync with package.json (EAS runs `npm ci`, which errors rather than
+reconciles), the config-plugin order that decides whether the share extension
+can read your login, the entry-point name the native side loads by string, and
+whether eas.json and api.ts agree on which server to talk to.
+
+**`npm ci`, not `npm install`.** `ci` installs strictly from the lockfile,
+which is what EAS does; `install` will happily resolve something else and leave
+you debugging a build that used different versions than your machine.
 
 **Not `npx eas`** — the package is `eas-cli` and the binary it installs is
 `eas`, so `npx eas` hunts for a package called "eas" and dies with "could not

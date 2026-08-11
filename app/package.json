@@ -7,15 +7,16 @@
     "start": "expo start --dev-client",
     "prebuild": "expo prebuild -p ios --clean",
     "ios": "expo run:ios",
-    "build:dev": "npx --yes eas-cli@latest build -p ios --profile development",
-    "build:preview": "npx --yes eas-cli@latest build -p ios --profile preview",
+    "build:dev": "node preflight.mjs && npx --yes eas-cli@latest build -p ios --profile development",
+    "build:preview": "node preflight.mjs && npx --yes eas-cli@latest build -p ios --profile preview",
     "verify": "node verify-design.mjs && node verify-design.mjs --selftest && node preview/build.mjs && node preview/measure.mjs",
     "frames": "node verify-design.mjs --frames",
     "preview": "node preview/build.mjs && node preview/shoot.mjs && node preview/measure.mjs",
     "lab": "node design-lab/shoot.mjs",
     "e2e": "node ../api/e2e.mjs",
     "eas": "npx --yes eas-cli@latest",
-    "android": "expo run:android"
+    "android": "expo run:android",
+    "preflight": "node preflight.mjs"
   },
   "dependencies": {
     "expo": "~52.0.0",
