@@ -103,19 +103,28 @@ Only set `EXPO_PUBLIC_SHELF_WEB` if you later put the pages on a custom domain.
 
 ---
 
-## 3. Build a dev client (~20 min, mostly waiting)
+## 3. Build the app (~20 min, mostly waiting)
 
 **Expo Go cannot host a share extension.** This has to be a real build.
+
+**Build the `preview` profile, not `development`.** Both are real native builds
+of shelf — same code, same share extension, same entitlements. The difference
+is where the JavaScript comes from: `development` loads it from a dev server on
+your Mac, so opening it without one running shows the Expo launcher screen and
+looks like an empty app. `preview` embeds the bundle, so it opens straight into
+shelf and keeps working with your laptop shut.
+
+Use `development` only when you want to edit code and see it reload.
 
 ```bash
 cd app
 npm ci                                     # NOT `npm install` — ci is what EAS runs
 npx --yes eas-cli@latest login
 npx --yes eas-cli@latest build:configure   # writes the projectId into app.json, once
-npm run build:dev
+npm run build:preview
 ```
 
-`npm run build:dev` runs `preflight.mjs` first and refuses to upload if
+`npm run build:preview` runs `preflight.mjs` first and refuses to upload if
 anything is wrong. Every check in it is one that has already cost a failed
 remote build: the expo-share-extension major against the Expo SDK, the Swift
 import that produces `no such module 'ReactAppDependencyProvider'`, a lockfile
