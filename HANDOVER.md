@@ -25,40 +25,48 @@ arriving and coming back with no names, which is exactly what a blocked scrape
 looks like. It is also what a markup change and a caption-less reel look like,
 which is why the next action is a measurement and not a guess.
 
-### Milestone 0, finally measured (2026-08-11)
+### Milestone 0: measured, and the answer was none of the theories (2026-08-11)
 
-Against a live reel, run from Render:
+Four months of documents said Instagram blocks datacentre IPs. It does not.
+Measured from Render against a live reel, seconds apart:
+
+| user agent | bytes | caption |
+|---|---|---|
+| browser (embed) | 606,013 | **0 chars** |
+| browser (canonical) | 605,958 | **0 chars** |
+| **crawler (canonical)** | 928,763 | **1,240 chars** + og:image + author |
+| **crawler (embed)** | 130,640 | **1,806 chars** |
+
+Not a block — HTTP 200, no wall. Meta renders posts client-side for a browser
+(`<title>Instagram</title>`, `data-sjs` bootstrap blobs, **not one og: tag**)
+and serves the full metadata to link-preview crawlers, because a reel pasted
+into WhatsApp has to draw a card. `viaCrawler` asks as `facebookexternalhit`.
+It is Meta's own crawler and the preview metadata every chat client is served.
+
+**Proven end to end on real rows**, not on fixtures:
 
 ```
-http 200 · 605,771 bytes · blocked: false · caption_chars: 0
+by_resolver: { "crawler-embed-json": 2, "none": 1 }
+movies      · 1,239 chars · title · confidence 0.98 · enriched (TMDB) · cover
+restaurants ·    46 chars · title · confidence 0.60 · un-enriched     · cover
 ```
 
-**Not an IP block.** Instagram served the full page and the extractor found
-nothing in it, because Meta now ships the caption as an OBJECT —
-`"caption":{"pk":…,"text":"…"}` — and `extractInstagram` read only bare
-strings. Four shapes are handled now (edges array → nested object → bare string
-→ `accessibility_caption`), each with a fixture. Whether that closes it on real
-reels is **still unconfirmed**: re-run the probe and look for
-`verdict: readable`.
-
-The lesson worth keeping is the sequencing. The plan named "datacentre IPs get
-blocked" as the load-bearing risk for four months; the measurement took ninety
-seconds and said it was a parser bug.
+Share → crawler → caption → classify → TMDB → filed with artwork. The
+discarded row was correctly left alone.
 
 ### Asking the live service anything — without a laptop
 
 The sandbox this repo is written in has an **egress policy denying
 `onrender.com`, `api.expo.dev` and `instagram.com`** at the gateway. Reported,
-not routed around. So diagnosis runs on a GitHub runner instead:
+not routed around. Diagnosis runs on a GitHub runner instead:
 
-Actions → **Diagnose the deployed service** → Run workflow → `health` | `items`
-| `reel`. `health` needs no secret. The other two need the repository secret
-`SHELF_ADMIN_SECRET` (= Render's `ADMIN_SECRET`). See `SETUP-ONCE.md`.
+Actions → **Diagnose the deployed service** → `health` | `items` | `reel` |
+`retry`. `health` needs no secret; the rest need `SHELF_ADMIN_SECRET`
+(= Render's `ADMIN_SECRET`). `retry` re-reads every untitled item, so a
+resolver fix reaches what is already sitting there. See `SETUP-ONCE.md`.
 
 **Live reading, 2026-08-11 15:16Z:** `db: true`, `worker: "in-process"`,
-`web_base` self-resolved, `claude: true`, `tmdb: true`, **`places: false`**,
-`ig_resolver: false`, queue `{pending: 0, inbox: 0, filed: 2, stuck: 0}`.
-Nothing is stuck; two items are filed; the database holds two items in total.
+`claude: true`, `tmdb: true`, **`places: false`**, `ig_resolver: false`.
 
 ## Shipped and verified
 
