@@ -102,4 +102,12 @@ jobs:
 
       - name: Publish
         if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
-        run: eas update --branch preview --message "${{ github.event.head_commit.message }}"
+        run: |
+          # From git, not from the event. `github.event.head_commit` does not
+          # exist on a manual run, so the message expanded to "" and eas
+          # refused: "--branch and --message are required". And %s is the
+          # SUBJECT only — these commit bodies are long and full of quotes and
+          # newlines, none of which belong on a one-line update label.
+          MSG=$(git log -1 --pretty=%s)
+          echo "publishing: $MSG"
+          eas update --branch preview --message "$MSG"
