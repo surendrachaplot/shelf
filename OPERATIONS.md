@@ -120,9 +120,16 @@ would have shipped a server that dies on its first import. It now builds with
 difference between the two is an oracle for guessing codes. `renderGone()` takes
 no argument for exactly that reason.
 
-**`SHELF_WEB_BASE` must match where the pages are actually served.** The app
-builds every URL it hands out from it; a mismatch produces links that 404 on
-arrival, and you will not notice until somebody tells you.
+**`SHELF_WEB_BASE` is an override, not a requirement.** The server falls back to
+`RENDER_EXTERNAL_URL`, which Render sets to the service's own address — so the
+ordinary deploy needs no configuration for this at all. That is deliberate: the
+host is not knowable until after the first deploy, so a required value here is
+one you would be typing in while links were already being handed out. Set it
+only for a custom domain, full origin, no trailing slash.
+
+**If neither is known, no `og:url` is emitted at all.** A preview card with no
+canonical address merely degrades; one pointing at the wrong host is a link that
+quietly sends people somewhere else.
 
 ## 4c. Search providers
 

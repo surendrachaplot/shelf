@@ -35,10 +35,11 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
    - `ANTHROPIC_API_KEY` — required, this is what reads captions
    - `ADMIN_SECRET` — any long random string (api only)
    - `TMDB_API_KEY`, `GOOGLE_PLACES_KEY` — optional
-4. Set `SHELF_WEB_BASE` on `shelf-api` to whatever Render gives you, e.g.
-   `https://shelf-api.onrender.com`. **No trailing slash.** This is the address
-   baked into every link the app hands out. (Render only knows the URL after the
-   first deploy, so this is a second save-and-redeploy — expected.)
+4. **`SHELF_WEB_BASE`: leave it unset.** The service falls back to
+   `RENDER_EXTERNAL_URL`, which Render sets to this service's own address, so
+   share links are correct with no configuration. Set it only if you later put
+   the pages on a custom domain — and then it is the full origin with **no
+   trailing slash**, e.g. `https://shelf.club`.
 
 **Do not skip this check.** Migrations run on boot, so:
 

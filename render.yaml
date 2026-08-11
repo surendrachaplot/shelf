@@ -24,10 +24,12 @@ services:
       - { key: TMDB_API_KEY, sync: false }
       - { key: GOOGLE_PLACES_KEY, sync: false }
       - { key: ADMIN_SECRET, sync: false }
-      # Where share links point. The app builds every URL it hands out from
-      # this, so a mismatch here produces links that 404 on arrival. Set it to
-      # this service's own URL — the pages and the JSON come out of one process.
-      - { key: SHELF_WEB_BASE, sync: false }
+      # Where share links point. LEAVE THIS UNSET on Render: the service falls
+      # back to RENDER_EXTERNAL_URL, which Render sets to this service's own
+      # address. That matters because the host is not knowable until after the
+      # first deploy — anything you have to type here is a step you take while
+      # links are already being handed out. Set it only for a custom domain.
+      # - { key: SHELF_WEB_BASE, sync: false }
       # Set to 1 if you deleted the worker service (free tier). See below.
       - { key: WORKER_IN_PROCESS, value: "0" }
 

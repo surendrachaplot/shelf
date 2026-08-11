@@ -23,9 +23,18 @@ const LIST_LABEL = { books: "Books", restaurants: "Restaurants", movies: "Movies
 // Where these pages actually live. og:url has to be ABSOLUTE — a relative one
 // is ignored, and the preview card then has no canonical address to attach to,
 // which is how a link pasted into a message ends up as a grey rectangle.
-// render.yaml sets this; it defaulted to nothing and was read by nobody.
-export const WEB_BASE = (process.env.SHELF_WEB_BASE || "https://shelf.club").replace(/\/+$/, "");
-export const canonical = (path) => `${WEB_BASE}${path}`;
+//
+// RENDER_EXTERNAL_URL is set by Render itself, so on Render this needs no
+// configuration at all. That matters more than it sounds: the host is not
+// knowable until after the first deploy, so anything you have to type here is
+// a step you take while the service is already running and links are already
+// being handed out. SHELF_WEB_BASE stays as the override for a custom domain.
+//
+// If NEITHER is known we emit no og:url rather than guessing one. A card with
+// no canonical address degrades; a card pointing at the wrong host is a link
+// that silently sends people somewhere else.
+export const WEB_BASE = (process.env.SHELF_WEB_BASE || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
+export const canonical = (path) => (WEB_BASE ? `${WEB_BASE}${path}` : null);
 const LIST_N = { books: "01", restaurants: "02", movies: "03", recipes: "04" };
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -316,6 +325,11 @@ if (isMain(import.meta.url)) {
     ok(/og:title/.test(profile) && /og:description/.test(profile), "a shared page shipped with no link preview");
     ok(/og:url" content="https?:\/\//.test(profile), "og:url is missing or not absolute — a relative one is ignored and the card has nothing to attach to");
     ok(canonical("/s/abc") === `${WEB_BASE}/s/abc`, "canonical url building");
+    // Render tells the process its own address, so the common deploy needs no
+    // configuration. Checked because "it defaults correctly" is the sort of
+    // claim that is true right up until somebody reorders an expression.
+    ok(WEB_BASE === (process.env.SHELF_WEB_BASE || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, ""),
+      "WEB_BASE does not fall back to RENDER_EXTERNAL_URL");
     ok(profile.includes(D.light.books), "the page is not painting from the app's palette");
 
     // A revoked link and a link that never existed must be indistinguishable.
