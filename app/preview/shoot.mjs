@@ -18,7 +18,12 @@ const SHOTS = [
   { name: "app-375-dark", q: "", w: 375, h: 980, scheme: "dark" },
   { name: "app-320-light", q: "", w: 320, h: 900, scheme: "light" },
   { name: "app-restaurants-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Restaurants," },
+  // The pile, at both widths and in both schemes, because it now holds the row
+  // that was reported broken: a reel Instagram gave us no caption for. An
+  // explanation you have not looked at is a paragraph, not an explanation.
   { name: "app-inbox-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Not shelved," },
+  { name: "app-inbox-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Not shelved," },
+  { name: "app-inbox-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Not shelved," },
   { name: "app-recipes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Recipes," },
   // Tapping a jacket. The detail panel is the same two colours and the same
   // composition language at full size, so opening one reads as a zoom.
@@ -43,8 +48,16 @@ const SHOTS = [
   { name: "app-share-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Share the Books shelf" },
   { name: "app-profile-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Your card" },
   { name: "app-add-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Add something by name", type: ["piranesi"] },
+  // The card with the plumbing broken — the sentence somebody reads when
+  // sharing from Instagram silently does nothing. It has to be legible and it
+  // has to say what to do.
+  { name: "app-profile-broken-375-light", q: "?keychain=0", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
   { name: "pair-375-light", q: "?paired=0", w: 375, h: 980, scheme: "light" },
   { name: "pair-claim-375-light", q: "?paired=0&unclaimed=1", w: 375, h: 980, scheme: "light" },
+  // Launch against a server that is still waking. This screen used to be an
+  // indefinite spinner under the wordmark — indistinguishable from the splash,
+  // and reported as "it is stuck on the splash screen".
+  { name: "pair-waking-375-light", q: "?paired=0&asleep=1", w: 375, h: 980, scheme: "light" },
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },

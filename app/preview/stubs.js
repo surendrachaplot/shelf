@@ -16,7 +16,15 @@ const ITEMS = [
     canonical: {}, confidence: 0.42, source_url: "x", enriched: false, created_at: "" },
   { id: "4", list: "unsorted", status: "pending", title: null, subtitle: null, note: null,
     image_url: null, canonical: {}, confidence: null, source_url: "x", enriched: false, created_at: "" },
-];
+  // The state this app was actually in when it was reported broken: Instagram
+  // handed the server nothing, so the item has a link, a list and no name. If
+  // it is not in the fixtures it is not on the contact sheet, and it was the
+  // single most common row on the real device.
+  { id: "5", list: "unsorted", status: "needs_review", title: null, subtitle: null, note: null,
+    image_url: null, canonical: {}, confidence: null,
+    source_url: "https://www.instagram.com/reel/DAbCdEf/", enriched: false, created_at: "",
+    resolver: "none", attempts: 1, last_error: null, had_caption: false },
+].map((x) => ({ resolver: "embed-json", attempts: 1, last_error: null, had_caption: true, ...x }));
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,14 +50,24 @@ export const fetchList = async (l) => {
   }));
 };
 export const updateItem = async () => ({ item: {} });
+export const retryItem = async () => ({ item: { id: "5", status: "pending" } });
 export const ingestUrl = async () => { await wait(140); return { id: "1" }; };
 export const ingestImage = async () => ({ id: "1" });
-export const queueShare = async () => {};
+export const NOT_PAIRED = "not paired";
+export const queueShare = async () => true;
 export const flushQueue = async () => 0;
 export const pair = async () => "shelf_preview";
 // ?unclaimed=1 renders the first-run screen, which is otherwise only reachable
-// against a server nobody has ever paired with.
-export const serverState = async () => ({ unclaimed: new URLSearchParams(location.search).get("unclaimed") === "1" });
+// against a server nobody has ever paired with. ?asleep=1 makes this throw for
+// ever, which is how you look at the "waking the server" copy — the state that
+// shipped as an indefinite spinner indistinguishable from the splash screen.
+export const serverState = async () => {
+  if (new URLSearchParams(location.search).get("asleep") === "1") {
+    await wait(200);
+    throw new Error("aborted");
+  }
+  return { unclaimed: new URLSearchParams(location.search).get("unclaimed") === "1" };
+};
 export const claim = async () => "shelf_preview";
 export const pendingShareCount = async () => 0;
 export const API_BASE = "";

@@ -159,10 +159,14 @@ async function tryFetch(url, ms = 12000) {
   try {
     const r = await fetchT(url, { headers: BROWSER_HEADERS, redirect: "follow" }, ms);
     const html = await r.text();
-    if (isBotWall(r.status, html)) return { blocked: true, html: "" };
-    return { blocked: false, html };
-  } catch (_) {
-    return { blocked: false, html: "" };
+    // `status`/`bytes` are for `probeShare` and ignored by the resolvers. A
+    // wall is NOT a fetch failure — 200 with a login page is the single most
+    // common way this chain dies, and in a diagnosis it must not be
+    // indistinguishable from "the network was down".
+    if (isBotWall(r.status, html)) return { blocked: true, html: "", status: r.status, bytes: html.length };
+    return { blocked: false, html, status: r.status, bytes: html.length };
+  } catch (e) {
+    return { blocked: false, html: "", status: 0, bytes: 0, error: e.message };
   }
 }
 
@@ -288,6 +292,67 @@ export async function resolveShare(sourceUrl) {
     if (got.caption) return got;
   }
   return { ...EMPTY(), via: "none" };
+}
+
+/**
+ * Run the chain WITHOUT hiding it, and report what each link actually got.
+ *
+ * This exists because "nothing is coming back with a title" has at least four
+ * causes that look identical from the app — Meta serving a login wall to a
+ * datacentre IP, a markup change, a timeout, or a classifier that ran fine and
+ * found nothing nameable — and picking between them by reasoning is how a day
+ * gets spent. The trap was named in the plan as Milestone 0 and never
+ * measured; this is the measurement, run from the server whose IP is the
+ * variable that matters.
+ *
+ * Deliberately reports SIZES AND STATUSES, not page bodies: the answer is
+ * "2.1kB and blocked" versus "310kB and a caption", and dumping Instagram's
+ * HTML through an API response helps nobody.
+ */
+export async function probeShare(sourceUrl) {
+  const ig = parseInstagramUrl(sourceUrl);
+  const steps = [];
+
+  const record = async (step, url, extract) => {
+    const t0 = Date.now();
+    const r = await tryFetch(url);
+    const got = extract(r.html);
+    steps.push({
+      step, url, ms: Date.now() - t0,
+      http: r.status, bytes: r.bytes, blocked: !!r.blocked, error: r.error ?? null,
+      caption_chars: (got.caption || "").length,
+      via: got.via ?? null,
+      image: !!got.imageUrl,
+      author: got.authorHandle ?? null,
+    });
+    return got;
+  };
+
+  if (ig) {
+    await record("embed", embedUrl(ig), extractInstagram);
+    await record("canonical", `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`, extractInstagram);
+    steps.push({
+      step: "paid",
+      configured: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
+      note: "off unless IG_RESOLVER_KEY and IG_RESOLVER_URL are both set",
+    });
+  } else if (/^https?:\/\//i.test(String(sourceUrl || ""))) {
+    await record("web", String(sourceUrl), (html) => extractWebPage(html, sourceUrl));
+  }
+
+  const best = steps.filter((x) => x.caption_chars > 0).sort((a, b) => b.caption_chars - a.caption_chars)[0] ?? null;
+  return {
+    url: sourceUrl,
+    kind: ig ? "instagram" : "web",
+    shortcode: ig?.shortcode ?? null,
+    steps,
+    // The one-line answer. Everything above is the working.
+    verdict: best
+      ? `readable — ${best.step} returned ${best.caption_chars} characters via ${best.via}`
+      : steps.some((x) => x.blocked)
+        ? "BLOCKED — Instagram served this server a wall, not a page. A datacentre IP is the usual reason; a residential one often works, which is why this must be run from the server and not a laptop."
+        : "no caption — the pages fetched but nothing we know how to read was in them (a markup change, or a reel with no caption at all)",
+  };
 }
 
 // ── selftest ─────────────────────────────────────────────────────────────────

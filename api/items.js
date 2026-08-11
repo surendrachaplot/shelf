@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { query } from "./db.js";
 import { getUser } from "./auth.js";
 import { LISTS } from "./classify.js";
+import { probeShare } from "./resolve.js";
 
 export const STATUSES = ["pending", "needs_review", "filed", "discarded"];
 export const ALL_LISTS = [...LISTS, "unsorted"];
@@ -160,12 +161,56 @@ export async function listItems(req, res, url) {
     where += ` and status = 'filed'`;
   }
   const r = await query(
+    // `resolver`, `attempts` and `last_error` ride along because the Inbox has
+    // to be able to say WHY something has no name. "Couldn't read it" with no
+    // reason attached is the state this app spent a day in.
     `select id, list, status, title, subtitle, note, image_url, canonical, confidence,
-            source_url, resolver, enriched, created_at, filed_at
+            source_url, resolver, attempts, last_error, raw_caption is not null as had_caption,
+            enriched, created_at, filed_at
        from items where ${where} order by coalesce(filed_at, created_at) desc limit 500`,
     params
   );
   return json(res, 200, { ok: true, items: r.rows });
+}
+
+/**
+ * POST /api/item/retry { id } — put an unread item back in the queue.
+ *
+ * A reel that Instagram refused to hand over today may well hand over
+ * tomorrow, and a resolver fix is worthless if the only way to apply it is to
+ * re-share every reel by hand from Instagram. `attempts` goes back to zero
+ * because the four-strikes rule is about not hammering a broken share, not
+ * about refusing forever.
+ */
+export async function retryItem(req, res, body) {
+  const me = await getUser(req);
+  if (!me) return json(res, 401, { ok: false, error: "not signed in" });
+  const id = String(body?.id || "");
+  if (!id) return json(res, 400, { ok: false, error: "id required" });
+  const r = await query(
+    `update items set status = 'pending', attempts = 0, last_error = null
+      where id = $1 and user_id = $2 and status <> 'discarded'
+      returning id, status`,
+    [id, me.id]
+  );
+  if (!r.rows.length) return json(res, 404, { ok: false, error: "no such item" });
+  return json(res, 200, { ok: true, item: r.rows[0] });
+}
+
+/**
+ * GET /api/debug/reel?url=… — run the resolver chain out loud.
+ *
+ * Behind the device token, because it fetches on your behalf and because the
+ * answer is only interesting to whoever owns the shelf. It is the only way to
+ * tell "Meta blocked this server" from "the markup moved" without shell access
+ * to a machine Render's free tier does not give you one of.
+ */
+export async function probeRoute(req, res, url) {
+  const me = await getUser(req);
+  if (!me) return json(res, 401, { ok: false, error: "not signed in" });
+  const target = url.searchParams.get("url");
+  if (!target) return json(res, 400, { ok: false, error: "url required" });
+  return json(res, 200, { ok: true, ...(await probeShare(target)) });
 }
 
 // One tap from the Inbox: accept it, move it, or bin it.

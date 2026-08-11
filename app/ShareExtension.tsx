@@ -16,7 +16,7 @@ import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { close, type InitialProps } from "expo-share-extension";
 import * as FileSystem from "expo-file-system";
-import { ingestImage, ingestUrl, queueShare, type ListName, LISTS } from "./src/api";
+import { ingestImage, ingestUrl, NOT_PAIRED, queueShare, type ListName, LISTS } from "./src/api";
 import { Press } from "./src/Press";
 import {
   BAND_BOARD, lists, listOn, sp, t, TOUCH_MIN, useTheme, type Palette,
@@ -66,12 +66,22 @@ export default function ShareExtension({ url, text, images }: InitialProps) {
       setPhase({ kind: "done", list, offline: false });
       setTimeout(close, 520);
     } catch (e) {
-      if (sharedUrl) {
-        await queueShare(sharedUrl, list);
+      const why = (e as Error).message;
+      // No key on this phone. Queuing would be theatre: the queue lives in the
+      // same shared Keychain the key is missing from, so it would either fail
+      // too or land somewhere the app can never read — and the sheet would
+      // have said "Queued" either way. Say the true thing instead.
+      if (why === NOT_PAIRED) {
+        setPhase({ kind: "error", message: "Open shelf on this phone once, then share again." });
+        return;
+      }
+      // Anything else is the network. Keep it, but only claim to have kept it
+      // if the write is actually readable back.
+      if (sharedUrl && (await queueShare(sharedUrl, list))) {
         setPhase({ kind: "done", list, offline: true });
         setTimeout(close, 1200);
       } else {
-        setPhase({ kind: "error", message: (e as Error).message });
+        setPhase({ kind: "error", message: why });
       }
     }
   }

@@ -28,11 +28,35 @@ export type Item = {
   source_url: string | null;
   enriched: boolean;
   created_at: string;
+  // Why a thing has no name. `resolver` is which link in the chain answered
+  // ("none" means every one of them came back empty), `had_caption` says
+  // whether there was any text to reason about at all, and `last_error` is a
+  // thrown exception rather than an empty result. Together they are the
+  // difference between "Instagram wouldn't hand it over" and "we read it and
+  // it wasn't about anything" — which need different actions from you.
+  resolver: string | null;
+  attempts: number;
+  last_error: string | null;
+  had_caption: boolean;
 };
+
+/** Put an unread item back in the queue. Reads are retried, not re-shared. */
+export const retryItem = (id: string) =>
+  req<{ item: Pick<Item, "id" | "status"> }>(`/api/item/retry`, {
+    method: "POST", body: JSON.stringify({ id }),
+  });
+
+/**
+ * The one failure the share extension must not mislabel. Every other error in
+ * the sheet means "the network was bad, we kept it"; this one means "this
+ * phone has no key", and keeping it would be a lie — the queue lives in the
+ * same Keychain group the missing key lives in.
+ */
+export const NOT_PAIRED = "not paired";
 
 async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<T> {
   const token = await getToken();
-  if (!token) throw new Error("not paired");
+  if (!token) throw new Error(NOT_PAIRED);
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   try {
@@ -79,10 +103,26 @@ export const claim = async (device: string) => {
   return body.token;
 };
 
-/** Is this server still unclaimed? Decides which pairing screen you get. */
-export const serverState = async () => {
-  const res = await fetch(`${API_BASE}/api/health`);
-  return (await res.json()) as { unclaimed?: boolean };
+/**
+ * Is this server still unclaimed? Decides which pairing screen you get.
+ *
+ * TIMED, and shorter than you'd think. This is the first network call the app
+ * ever makes, and it is made while the only thing on screen is the wordmark
+ * over a spinner — which is indistinguishable from the splash. Render's free
+ * tier sleeps after ~15 minutes idle and can take a minute to wake, so an
+ * untimed fetch here IS "the app is stuck on the splash screen". It was
+ * reported as exactly that. One call may not wake the server; the caller
+ * retries and says so out loud.
+ */
+export const serverState = async (timeoutMs = 7000) => {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { signal: ac.signal });
+    return (await res.json()) as { unclaimed?: boolean; db?: boolean };
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 export const fetchList = (list: ListName) =>
@@ -222,10 +262,21 @@ async function writeQueue(q: QueuedShare[]): Promise<void> {
   await SecureStore.setItemAsync(QUEUE_KEY, JSON.stringify(q.slice(-50)), queueOpts);
 }
 
-export async function queueShare(url: string, list: ListName): Promise<void> {
-  const q = await readQueue();
-  q.push({ url, list, at: Date.now() });
-  await writeQueue(q);
+/**
+ * Returns whether the share is really on disk. The extension shows "Queued" on
+ * the strength of this, and a "Queued" that did not queue is the worst outcome
+ * this app can produce: a receipt for something that was thrown away. So the
+ * write is read back rather than assumed.
+ */
+export async function queueShare(url: string, list: ListName): Promise<boolean> {
+  try {
+    const q = await readQueue();
+    q.push({ url, list, at: Date.now() });
+    await writeQueue(q);
+    return (await readQueue()).some((x) => x.url === url && x.list === list);
+  } catch {
+    return false;
+  }
 }
 
 // Called on app launch. Returns how many stranded shares made it through.

@@ -23,10 +23,12 @@
 // does not read as a swatch book. A missing cover is a design brief, not a hole.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, AppState, Image, Linking, RefreshControl, ScrollView, StyleSheet,
+  Text, TextInput, View,
 } from "react-native";
 import {
-  claim, fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, serverState, updateItem,
+  claim, fetchInbox, fetchList, flushQueue, getProfile, listReceived, pair, retryItem,
+  serverState, updateItem,
   type Item, type ListName, type ShareKind, LISTS,
 } from "./src/api";
 import { Add } from "./src/Add";
@@ -76,17 +78,27 @@ export default function App() {
   // null means the shelves really are empty. A string means we could not look.
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const syncQueue = useCallback(async () => {
+    const sent = await flushQueue().catch(() => 0);
+    if (sent) setFlash(`Synced ${sent} share${sent > 1 ? "s" : ""} saved offline`);
+  }, []);
+
   useEffect(() => {
     (async () => {
-      const token = await getToken();
-      setPaired(!!token);
-      setReady(true);
-      if (token) {
-        const sent = await flushQueue().catch(() => 0);
-        if (sent) setFlash(`Synced ${sent} share${sent > 1 ? "s" : ""} saved offline`);
+      // `ready` is set in a finally, not after the await. A Keychain read that
+      // throws would otherwise leave this screen on its boot spinner forever,
+      // and a boot spinner on this app looks exactly like the splash — which
+      // is what "stuck on the splash screen" turned out to mean.
+      let token: string | null = null;
+      try {
+        token = await getToken();
+      } finally {
+        setPaired(!!token);
+        setReady(true);
       }
+      if (token) await syncQueue();
     })();
-  }, []);
+  }, [syncQueue]);
 
   const load = useCallback(async () => {
     if (!paired) return;
@@ -121,11 +133,46 @@ export default function App() {
 
   useEffect(() => { loadHeader(); }, [loadHeader]);
 
+  // SHARING HAPPENS IN ANOTHER APP. You leave shelf, share a reel from
+  // Instagram, and come back — and iOS does not remount a backgrounded app, so
+  // every effect above ran once, at cold start, and never again. The shelves
+  // then show whatever they showed when you last launched, no matter how many
+  // reels went up in between. Reported, accurately, as "nothing is coming to
+  // the shelf when I share".
+  //
+  // Returning to the app is the one moment we KNOW something may have arrived,
+  // so it is the one moment worth spending a fetch on. The queue is flushed
+  // here too: a share sent with no signal is stranded until the app asks.
+  useEffect(() => {
+    if (!paired) return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      load();
+      loadHeader();
+      syncQueue();
+    });
+    return () => sub.remove();
+  }, [paired, load, loadHeader, syncQueue]);
+
   useEffect(() => {
     if (!flash) return;
     const id = setTimeout(() => setFlash(null), 3500);
     return () => clearTimeout(id);
   }, [flash]);
+
+  async function retry(item: Item) {
+    // Optimistic: the row flips to "Working it out…" immediately, because the
+    // queue is drained on an interval and a button that looks inert for five
+    // seconds gets pressed four more times.
+    setInbox((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "pending", last_error: null } : i)));
+    try {
+      await retryItem(item.id);
+      setFlash("Reading it again — pull down in a moment to see.");
+    } catch (e) {
+      setFlash((e as Error).message);
+      load();
+    }
+  }
 
   async function act(item: Item, body: Record<string, unknown>) {
     setInbox((prev) => prev.filter((i) => i.id !== item.id)); // optimistic
@@ -162,8 +209,11 @@ export default function App() {
               <Text style={s.toolLiveLabel}>{waiting} sent you</Text>
             </Press>
           ) : (
+            /* NOT "Inbox". The fifth rail tab below is already where your own
+               unfiled things pile up, and two Inboxes on one screen means the
+               one you tap is the wrong one. This button is other people. */
             <Press onPress={() => setScreen("received")} style={s.tool} size={TOUCH_MIN} label="Things sent to you">
-              <Text style={s.toolLabel}>Inbox</Text>
+              <Text style={s.toolLabel}>Sent you</Text>
             </Press>
           )}
           <Press onPress={() => setScreen("profile")} style={s.plateBtn} size={TOUCH_MIN} label="Your card">
@@ -211,6 +261,17 @@ export default function App() {
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
         onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
+        // The gesture everybody already tries when a list looks stale. It is
+        // also the only way to ask again while the app stays in the
+        // foreground — a reel resolves seconds after it is shared, so "pull
+        // once more" is a real answer rather than a placebo.
+        refreshControl={
+          <RefreshControl
+            refreshing={busy}
+            onRefresh={() => { load(); loadHeader(); syncQueue(); }}
+            tintColor={c.inkFaint}
+          />
+        }
       >
         {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
 
@@ -237,7 +298,7 @@ export default function App() {
               />
             ) : inbox.map((item, i) => (
               <Reveal key={item.id} index={i}>
-                <PileRow item={item} onAct={act} onOpen={setOpen} s={s} c={c} />
+                <PileRow item={item} onAct={act} onOpen={setOpen} onRetry={retry} s={s} c={c} />
               </Reveal>
             ))}
           </View>
@@ -448,27 +509,68 @@ function EmptyShelf({ list, width, s, c }: { list: ListName; width: number; s: R
   );
 }
 
-function PileRow({ item, onAct, onOpen, s, c }: {
+/**
+ * Why this one has no name — in words, and different words per cause, because
+ * the thing you should do next differs. "Couldn't read this one" told nobody
+ * anything, which is how a blocked scrape and a caption-less reel spent a day
+ * looking like the same bug.
+ */
+export function whyUnread(item: Pick<Item, "title" | "resolver" | "last_error" | "had_caption">): string | null {
+  if (item.title) return null;
+  if (item.last_error) return `It threw an error while reading: ${item.last_error}`;
+  if (!item.had_caption) {
+    return "Instagram gave us nothing to read. Screenshot the reel and share the picture instead — that path never touches Instagram.";
+  }
+  return "We got the caption but couldn't tell what it was about.";
+}
+
+function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
   item: Item; s: ReturnType<typeof styles>; c: Palette;
   onOpen: (i: Item) => void;
+  onRetry: (i: Item) => void;
   onAct: (i: Item, body: Record<string, unknown>) => void;
 }) {
   const pending = item.status === "pending";
   // A pending item has no shelf yet. Painting it in a list colour is a lie the
   // eye reads before the words do — it gets an outline instead.
   const fill = pending ? "transparent" : (c[item.list] ?? c.unsorted);
+  const why = pending ? null : whyUnread(item);
   return (
     <View style={s.pile}>
-      <View style={[s.pileSwatch, { backgroundColor: fill, borderColor: pending ? c.inkFaint : fill }]} />
+      {/* The swatch sits in a 44pt box rather than carrying a magic top
+          margin, so it lands on the FIRST LINE whether the row is one line or
+          five. Hand-tuned to the two-line case, it floated under the one-line
+          rows — visible immediately in the contact sheet. */}
+      <View style={s.pileSwatchBox}>
+        <View style={[s.pileSwatch, { backgroundColor: fill, borderColor: pending ? c.inkFaint : fill }]} />
+      </View>
       {pending ? (
-        <Text style={s.pileTitle} numberOfLines={1}>Working it out…</Text>
+        // flex:1 lives HERE, not on pileTitle: the title is now a heading with
+        // a paragraph under it, and a flexed Text inside that column stops the
+        // row from pushing the action to the right-hand edge.
+        <View style={s.pileMain}>
+          <Text style={s.pileTitle} numberOfLines={1}>Working it out…</Text>
+        </View>
       ) : (
-        <Press onPress={() => onOpen(item)} containerStyle={s.pileMain} size={TOUCH_MIN} label={`Open ${item.title ?? "this item"}`}>
+        <Press onPress={() => onOpen(item)} containerStyle={s.pileMain} size={TOUCH_MIN} label={`Open ${item.title ?? "the one we couldn't read"}`}>
           <Text style={s.pileTitle} numberOfLines={1}>{item.title ?? "Couldn't read this one"}</Text>
+          {/* The reason, under the row, in full. Truncating an explanation to
+              one line makes it decoration. */}
+          {why ? <Text style={s.pileWhy}>{why}</Text> : null}
         </Press>
       )}
       {pending ? (
-        <Text style={s.pileAction}>Reading</Text>
+        // In the same 44pt box the buttons use, or it rides at the very top of
+        // the row while the title is centred below it.
+        <View style={s.pileBtn}><Text style={s.pileAction}>Reading</Text></View>
+      ) : why ? (
+        // Shelving something with no name puts a blank jacket on a board. The
+        // useful action on an unread item is to read it again — Instagram's
+        // mood changes, and a resolver fix has to be applicable to what is
+        // already here or it fixes nothing you have already lost.
+        <Press onPress={() => onRetry(item)} style={s.pileBtn} size={TOUCH_MIN} label="Try reading it again">
+          <Text style={s.pileAction}>Read again</Text>
+        </Press>
       ) : (
         <Press onPress={() => onAct(item, { action: "file" })} style={s.pileBtn} size={TOUCH_MIN} label="Shelve it">
           <Text style={s.pileAction}>Shelve →</Text>
@@ -641,12 +743,34 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
   // rendering of that; showing the code field first and swapping it out under
   // somebody's fingers is not.
   const [unclaimed, setUnclaimed] = useState<boolean | undefined>(undefined);
+  // The server is asleep and we are waiting on it. Worth saying out loud.
+  const [waking, setWaking] = useState(false);
 
   useEffect(() => {
     let live = true;
-    serverState()
-      .then((r) => live && setUnclaimed(!!r.unclaimed))
-      .catch(() => live && setUnclaimed(false));   // can't ask → assume claimed
+    (async () => {
+      // The API is on a free tier that sleeps after about fifteen minutes idle
+      // and takes up to a minute to get back up. ASK REPEATEDLY WITH A SHORT
+      // TIMEOUT rather than once with a long one: one long wait is a spinner
+      // that cannot tell you anything, and this screen — wordmark over a
+      // spinner — is visually identical to the splash, so a hang here reads as
+      // "the app never started". It did; it was waiting on a sleeping server.
+      for (let attempt = 0; live && attempt < 8; attempt++) {
+        try {
+          const r = await serverState();
+          if (live) { setUnclaimed(!!r.unclaimed); setWaking(false); }
+          return;
+        } catch {
+          if (!live) return;
+          setWaking(true);
+          await new Promise((r) => setTimeout(r, 2500));
+        }
+      }
+      // Eight tries, about eighty seconds. Whatever is wrong is not a nap.
+      // Fall through to the code field: a screen you can act on beats a screen
+      // that is still deciding.
+      if (live) { setUnclaimed(false); setWaking(false); }
+    })();
     return () => { live = false; };
   }, []);
 
@@ -654,7 +778,11 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      setToken(await get());
+      // AWAITED. Unawaited, the app moves on to its shelves while the write is
+      // still in flight — and if it fails, nothing catches it: the next launch
+      // is back on this screen with no explanation, and the share extension
+      // reads a key that was never written.
+      await setToken(await get());
       // Confirm the extension can actually read what we just wrote. Finding
       // this out here is the difference between a one-line fix and a week of
       // "why does sharing do nothing".
@@ -684,7 +812,18 @@ function Pairing({ onPaired }: { onPaired: () => void }) {
         <Text style={s.pairMark}>shelf</Text>
 
         {unclaimed === undefined ? (
-          <ActivityIndicator color={c.inkFaint} />
+          <>
+            <ActivityIndicator color={c.inkFaint} style={s.pairSpin} />
+            {/* Only once we KNOW it is asleep. Saying "waking the server" the
+                instant the screen appears would be a guess presented as a
+                fact, and on a warm server it would flash for 200ms. */}
+            {waking ? (
+              <Text style={s.pairHint}>
+                Waking the server. It sleeps when nobody has used it for a while —
+                this takes up to a minute.
+              </Text>
+            ) : null}
+          </>
         ) : unclaimed ? (
           <>
             {/* Nobody has ever paired with this server, so there is nobody to
@@ -765,13 +904,17 @@ const styles = (c: Palette) => StyleSheet.create({
   sectionNum: { ...t.micro, color: c.inkFaint },
 
   pile: {
-    flexDirection: "row", alignItems: "center", gap: sp.sm,
+    // flex-start, not center: a row carrying a two-line reason must not push
+    // the swatch and the button to the vertical middle of a tall block.
+    flexDirection: "row", alignItems: "flex-start", gap: sp.sm,
     borderWidth: 2, borderColor: c.ink, paddingHorizontal: sp.md,
     minHeight: TOUCH_MIN, marginBottom: sp.sm,
   },
+  pileSwatchBox: { minHeight: TOUCH_MIN, justifyContent: "center" },
   pileSwatch: { width: 9, height: 9, borderWidth: 2 },
-  pileMain: { flex: 1, minHeight: TOUCH_MIN, justifyContent: "center" },
-  pileTitle: { ...t.bodyMed, color: c.ink, flex: 1 },
+  pileMain: { flex: 1, minHeight: TOUCH_MIN, justifyContent: "center", paddingVertical: sp.sm },
+  pileTitle: { ...t.bodyMed, color: c.ink },
+  pileWhy: { ...t.meta, color: c.inkSoft, marginTop: sp.xs },
   pileBtn: { minHeight: TOUCH_MIN, justifyContent: "center", paddingLeft: sp.sm },
   pileAction: { ...t.micro, color: c.inkFaint },
 
@@ -839,6 +982,9 @@ const styles = (c: Palette) => StyleSheet.create({
   pairWrap: { justifyContent: "center", paddingHorizontal: sp.xl, gap: sp.md },
   pairMark: { ...t.wordmark, color: c.ink },
   pairHint: { ...t.meta, color: c.inkSoft },
+  // The column is stretched, so a spinner centres itself in it while the
+  // wordmark and the sentence sit on the left margin. Pinned to the same edge.
+  pairSpin: { alignSelf: "flex-start" },
   mono: { ...t.code, color: c.ink },
   input: {
     ...t.bodyMed, color: c.ink, height: TOUCH_MIN + 8, paddingHorizontal: sp.md,

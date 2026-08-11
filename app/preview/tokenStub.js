@@ -3,4 +3,8 @@ const paired = typeof location !== "undefined" && new URLSearchParams(location.s
 export const getToken = async () => (paired ? "shelf_preview" : null);
 export const setToken = async () => {};
 export const clearToken = async () => {};
-export const verifySharedAccess = async () => true;
+// `?keychain=0` renders the Profile diagnosis in its FAILING state — the one
+// that says the share sheet cannot read this phone's key. That is the state
+// worth looking at, and it is the one you can never reach on a healthy device.
+export const verifySharedAccess = async () =>
+  !(typeof location !== "undefined" && new URLSearchParams(location.search).get("keychain") === "0");

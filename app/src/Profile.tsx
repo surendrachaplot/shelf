@@ -12,9 +12,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import {
-  getProfile, listShares, revokeShare, saveProfile, shareUrl,
+  getProfile, listShares, pendingShareCount, revokeShare, saveProfile, shareUrl,
   type ProfileState, type Share,
 } from "./api";
+import { verifySharedAccess } from "./tokenStore";
 import { handleProblem, normHandle } from "./exlibris.js";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
@@ -60,6 +61,20 @@ export function Profile({ onClose, onShare }: {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Two local facts, no network. `verifySharedAccess` has existed since the
+  // first day and was shown nowhere — which is how "sharing silently does
+  // nothing" stayed a mystery instead of being one tap to diagnose.
+  const [wiring, setWiring] = useState<{ shared: boolean; queued: number } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const [shared, queued] = await Promise.all([
+        verifySharedAccess().catch(() => false),
+        pendingShareCount().catch(() => 0),
+      ]);
+      setWiring({ shared, queued });
+    })();
+  }, []);
 
   async function save() {
     const problem = handleProblem(draft.handle);
@@ -223,6 +238,35 @@ export function Profile({ onClose, onShare }: {
             </Reveal>
           ))}
         </View>
+
+        {/* The answer to "I shared a reel and nothing happened". Three facts,
+            in the order they can fail, each saying what to do about it. */}
+        <View style={[s.inset, s.linksWrap]}>
+          <Text style={s.h2}>Sharing from Instagram</Text>
+          {wiring === null ? (
+            <Text style={s.body}>Checking…</Text>
+          ) : (
+            <>
+              <Fact
+                ok={wiring.shared}
+                good="The share sheet can read this phone's key."
+                bad="The share sheet cannot read this phone's key. Shares from Instagram will not save — install the latest build and pair again."
+                s={s} c={c}
+              />
+              <Fact
+                ok={wiring.queued === 0}
+                good="Nothing stranded — every share made it up."
+                bad={`${wiring.queued} share${wiring.queued === 1 ? "" : "s"} saved with no signal. They go up next time you open shelf with the server reachable.`}
+                s={s} c={c}
+              />
+            </>
+          )}
+          <Text style={s.body}>
+            A reel takes a few seconds to read after you share it. Until then it is on
+            the fifth tab — Not shelved — with whatever we have so far. Anything we
+            could not read stays there rather than being filed wrongly.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -235,6 +279,23 @@ function Header({ onClose, title, s }: { onClose: () => void; title: string; s: 
       <Press onPress={onClose} style={s.close} size={TOUCH_MIN} label="Close">
         <Text style={s.micro}>Close</Text>
       </Press>
+    </View>
+  );
+}
+
+/**
+ * A fact about the plumbing. The swatch carries the state and the sentence
+ * carries the meaning — never a bare tick, which tells you a thing passed
+ * without telling you what the thing was.
+ */
+function Fact({ ok, good, bad, s, c }: {
+  ok: boolean; good: string; bad: string;
+  s: ReturnType<typeof styles>; c: Palette;
+}) {
+  return (
+    <View style={s.factRow}>
+      <View style={[s.factSwatch, { backgroundColor: ok ? c.good : c.accent }]} />
+      <Text style={[s.factText, ok ? null : { color: c.ink }]}>{ok ? good : bad}</Text>
     </View>
   );
 }
@@ -318,4 +379,10 @@ const styles = (c: Palette) => StyleSheet.create({
   linkUrl: { ...t.meta, color: c.inkFaint },
   linkViews: { ...t.micro, color: c.inkFaint },
   linkBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.md, justifyContent: "center" },
+
+  factRow: { flexDirection: "row", gap: sp.sm, marginTop: sp.md, alignItems: "flex-start" },
+  // Aligned to the cap-height of the first line rather than the box, so the
+  // square sits ON the sentence instead of above it.
+  factSwatch: { width: 9, height: 9, marginTop: 5 },
+  factText: { ...t.meta, color: c.inkSoft, flex: 1 },
 });

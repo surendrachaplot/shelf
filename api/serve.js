@@ -4,7 +4,7 @@
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
 import { mintPairCode, redeemPairCode, secretMatches } from "./auth.js";
-import { listItems, updateItem, json } from "./items.js";
+import { listItems, updateItem, retryItem, probeRoute, json } from "./items.js";
 import { ingestUrl, ingestImage } from "./ingest.js";
 import { drain } from "./worker.js";
 import {
@@ -46,6 +46,7 @@ const routes = {
   "POST /api/ingest": ingestUrl,
   "POST /api/ingest/image": ingestImage,
   "POST /api/item": updateItem,
+  "POST /api/item/retry": retryItem,
   "POST /api/profile": putProfile,
   "POST /api/share": createShare,
   "POST /api/share/revoke": revokeShare,
@@ -60,6 +61,9 @@ const getRoutes = {
   "GET /api/shares": (req, res) => listShares(req, res),
   "GET /api/received": (req, res) => listReceived(req, res),
   "GET /api/search": (req, res, url) => searchRoute(req, res, url),
+  // Not a feature — an instrument. It answers "why did that reel come back
+  // with no name" from the machine whose IP address is the variable.
+  "GET /api/debug/reel": (req, res, url) => probeRoute(req, res, url),
 };
 
 /**
