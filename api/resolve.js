@@ -92,6 +92,39 @@ export function parseInstagramUrl(u) {
   return { kind, shortcode: m[2] };
 }
 
+/**
+ * A PROFILE, not a post. `instagram.com/<handle>/` and nothing else.
+ *
+ * Deliberately strict: the reserved words are real Instagram paths, and
+ * treating `/explore/` or `/accounts/` as somebody's handle would send the
+ * resolver off to fetch a page that has no bio on it and report the failure as
+ * "that person has no bio".
+ */
+const RESERVED_PATHS = new Set([
+  "p", "reel", "reels", "tv", "share", "explore", "accounts", "stories",
+  "direct", "about", "developer", "legal", "privacy", "api", "web", "graphql",
+]);
+export function parseInstagramProfile(u) {
+  const m = /^https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9._]{1,30})\/?(?:\?|#|$)/i.exec(String(u || "").trim());
+  if (!m) return null;
+  const handle = m[1].toLowerCase();
+  if (RESERVED_PATHS.has(handle)) return null;
+  return { handle };
+}
+
+/** The handles a caption mentions, deduplicated, in the order they appear. */
+export function handlesIn(text) {
+  const out = [];
+  const seen = new Set();
+  for (const m of String(text || "").matchAll(/(?:^|[^\w@])@([A-Za-z0-9._]{2,30})\b/g)) {
+    const h = m[1].toLowerCase().replace(/\.+$/, "");
+    if (h.length < 2 || seen.has(h)) continue;
+    seen.add(h);
+    out.push(h);
+  }
+  return out;
+}
+
 export function embedUrl({ shortcode }) {
   // /p/<code>/embed/captioned/ serves the caption for reels as well as posts —
   // the /reel/ form of the embed path 302s to it anyway.
@@ -372,6 +405,48 @@ export async function resolveShare(sourceUrl) {
 }
 
 /**
+ * What a PROFILE page gives up. Measured, not assumed.
+ *
+ * The plan for "a reel that just tags ten restaurants" is to read each tagged
+ * account's bio. Whether that is possible at all depends on what
+ * instagram.com/<handle>/ returns to a crawler, and the honest answer is that
+ * nobody here knows yet — a profile has no /embed/ endpoint, and og:description
+ * on a profile is usually a follower count rather than the bio.
+ *
+ * So this reports what actually comes back, per user agent, before a line of
+ * resolver is written for it.
+ */
+export async function probeProfile(handle) {
+  const url = `https://www.instagram.com/${handle}/`;
+  const steps = [];
+  for (const [name, headers] of [["browser", BROWSER_HEADERS], ["crawler", CRAWLER_HEADERS]]) {
+    const t0 = Date.now();
+    const r = await tryFetch(url, 12000, headers);
+    const og = metaTag(r.html, "og:description");
+    const bioJson = jsonStringAfter(r.html, /"biography"/);
+    steps.push({
+      step: name, url, ms: Date.now() - t0, http: r.status, bytes: r.bytes,
+      blocked: !!r.blocked, error: r.error ?? null,
+      og_description: og ? String(og).slice(0, 400) : null,
+      biography: bioJson ? String(bioJson).slice(0, 400) : null,
+      full_name: jsonStringAfter(r.html, /"full_name"/) || null,
+      category: jsonStringAfter(r.html, /"category_name"/) || jsonStringAfter(r.html, /"category"/) || null,
+      // A profile bio very often IS the address, which is the whole point.
+      external_url: jsonStringAfter(r.html, /"external_url"/) || null,
+    });
+  }
+  const best = steps.find((x) => x.biography) || steps.find((x) => x.og_description);
+  return {
+    handle, kind: "profile", steps,
+    verdict: steps.some((x) => x.biography)
+      ? "BIO READABLE — the profile page carries a biography field, so tagged accounts can be resolved into places"
+      : best?.og_description
+        ? "ONLY og:description — usually a follower count, not the bio. Check the sample before building on it."
+        : "NOTHING — the profile page gives up neither a bio nor og:description to this server",
+  };
+}
+
+/**
  * Run the chain WITHOUT hiding it, and report what each link actually got.
  *
  * This exists because "nothing is coming back with a title" has at least four
@@ -422,6 +497,10 @@ function excerpt(html, re, span = 220) {
 }
 
 export async function probeShare(sourceUrl) {
+  // A profile URL is a different question with a different answer.
+  const prof = parseInstagramProfile(sourceUrl);
+  if (prof) return probeProfile(prof.handle);
+
   const ig = parseInstagramUrl(sourceUrl);
   const steps = [];
 
@@ -574,6 +653,18 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
      "a shortcode that is not on the page returns null — never the whole page");
   ok(scopeToShortcode("", "BBBwanted") === null && scopeToShortcode(twoPosts, "") === null,
      "empty input scopes to nothing");
+
+  // Profiles and handles — the backup path for a post that names ten places by
+  // tagging them rather than writing them out.
+  ok(parseInstagramProfile("https://www.instagram.com/stillframe.archivee/")?.handle === "stillframe.archivee", "profile url");
+  ok(parseInstagramProfile("https://instagram.com/foo?hl=en")?.handle === "foo", "query string tolerated");
+  ok(parseInstagramProfile("https://www.instagram.com/p/DboDS-UAJEb/") === null, "a POST is not a profile");
+  ok(parseInstagramProfile("https://www.instagram.com/reel/x/") === null, "a REEL is not a profile");
+  ok(parseInstagramProfile("https://www.instagram.com/explore/") === null, "a reserved path is not somebody's handle");
+  ok(handlesIn("Loved @kiln_soho and @st.john_bread, thanks @someone").join() === "kiln_soho,st.john_bread,someone",
+     "handles in the order they appear");
+  ok(handlesIn("mail me at ab@cd.com").length === 0, "an email address is not a handle");
+  ok(handlesIn("@kiln @kiln @KILN").length === 1, "deduplicated case-insensitively");
 
   // Meta's generated alt text: worse than a caption, far better than nothing.
   const altFix = `<html><script>{"accessibility_caption":"Photo by suren on August 01, 2026. May be an image of pasta."}</script></html>`;
