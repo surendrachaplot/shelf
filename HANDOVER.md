@@ -42,16 +42,31 @@ and serves the full metadata to link-preview crawlers, because a reel pasted
 into WhatsApp has to draw a card. `viaCrawler` asks as `facebookexternalhit`.
 It is Meta's own crawler and the preview metadata every chat client is served.
 
-**Proven end to end on real rows**, not on fixtures:
+**READ THE EMBED PAGE, NEVER THE CANONICAL ONE.** The first crawler version
+tried the canonical URL first and filed a reel about *Willow and Wind* as
+*The Wicker Man* — because that URL returns ~930kB carrying SEVERAL of the
+account's posts, and the extractor took the first `"caption"` in document
+order: a neighbouring post. `/embed/captioned/` is ~130kB and holds exactly one
+post by construction. The canonical page is used only for `og:image`, a
+page-level tag that cannot belong to another post.
+
+It was not one bad row. EVERY item resolved through the canonical URL was
+wrong, including a restaurant nobody had questioned — its caption went from 46
+characters (a neighbour) to 428 (its own). **A wrong resolution is worse than
+an empty one: it is confident, well-formed, catalogue-matched and silent.**
+`scopeToShortcode` narrows any multi-post page to the requested post and
+returns null — never the whole page — when the shortcode is absent.
+
+**Proven end to end on real rows**, after the fix:
 
 ```
-by_resolver: { "crawler-embed-json": 2, "none": 1 }
-movies      · 1,239 chars · title · confidence 0.98 · enriched (TMDB) · cover
-restaurants ·    46 chars · title · confidence 0.60 · un-enriched     · cover
+movies      · 1,805 chars · "Willow and Wind" · 2003 · tmdb 247447 · 0.95 · enriched · cover
+restaurants ·   428 chars · "Multi Story" · Peckham Levels Level 6 · 0.95 · cover
 ```
 
-Share → crawler → caption → classify → TMDB → filed with artwork. The
-discarded row was correctly left alone.
+Share → embed page → caption → classify → TMDB → filed with artwork. The
+discarded row was correctly left alone. NOTE: the caption says 1999 and TMDB
+says 2003 for that film; unresolved, and small.
 
 ### Asking the live service anything — without a laptop
 
@@ -102,6 +117,10 @@ resolver fix reaches what is already sitting there. See `SETUP-ONCE.md`.
   the range said "nothing changed" · `github.event.head_commit` absent so
   `--message ""` was rejected · a ROBOT token needing an explicit `owner` in
   app.json. Each fix revealed the next. Never conclude from one green fix.
+- **A repair tool that only fixes empty rows cannot fix wrong ones.**
+  `retry-unread` skipped the mis-filed film because it HAD a title — just a
+  different film's. `?resolver=<name>` re-reads everything a named resolver
+  produced. It is opt-in because, unlike the default, it can overwrite a title.
 - **A guard that blocks its own fix gets bypassed.** `owner` had to go in
   app.json for a robot token to publish, and app.json was on the native list —
   so adding it would have demanded a full rebuild. `native-changed.mjs` now
