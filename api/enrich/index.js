@@ -30,8 +30,9 @@ import { parseLd, extractWebPage } from "../resolve.js";
  * in the table doing no harm.
  *
  *   v2 — trailers, runtime, cast, streaming, book pages, OSM places
+ *   v3 — travel places (located, city, search fallback)
  */
-export const SHAPE = "v2";
+export const SHAPE = "v3";
 
 export const cacheKey = (parts) =>
   [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
@@ -341,6 +342,59 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
   });
 }
 
+// ── travel: a name on a map ──────────────────────────────────────────────────
+
+/**
+ * A place you could actually navigate to.
+ *
+ * BOTH strategies, because neither alone is honest. OpenStreetMap gives a real
+ * pin — coordinates, and a map that opens ON the place. But OSM does not know
+ * everything: a coffee bar inside a converted car park was missed, and a
+ * viewpoint somebody named in a reel very often is. Rather than pretend, a
+ * place OSM has never heard of still gets a working link — a maps SEARCH for
+ * its name and city, which opens the phone's map app with the query typed in.
+ *
+ * The item says which it got. "Here is the pin" and "here is a search that
+ * should find it" are different promises and the app renders them differently.
+ */
+export function searchMapUrl(title, city) {
+  const q = [title, city].filter(Boolean).join(", ");
+  // geo:0,0?q= is the universal form: iOS opens Apple Maps, Android opens
+  // whatever the person actually uses. Deciding on their behalf that they want
+  // Google Maps is the kind of small rudeness that adds up.
+  return `geo:0,0?q=${encodeURIComponent(q)}`;
+}
+
+export async function enrichTravel({ title, search_hints }, homeCity) {
+  const city = search_hints?.city || homeCity || "";
+  return cached("travel", cacheKey(["travel", title, city]), async () => {
+    const osm = await osmPlace(title, city).catch(() => null);
+    if (osm) {
+      return {
+        ...osm,
+        // The subtitle for a place you are travelling to is WHERE, not what
+        // cuisine it serves. That is the field you scan on a shelf of places.
+        subtitle: [osm.canonical.area, city].filter((v, i, a) => v && a.indexOf(v) === i).join(" · ") || city,
+        canonical: { ...osm.canonical, city, located: true },
+      };
+    }
+    // Not on the map, still worth having. Named honestly so the app can say
+    // "search for it" rather than showing a pin that does not exist.
+    return {
+      title,
+      subtitle: city,
+      image_url: null,
+      canonical: { city, located: false, map_url: searchMapUrl(title, city), source: "search" },
+    };
+  });
+}
+
+// ── quotes: nothing to look up ───────────────────────────────────────────────
+//
+// There is no catalogue of things people said. The words ARE the item, they
+// arrived complete in the caption, and every field a quote has was already
+// filled in by the reading step. Enriching it would mean inventing something.
+
 // ── recipes: the outbound link, parsed as schema.org ─────────────────────────
 
 /**
@@ -420,7 +474,10 @@ export async function enrich(item, { outboundUrls = [], homeCity = null } = {}) 
     if (item.list === "books") got = await enrichBook(item);
     else if (item.list === "movies") got = await enrichMovie(item);
     else if (item.list === "restaurants") got = await enrichPlace(item, homeCity);
+    else if (item.list === "travel") got = await enrichTravel(item, homeCity);
     else if (item.list === "recipes") got = await enrichRecipe(item, outboundUrls);
+    // Quotes deliberately fall through: see above. The item Claude read IS the
+    // finished item, and `enriched: false` on a quote is not a shortfall.
   } catch (_) {
     got = null;
   }

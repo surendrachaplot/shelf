@@ -1,7 +1,10 @@
 // Fixtures and platform stubs for the NETWORK half. The components are the
 // real ones; only the three things a browser genuinely lacks are faked — the
 // server, the Keychain, and the filesystem (see storeStub.js).
-export const LISTS = ["books", "restaurants", "movies", "recipes"];
+// MUST match src/api.ts. It did not, once: two new lists were added and the
+// rail in every screenshot still showed the old five, which looked like the
+// feature had not been built.
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const API_BASE = "";

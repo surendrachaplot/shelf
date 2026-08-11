@@ -42,7 +42,7 @@ import { Reveal } from "./src/Reveal";
 import { scrollKeyboardProps } from "./src/KeyboardSafe";
 import { Screen } from "./src/Screen";
 import {
-  BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
+  BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, quoteType, excerpt, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
 import * as D from "./src/design.js";
@@ -60,6 +60,20 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
 type Route = "case" | "add" | "profile";
+
+/**
+ * Which items keep the caption they came from.
+ *
+ * Most do not: a film has a synopsis and a poster, and hoarding the reel's
+ * hashtag wall alongside it is clutter you never read. TRAVEL is different —
+ * one reel becomes ten places, and the caption is the only record of WHY those
+ * ten were together and what was said about each. Losing it turns a trip into
+ * a list of pins. Quotes keep theirs for the same reason: the surrounding text
+ * is often where the attribution lives.
+ */
+const KEEPS_CAPTION = new Set(["travel", "quotes"]);
+const keepCaption = (it: { list?: string; caption?: string }) =>
+  KEEPS_CAPTION.has(it.list ?? "") ? (it.caption || "").slice(0, 4000) : undefined;
 type Sharing = { kind: "item" | "shelf" | "profile"; item?: Item; list?: string; title: string };
 
 export default function App() {
@@ -132,7 +146,7 @@ export default function App() {
           ? patch(cur, it.id, {
               ...first,
               status: "filed",
-              caption: undefined,           // the device does not need to keep it
+              caption: keepCaption(first),
               resolved_at: new Date().toISOString(),
               error: null,
             })
@@ -147,7 +161,7 @@ export default function App() {
             ...extra,
             id: idFor(`${it.source_url}#${extra.title}`),
             status: "filed",
-            caption: undefined,
+            caption: keepCaption(extra),
             created_at: it.created_at,
             resolved_at: new Date().toISOString(),
           } as Item);
@@ -483,9 +497,26 @@ function Cover({ item, width, list, onOpen, s, c }: {
   const inverted = dims.comp === 2;
   const field = inverted ? on : fill;
   const mark = inverted ? fill : on;
-  const title = mainTitle(item.title ?? "") || "Untitled";
+  // A QUOTE'S JACKET IS THE QUOTE. Not a label for it, not who said it — the
+  // words, as large as they will go, because a shelf of quotes you cannot read
+  // is the spine-out shelf all over again. Solved by area rather than by the
+  // longest word, and cut on a word boundary when even the floor will not hold
+  // it, with the whole thing in the panel behind.
+  const isQuote = list === "quotes";
+  const raw = item.title ?? "";
+  // THE BOX IS NOT THE JACKET. A cover carries a 22pt series strip at the top
+  // (except composition 0) and a ~24pt foot holding the attribution (except
+  // composition 1), plus its own padding. Solving the type against the full
+  // height overran both: at 320 the quote was clipped mid-word and the
+  // attribution sat on top of the last line. Measure what is actually left.
+  const strip = dims.comp !== 0 ? 22 : 0;
+  const foot = dims.comp !== 1 && item.subtitle ? 28 : 0;
+  const q = isQuote ? quoteType(raw, width, dims.height - strip - foot - sp.md) : null;
+  const title = isQuote
+    ? (q!.fits ? raw.trim() : excerpt(raw, q!.chars ?? 80))
+    : (mainTitle(raw) || "Untitled");
   // Sized from the longest word so nothing is ever split mid-syllable.
-  const jacket = jacketType(title, width);
+  const jacket = isQuote ? { fontSize: q!.fontSize, lineHeight: q!.lineHeight } : jacketType(title, width);
 
   return (
     <Press
@@ -526,7 +557,15 @@ function Cover({ item, width, list, onOpen, s, c }: {
           {/* Three places for the mass: top, foot, centre. Three silhouettes
               you can tell apart across a shelf without reading a word. */}
           <View style={[s.coverBody, dims.comp === 1 ? s.coverBodyBottom : null, dims.comp === 2 ? s.coverBodyMiddle : null]}>
-            <Text style={[s.coverTitle, jacket, { color: mark }]} numberOfLines={5}>{title}</Text>
+            <Text
+              style={[s.coverTitle, isQuote ? s.coverQuote : null, jacket, { color: mark }]}
+              // A quote is already cut to what fits; letting numberOfLines cut
+              // it again would truncate the truncation.
+              numberOfLines={isQuote ? (q!.lines ?? 12) : 5}
+            >
+              {title}
+            </Text>
+
           </View>
 
           {/* The foot band carries the author / the neighbourhood — and it
@@ -913,6 +952,10 @@ const styles = (c: Palette) => StyleSheet.create({
   pileTop: { paddingTop: sp.xl },
   caseRow: { flexDirection: "row", alignItems: "flex-end", gap: sp.sm, marginTop: sp.xl },
   coverSlot: { alignSelf: "flex-end" },
+  // A quote is read, not glanced: regular weight and normal tracking, against
+  // the display weight every other jacket uses. Setting somebody's sentence in
+  // tight bold caps would make it a slogan.
+  coverQuote: { fontWeight: "400", letterSpacing: 0 },
   spareRow: { height: EMPTY_BOARD_H },
   cover: { overflow: "hidden", borderWidth: COVER_KEYLINE },
   coverArt: { width: "100%", height: "100%" },

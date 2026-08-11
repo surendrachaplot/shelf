@@ -402,6 +402,41 @@ const systemRules = [
     },
   },
   {
+    id: "quote-fits",
+    why: "§1 — A QUOTE'S JACKET IS THE QUOTE, so it must be solved by AREA, not by the longest word. `jacketType` sizes from the longest word, which is right for a title and catastrophic for a sentence: run 180 characters through it, the longest word is nine letters, it returns 24pt, five lines hold sixty characters, and two thirds of what somebody said is replaced by an ellipsis. A shelf of quotes you cannot read is the spine-out shelf again. Every quote must either FIT its trim at the solved size or come back marked `fits:false` with the character count that does fit, so the caller can cut it on a word boundary instead of letting numberOfLines guess.",
+    check: (d) => {
+      const out = [];
+      const quotes = [
+        "Be kind.",
+        "Attention is the rarest and purest form of generosity.",
+        "The center of me is always and eternally a terrible pain, a curious wild pain, a searching for something beyond what the world contains.",
+        "x".repeat(900),
+      ];
+      const COLS = [d.cover.minW, d.gridFor(288, 8).width, d.gridFor(343, 8).width];
+      for (const w of COLS) {
+        for (const h of d.cover.heights) {
+          const boxW = w - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
+          const boxH = h - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
+          for (const q of quotes) {
+            const r = d.quoteType(q, w, h);
+            if (r.fontSize < d.TYPE_FLOOR) out.push({ msg: `a quote sized to ${r.fontSize}px, below the ${d.TYPE_FLOOR}px floor` });
+            if (r.lineHeight < r.fontSize) out.push({ msg: `quote leading ${r.lineHeight} under size ${r.fontSize}` });
+            if (r.fits) {
+              const perLine = Math.max(1, Math.floor(boxW / (r.fontSize * d.QUOTE_GLYPH)));
+              const needed = (Math.ceil(q.trim().length / perLine) + 1) * r.fontSize * d.QUOTE_LEADING;
+              if (needed > boxH + 1e-6) {
+                out.push({ msg: `a ${q.length}-char quote claims to fit a ${w}x${h} jacket at ${r.fontSize}px but needs ${needed.toFixed(0)}pt of ${boxH}pt` });
+              }
+            } else if (!(r.chars > 0)) {
+              out.push({ msg: `an unfittable quote reported no character budget — the caller cannot cut it deliberately` });
+            }
+          }
+        }
+      }
+      return out.slice(0, 4);
+    },
+  },
+  {
     id: "shelf-grid",
     why: "§4 — the bookcase solves its own column, so the solution has to be provable: a row never wider than the shelf, a column never narrower than a jacket needs to set a twelve-letter word at the 11px floor, at least one column at any width, every item placed exactly once in order, and NOTHING painted before the container is measured. Greedy variable-width packing was tried first and left ~100pt of empty paper on the right of every board.",
     check: (d) => {
@@ -620,6 +655,9 @@ const SYSTEM_PROBES = {
   // Type picked by eye instead of solved for: it looks right on "Kiln" and
   // shatters "The Dispossessed".
   "jacket-fits": { ...D, jacketType: () => ({ fontSize: 40, lineHeight: 42 }) },
+  // The exact defect: a quote solved like a title. Large type, five lines, and
+  // most of the sentence gone.
+  "quote-fits": { ...D, quoteType: () => ({ fontSize: 24, lineHeight: 26, lines: 5, fits: true }) },
   // The classic off-by-one: the column solver forgets the gaps, so every row
   // overflows and the last jacket is clipped by the screen edge.
   "shelf-grid": {

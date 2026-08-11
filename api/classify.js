@@ -12,7 +12,7 @@
 import { isMain } from "./ismain.js";
 import { readFile } from "node:fs/promises";
 
-export const LISTS = ["books", "restaurants", "movies", "recipes"];
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
 
 // Opus 5 by default. Sonnet 5 is a drop-in via SHELF_MODEL if this ever runs
 // hot enough to care — a per-share extraction is a few thousand tokens, so at
@@ -57,7 +57,7 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with four lists: books, restaurants, movies, recipes.
+const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with six lists: books, restaurants, movies, recipes, quotes, travel.
 
 Return the thing itself, never the post about it. "POV: you finally read the book everyone's talking about 📚 Piranesi by Susanna Clarke" is one item titled "Piranesi", not "POV: you finally read...".
 
@@ -65,7 +65,13 @@ A reel can hold several things — "5 books I read in March" is five items. A re
 
 Confidence is about the NAME, not your enthusiasm. A caption that names a restaurant and its street gets 0.9. A caption that says "this place is unreal 🤯" with no name gets 0.2 and a title of whatever you can salvage — it will land in the Inbox for the user to fix, which is the correct outcome and much better than a confident fabrication.
 
-Never invent an author, year, or address that the caption does not support. An empty hint is useful; a wrong one sends the enrichment step off to fetch the wrong book.`;
+Never invent an author, year, or address that the caption does not support. An empty hint is useful; a wrong one sends the enrichment step off to fetch the wrong book.
+
+QUOTES. The thing being saved is THE WORDS THEMSELVES. Put the quote in "title", verbatim — the person's actual sentence, not a summary of it and not a label for it. Strip surrounding quotation marks, hashtags, and the "follow for more" tail; keep the wording, the punctuation and the line breaks inside it exactly as written. Put whoever said it in "subtitle" and in search_hints.author. If the caption does not say who said it, leave both empty rather than guessing — a misattributed quote is worse than an unattributed one. A quote with no attribution is still a perfectly good quote.
+
+TRAVEL. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
+
+RESTAURANTS vs TRAVEL: a place you would eat at, at home, is a restaurant. A place you would go to on a trip — including its restaurants — is travel. When the caption is about a trip, prefer travel.`;
 
 // The user's tap wins. Stated separately from SYSTEM so it is impossible to
 // accidentally drop when the prompt is edited.

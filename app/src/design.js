@@ -122,6 +122,16 @@ export const light = {
   restaurants: "#E01000",
   movies: "#FFD400",
   recipes: "#007A3D",
+  // Two more, and the hardest part of adding them was not the code.
+  //
+  // Four poster primaries leave exactly two gaps a sixth hue can sit in
+  // without reading as a shade of a neighbour: violet and orange. Violet for
+  // QUOTES — ink, and the only shelf that is words rather than objects. Burnt
+  // orange for TRAVEL, well away from the pure red and driven dark enough that
+  // the two are not the same gesture at 47pt on the rail, which is the only
+  // place colour carries the meaning alone.
+  quotes: "#6D28D9",
+  travel: "#C2410C",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
@@ -131,7 +141,8 @@ export const light = {
 // label on Movies.
 export const listOn = {
   books: "#FFFFFF", restaurants: "#FFFFFF", movies: "#0A0A0A",
-  recipes: "#FFFFFF", unsorted: "#FFFFFF",
+  recipes: "#FFFFFF", quotes: "#FFFFFF", travel: "#FFFFFF",
+  unsorted: "#FFFFFF",
 };
 
 export const dark = {
@@ -156,11 +167,21 @@ export const dark = {
   restaurants: "#E01000",
   movies: "#FFD400",
   recipes: "#007A3D",
+  // Two more, and the hardest part of adding them was not the code.
+  //
+  // Four poster primaries leave exactly two gaps a sixth hue can sit in
+  // without reading as a shade of a neighbour: violet and orange. Violet for
+  // QUOTES — ink, and the only shelf that is words rather than objects. Burnt
+  // orange for TRAVEL, well away from the pure red and driven dark enough that
+  // the two are not the same gesture at 47pt on the rail, which is the only
+  // place colour carries the meaning alone.
+  quotes: "#6D28D9",
+  travel: "#C2410C",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
 
-export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "unsorted"];
+export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "quotes", "travel", "unsorted"];
 
 // Depth instead of outlines. A hairline border around every surface is the
 // visual equivalent of underlining every sentence: it flattens the hierarchy
@@ -291,6 +312,66 @@ export function jacketType(title, coverWidth) {
   // longest word 1.6pt outside a 92pt box, which is the entire defect again.
   const size = Math.max(TYPE_FLOOR, Math.min(type.heading.fontSize, Math.floor(fit * 2) / 2));
   return { fontSize: size, lineHeight: Math.round(size * 1.05 * 2) / 2 };
+}
+
+/**
+ * A QUOTE'S JACKET IS THE WHOLE QUOTE, so it is solved by AREA, not by the
+ * longest word.
+ *
+ * `jacketType` sizes from the longest word, which is right for a title: fit
+ * "Dispossessed" and everything else fits too. Run a 180-character quote
+ * through it and the longest word is "eternally" — nine characters — so it
+ * happily returns 24pt, five lines hold about sixty characters, and two thirds
+ * of somebody's sentence is replaced by an ellipsis. A shelf of quotes you
+ * cannot read is the same failure as the spine-out shelf: the thing you saved
+ * is not on screen.
+ *
+ * So: how many characters fit on a line at size S, how many lines does that
+ * make, does the stack fit the height. Walk down until it does.
+ *
+ * The floor still outranks the fit. Below TYPE_FLOOR the answer is an excerpt
+ * with an honest ellipsis and the rest in the panel — not four-point type.
+ */
+export const QUOTE_GLYPH = 0.52;   // regular weight, mixed case, average advance
+export const QUOTE_LEADING = 1.22; // quotes are read, not glanced — more air than a title
+
+export function quoteType(text, coverWidth, coverHeight) {
+  const boxW = Math.max(1, coverWidth - 2 * COVER_KEYLINE - 2 * cover.pad);
+  const boxH = Math.max(1, coverHeight - 2 * COVER_KEYLINE - 2 * cover.pad);
+  const len = Math.max(1, String(text ?? "").trim().length);
+
+  for (let size = type.heading.fontSize; size >= TYPE_FLOOR; size -= 0.5) {
+    const perLine = Math.max(1, Math.floor(boxW / (size * QUOTE_GLYPH)));
+    // +1 line of slack: word wrapping never packs a line perfectly full, and a
+    // solver that assumes it does overflows on real sentences.
+    const lines = Math.ceil(len / perLine) + 1;
+    if (lines * size * QUOTE_LEADING <= boxH) {
+      return { fontSize: size, lineHeight: Math.round(size * QUOTE_LEADING * 2) / 2, lines, fits: true };
+    }
+  }
+  const perLine = Math.max(1, Math.floor(boxW / (TYPE_FLOOR * QUOTE_GLYPH)));
+  const lines = Math.max(1, Math.floor(boxH / (TYPE_FLOOR * QUOTE_LEADING)) - 1);
+  return {
+    fontSize: TYPE_FLOOR,
+    lineHeight: Math.round(TYPE_FLOOR * QUOTE_LEADING * 2) / 2,
+    lines,
+    fits: false,
+    // What actually fits at the floor, so the caller can cut it deliberately
+    // rather than letting numberOfLines guess.
+    chars: perLine * lines,
+  };
+}
+
+/** Cut on a WORD boundary. A quote severed mid-word reads as a bug. */
+export function excerpt(text, maxChars) {
+  const t = String(text ?? "").trim();
+  if (t.length <= maxChars) return t;
+  const cut = t.slice(0, Math.max(1, maxChars - 1));
+  const at = cut.lastIndexOf(" ");
+  // Half, not 0.6. At 0.6 a perfectly good boundary at 7 of 12 characters was
+  // rejected and the word got severed anyway. The threshold exists only to
+  // stop one very long word being cut back to almost nothing.
+  return (at > maxChars * 0.5 ? cut.slice(0, at) : cut).replace(/[,;:.\s]+$/, "") + "…";
 }
 
 // Text/background pairings that actually occur in the UI. The auditor walks

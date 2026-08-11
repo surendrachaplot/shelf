@@ -39,6 +39,6 @@ export function appKeyOk(req) {
   return diff === 0;
 }
 
-export const LISTS = ["books", "restaurants", "movies", "recipes"];
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
 export const ALL_LISTS = [...LISTS, "unsorted"];
 export const normList = (l) => (ALL_LISTS.includes(l) ? l : "unsorted");

@@ -57,6 +57,23 @@ export function factsFor(item) {
     link("Map", c.map_url);
     link("Website", c.website);
     link("Call", c.phone ? `tel:${String(c.phone).replace(/\s+/g, "")}` : null);
+  } else if (item?.list === "quotes") {
+    // A quote's facts are almost nothing, and that is right: the words are on
+    // the jacket and in the panel already. What is worth saying is WHO, and
+    // where you found it — repeating the quote here would be printing it twice
+    // on one screen.
+    row("Said by", c.author);
+    row("From", c.source);
+  } else if (item?.list === "travel") {
+    row("Where", [c.area, c.city].filter((v, i, a) => v && a.indexOf(v) === i).join(" · "));
+    row("Address", c.address);
+    row("Open", c.opening_hours);
+    // TWO DIFFERENT PROMISES, said differently. A geocoded place opens the map
+    // ON it; an unlocated one opens a search that should find it. Labelling
+    // both "Map" would make the second one feel broken the first time it lands
+    // you somewhere approximate.
+    link(c.located === false ? "Find on map" : "Map", c.map_url);
+    link("Website", c.website);
   } else if (item?.list === "recipes") {
     row("Takes", c.total_time);
     row("Serves", c.serves);

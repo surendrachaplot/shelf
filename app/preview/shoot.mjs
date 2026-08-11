@@ -24,6 +24,14 @@ const SHOTS = [
   { name: "app-inbox-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Not shelved," },
   { name: "app-inbox-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Not shelved," },
   { name: "app-inbox-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Not shelved," },
+  // The two new shelves. Quotes are the hard one: the jacket IS the text, so
+  // this is the only way to know whether a wall of them is readable or a wall
+  // of grey. Travel has to show a place that IS on the map and one that is not.
+  { name: "app-quotes-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Quotes," },
+  { name: "app-quotes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Quotes," },
+  { name: "app-quotes-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Quotes," },
+  { name: "app-travel-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Travel," },
+  { name: "app-travel-unlocated-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Travel,", "Praia da Ursa"], scroll: 500 },
   { name: "app-recipes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Recipes," },
   // Tapping a jacket. The detail panel is the same two colours and the same
   // composition language at full size, so opening one reads as a zoom.

@@ -11,7 +11,7 @@ export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
   STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
-  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS, mix, placeholderOn, PLACEHOLDER_MIN,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, quoteType, excerpt, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS, mix, placeholderOn, PLACEHOLDER_MIN,
 } = D;
 
 const sans = Platform.select(D.family.sans);
@@ -23,10 +23,12 @@ export const lists = {
   restaurants: { label: "Restaurants", one: "place", n: "02" },
   movies: { label: "Movies", one: "film", n: "03" },
   recipes: { label: "Recipes", one: "recipe", n: "04" },
+  quotes: { label: "Quotes", one: "quote", n: "05" },
+  travel: { label: "Travel", one: "place", n: "06" },
   unsorted: { label: "Not shelved", one: "item", n: "00" },
 } as const;
 
-export const LIST_ORDER = ["books", "restaurants", "movies", "recipes"] as const;
+export const LIST_ORDER = ["books", "restaurants", "movies", "recipes", "quotes", "travel"] as const;
 
 // Indexed by a string that came off the wire — a share target, a received
 // delivery, a search hit — where the type system cannot know it is one of the

@@ -36,18 +36,66 @@ const SHELVED = {
   restaurants: ["Ganapati", "Kiln", "St. John", "Mangal II", "Brutto", "Toklas"],
   movies: ["Sinners", "Petrol", "La Chimera"],
   recipes: ["Lemon dal", "Cacio e pepe", "Pot-au-feu", "Miso cod"],
+  // QUOTES ARE THE HARD CASE and the fixtures have to say so: a four-word one,
+  // a long one that only just fits, and one longer than any jacket can hold so
+  // the excerpt is looked at rather than assumed.
+  quotes: [
+    "Be kind, for everyone you meet is fighting a hard battle.",
+    "The center of me is always and eternally a terrible pain, a curious wild pain, a searching for something beyond what the world contains.",
+    "Attention is the rarest and purest form of generosity.",
+    "We tell ourselves stories in order to live. We look for the sermon in the suicide, for the social or moral lesson in the murder of five. We interpret what we see, select the most workable of the multiple choices, and we live entirely by the imposition of a narrative line upon disparate images.",
+  ],
+  // A trip is one reel and many places — the whole point of one item per place.
+  travel: ["Miradouro da Senhora do Monte", "Time Out Market", "Belém", "A Cevicheria", "Praia da Ursa"],
 };
 
-const mk = (list, title, i) => ({
-  id: `${list}-${i}`, list, status: "filed", title,
-  subtitle: (RICH[title] && (list === "movies"
-    ? [RICH[title].director, RICH[title].year].filter(Boolean).join(" · ")
-    : list === "recipes" ? [RICH[title].total_time, RICH[title].serves].filter(Boolean).join(" · ") : null))
-    || (list === "books" ? "Susanna Clarke" : list === "restaurants" ? "Peckham" : ""),
-  note: "", image_url: ART[title] ?? null, canonical: RICH[title] ?? {},
-  confidence: 0.9, enriched: true, source_url: "https://insta/x", resolver: "crawler-embed-html",
-  created_at: "2026-08-01T00:00:00Z",
-});
+const QUOTE_BY = {
+  "Be kind, for everyone you meet is fighting a hard battle.": "Ian Maclaren",
+  "The center of me is always and eternally a terrible pain, a curious wild pain, a searching for something beyond what the world contains.": "Bertrand Russell",
+  "Attention is the rarest and purest form of generosity.": "Simone Weil",
+  "We tell ourselves stories in order to live. We look for the sermon in the suicide, for the social or moral lesson in the murder of five. We interpret what we see, select the most workable of the multiple choices, and we live entirely by the imposition of a narrative line upon disparate images.": "Joan Didion",
+};
+
+const TRAVEL = {
+  "Miradouro da Senhora do Monte": { city: "Lisbon", area: "Graça", located: true,
+    address: "Largo Monte, 1170-107 Lisboa", lat: 38.72, lng: -9.13,
+    map_url: "geo:38.72,-9.13?q=Miradouro", osm_url: "https://www.openstreetmap.org/node/1", source: "openstreetmap" },
+  "Time Out Market": { city: "Lisbon", area: "Cais do Sodré", located: true,
+    address: "Av. 24 de Julho 49, Lisboa", opening_hours: "Su-We 10:00-24:00",
+    map_url: "geo:38.70,-9.14?q=Time%20Out", website: "https://timeoutmarket.com", source: "openstreetmap" },
+  // The honest case: OSM has never heard of it, so it gets a search rather
+  // than a pin — and the panel has to SAY so.
+  "Praia da Ursa": { city: "Sintra", located: false, map_url: "geo:0,0?q=Praia%20da%20Ursa%2C%20Sintra", source: "search" },
+};
+
+const mk = (list, title, i) => {
+  // ORDER MATTERS. The per-list subtitle used to be spread BEFORE the generic
+  // one, so the generic empty string overwrote it and every quote rendered
+  // with no attribution — which looked like the feature was missing rather
+  // than the fixture being wrong.
+  const generic = list === "books" ? "Susanna Clarke" : list === "restaurants" ? "Peckham" : "";
+  const rich = RICH[title];
+  const richSub = rich && (list === "movies"
+    ? [rich.director, rich.year].filter(Boolean).join(" · ")
+    : list === "recipes" ? [rich.total_time, rich.serves].filter(Boolean).join(" · ") : null);
+
+  const perList =
+    list === "quotes"
+      ? { subtitle: QUOTE_BY[title] ?? "", canonical: { author: QUOTE_BY[title] ?? null } }
+      : list === "travel"
+        ? { subtitle: [TRAVEL[title]?.area, TRAVEL[title]?.city].filter(Boolean).join(" · ") || "Lisbon",
+            canonical: TRAVEL[title] ?? { city: "Lisbon", located: false, map_url: `geo:0,0?q=${encodeURIComponent(title)}` } }
+        : {};
+
+  return {
+    id: `${list}-${i}`, list, status: "filed", title,
+    subtitle: richSub || generic,
+    note: "", image_url: ART[title] ?? null, canonical: rich ?? {},
+    confidence: 0.9, enriched: true, source_url: "https://insta/x", resolver: "crawler-embed-html",
+    created_at: "2026-08-01T00:00:00Z",
+    ...perList,
+  };
+};
 
 const PILE = [
   { id: "p1", list: "restaurants", status: "filed", title: "Ganapati",
