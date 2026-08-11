@@ -12,6 +12,11 @@ on:
     branches: [main]
     paths: ["app/**"]
   workflow_dispatch:
+    inputs:
+      anyway:
+        description: "Publish the JS even though something in this range needs a rebuild. The native part will be ABSENT until you build."
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -61,6 +66,7 @@ jobs:
             *) RANGE="$BEFORE..${{ github.sha }}" ;;
           esac
           echo "range: $RANGE"
+          echo "range=$RANGE" >> "$GITHUB_OUTPUT"
           node native-changed.mjs "$RANGE"
           CODE=$?
           # 3 means "this push changed nothing under app/". On a PUSH that is
@@ -80,11 +86,25 @@ jobs:
         if: steps.native.outputs.code == '3'
         run: echo "No app changes in this push."
 
+      # A PUSH never publishes a native change silently. That is the whole
+      # point of this job and it does not get an override.
       - name: Refuse to publish a native change as an update
-        if: steps.native.outputs.code == '1'
+        if: steps.native.outputs.code == '1' && !(github.event_name == 'workflow_dispatch' && inputs.anyway)
         run: |
-          echo "::error::This push changes native code. Run \`npm run build:preview\` and install the new build — an over-the-air update cannot carry it."
+          echo "::error::This range changes native code. Run \`npm run build:preview\` and install the new build — an over-the-air update cannot carry it."
+          echo "::error::If the JS is worth shipping NOW and you accept the native part being absent, re-run this manually with 'anyway' ticked."
           exit 1
+
+      # The informed override. It exists because "refuse everything" is the
+      # wrong answer when a range is 40 JavaScript files plus one build-time
+      # env var: the JS is worth having today, and the missing piece is inert
+      # until a rebuild. It is a MANUAL, explicit, logged choice — never
+      # something a push can do by itself.
+      - name: Publishing anyway, with the native part missing
+        if: steps.native.outputs.code == '1' && github.event_name == 'workflow_dispatch' && inputs.anyway
+        run: |
+          echo "::warning::Publishing JS only. Everything native in this range is ABSENT from the app until \`npm run ship\`."
+          node native-changed.mjs "${{ steps.native.outputs.range }}" || true
 
       # No token → skip, do not fail. An unconfigured optional workflow that
       # goes red on every push trains you to ignore red, which costs more than
@@ -95,13 +115,13 @@ jobs:
           echo "::notice::Publishable. EAS Workflows publishes this if the repo is connected at expo.dev; otherwise run \`npm run update\` from app/."
 
       - uses: expo/expo-github-action@v8
-        if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
+        if: (steps.native.outputs.code == '0' || (steps.native.outputs.code == '1' && inputs.anyway)) && env.EXPO_TOKEN != ''
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publish
-        if: steps.native.outputs.code == '0' && env.EXPO_TOKEN != ''
+        if: (steps.native.outputs.code == '0' || (steps.native.outputs.code == '1' && inputs.anyway)) && env.EXPO_TOKEN != ''
         run: |
           # From git, not from the event. `github.event.head_commit` does not
           # exist on a manual run, so the message expanded to "" and eas
