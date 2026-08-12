@@ -198,15 +198,29 @@ flat orange that should have been a gradient looked entirely plausible in one.
 - **shelf has its own palette.** Different product, different mood — the rule is
   *one* palette rigorously applied, not *soundcheck's* palette. `design.js` is
   the single source, and §0a applies to it with full force.
-- **shelf is iOS-only.** soundcheck's standing rule is that every change ships
-  web + mobile web + iOS + Android together, and permits saying so explicitly
-  when a surface genuinely can't have it. There is no web surface and no Android
-  target here: the product is an iOS share extension, and a share sheet over
-  Instagram has no web equivalent.
+- **shelf is iOS and Android. There is no web surface.** The standing rule is
+  that every change ships everywhere unless you say which surface cannot have
+  it, so: a shelf that lives in a file on your phone has no web equivalent, and
+  the public `/s/<code>` pages are how the web sees any of this.
+- **The share picker is ONE component with two hosts.** iOS runs it as a share
+  extension: a separate process, over Instagram, that closes itself. Android
+  has no extension — ACTION_SEND opens the app — so the same boards render
+  full screen inside it. `src/ShareBoards.tsx` is the component; the only
+  things that differ are what "done" does and one line of copy. Two copies
+  would disagree about what a saved reel looks like within a week.
+- **The same layout, two very different heights.** Six bands over a 420pt
+  sheet and six over 800+pt of Android screen are not the same composition
+  problem. Both are rendered and measured (`?screen=share` and
+  `?screen=android-share`), at 412×915 and at 360×800 — the small cheap
+  Android is the tight case, not the Pixel.
+- **Android paints its status bar; iOS floats it.** The generated Android theme
+  hardcodes an opaque bar, so a scheme-aware `StatusBar` is set in JS. A
+  platform difference that only shows up in one scheme is exactly the kind
+  this project keeps shipping.
 - **Two surfaces, not one.** The app and the extension are separate processes
   with separate bundles. They share `design.js`, `Press` and `Reveal` so the
-  press feel and entrance cannot diverge — a tile in the sheet and a button in
-  the Inbox must answer identically or it reads as two apps.
+  press feel and entrance cannot diverge — a band in the sheet and a button in
+  the pile must answer identically or it reads as two apps.
 - **The extension's tile grid is a picker, not a row of CTAs.** It is a
   deliberate 2×2. §3's "never stretched buttons" governs `decide`, the actual
   button, which takes its natural width.

@@ -62,9 +62,10 @@ api/     node:http. No framework. Postgres only for published links.
   resolveRoute.js the whole service, in one request — stores nothing
   publish.js      the snapshots you chose to hand somebody
   probe.js        /api/debug/reel — the instrument, not a feature
-app/     Expo + expo-share-extension
-  ShareExtension.tsx  the sheet over Instagram (no network at all)
-  App.tsx             six shelves, the pile, your card
+app/     Expo. iOS + Android.
+  src/ShareBoards.tsx the picker — ONE component, two hosts, no network
+  ShareExtension.tsx  the iOS host (12 lines: it passes close())
+  App.tsx             six shelves, the pile, your card, the Android host
   store.ts            the shelf, on the phone
 ```
 
@@ -92,19 +93,31 @@ cd app
 npm install
 npx expo prebuild -p ios       # required — a share extension needs a native target
 npx eas build -p ios --profile development
+npx eas build -p android --profile preview    # an APK you can just install
 ```
 
 **Expo Go cannot host a share extension.** The first build is an EAS dev-client
 build, not a QR code. Discovering that late costs a rebuild cycle.
+
+Neither build can run from this sandbox — `api.expo.dev` is denied at the
+gateway — so **Actions → Build the app** does it on a runner and prints the
+install link. Android needs no Apple account and no registered device, which
+makes it the short path from a push to something on a phone.
 
 ```bash
 npm run preflight # the design gate's grep half, ~1s
 npm run verify    # the same plus rendering every screen and MEASURING taps
 ```
 
-`DESIGN.md` is the bar and the rules. shelf is **iOS-only** — no web, no
-Android surface, stated explicitly because the standing rule is that every
-change ships everywhere unless you say which surface cannot have it.
+`DESIGN.md` is the bar and the rules. shelf is **iOS and Android** — no web
+surface, stated explicitly because the standing rule is that every change ships
+everywhere unless you say which surface cannot have it.
+
+The two platforms take shares differently and it is worth knowing which you are
+looking at. iOS has a share extension: a separate process, over Instagram, that
+writes to a shared Keychain and closes in ~420ms. Android has no such thing —
+`ACTION_SEND` opens the app itself — so the same picker renders full screen
+inside it and writes to the same queue. After the tap the two are identical.
 
 ## Asking the live service anything
 
@@ -116,10 +129,13 @@ in a list of what would land on a shelf).
 
 ## What is verified, and what is not
 
-Verified: every module selftest, the design gate, 201 tap targets measured off
+Verified: every module selftest, the design gate, 225 tap targets measured off
 the live layout, every screen rendered and looked at in both schemes at two
-widths — and, on the live service, a real post whose caption is nothing but a
-headline and eight @handles resolving into eight enriched places.
+widths — iOS at 375/320 and Android at 412×915 and 360×800 — and, on the live
+service, a real post whose caption is nothing but a headline and eight @handles
+resolving into eight enriched places. On Android, `expo prebuild` is run and
+the generated manifest read, so the intent filter that puts shelf in
+Instagram's share sheet is checked rather than assumed.
 
 Not verified from this sandbox — the proxy blocks `instagram.com`,
 `onrender.com` and `api.expo.dev`, and there is no iOS toolchain here: anything
