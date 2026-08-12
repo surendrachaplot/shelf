@@ -13,7 +13,7 @@
 // Editing happens in place. A separate "edit profile" screen for three fields
 // is a second screen that exists to hold a Save button.
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { publishStats, revokePublish, shareUrl, pendingShareCount, sharedKeychainOk } from "./api";
 import { countsOf, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
@@ -192,10 +192,21 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
             <Text style={s.body}>Checking…</Text>
           ) : (
             <>
+              {/* THE SAME PROBE, A DIFFERENT CLAIM. On iOS this proves two
+                  PROCESSES can see one Keychain group — the thing that
+                  silently breaks and takes a week to find. Android has no
+                  second process: the share opens the app itself, so the same
+                  probe only proves this app can write its own queue. Saying
+                  "the share sheet can reach this app" there would be a
+                  sentence that is true for a reason nobody tested. */}
               <Fact
                 ok={wiring.shared}
-                good="The share sheet can hand things to this app."
-                bad="The share sheet cannot reach this app. Sharing from Instagram will not work — install the latest build."
+                good={Platform.OS === "android"
+                  ? "Shared links open straight into shelf, and it can save them."
+                  : "The share sheet can hand things to this app."}
+                bad={Platform.OS === "android"
+                  ? "This phone refused a test write, so a shared reel would not be saved."
+                  : "The share sheet cannot reach this app. Sharing from Instagram will not work — install the latest build."}
                 s={s} c={c}
               />
               <Fact

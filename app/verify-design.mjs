@@ -37,6 +37,10 @@ const SOURCES = [
   "App.tsx", "ShareExtension.tsx",
   "src/Add.tsx", "src/Profile.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
   "src/KeyboardSafe.tsx", "src/Screen.tsx",
+  // The share picker moved out of ShareExtension.tsx when Android arrived —
+  // one component, two hosts. It paints, so the gate reads it; leaving it out
+  // would have quietly dropped the busiest screen in the app out of coverage.
+  "src/ShareBoards.tsx",
 ];
 
 // ─── static rules ────────────────────────────────────────────────────────────

@@ -1,4 +1,13 @@
 export const close = () => { document.body.setAttribute("data-closed", "1"); };
+
+// expo-share-intent. The harness never receives a real Android intent, so the
+// hook reports "nothing shared" — which is the state every screenshot except
+// the share one is taken in. The Android boards are rendered directly instead
+// (?screen=android-share), because a hook that can only return null cannot
+// show you what an incoming share looks like.
+export const useShareIntent = () => ({
+  hasShareIntent: false, shareIntent: null, resetShareIntent: () => {}, error: null,
+});
 export const openHostApp = () => {};
 export const clearAppGroupContainer = () => {};
 export const readAsStringAsync = async () => "";

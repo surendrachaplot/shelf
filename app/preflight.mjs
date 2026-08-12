@@ -122,6 +122,65 @@ if (!existsSync(here("./index.share.js"))) {
   ok("the extension entry point and component name match the native side");
 }
 
+// ── 5b. ANDROID ──────────────────────────────────────────────────────────────
+// Android arrived after iOS, and the ways it breaks are mostly ways it breaks
+// IOS: two plugins both trying to build a share extension, a lockfile that
+// gained packages nobody installed. Checked here because each one otherwise
+// surfaces ten minutes into a remote build, in a Gradle or Xcode error that
+// names neither the plugin nor the platform.
+const androidPlugin = (app.plugins ?? []).find((x) => Array.isArray(x) && x[0] === "expo-share-intent");
+if (!androidPlugin) {
+  no("expo-share-intent is not in app.json plugins",
+     "without it Android registers no intent filter and shelf does not appear in Instagram's share sheet at all");
+} else if (androidPlugin[1]?.disableIOS !== true) {
+  // THE ONE THAT BREAKS THE OTHER PLATFORM. Both packages build an iOS share
+  // extension; with both enabled the iOS target is written twice and the build
+  // fails somewhere that mentions neither package.
+  no("expo-share-intent is not configured with disableIOS: true",
+     "iOS already has expo-share-extension. Two plugins building one extension target is an iOS build failure caused by an Android change.");
+} else {
+  ok("expo-share-intent handles Android only; iOS keeps its own extension");
+}
+
+{
+  const sdk = Number((installed("expo") ?? "0").split(".")[0]);
+  // Same shape as the expo-share-extension table above, same reason.
+  const NEEDED_SI = { 52: 3, 53: 4, 54: 5 };
+  const want = NEEDED_SI[sdk];
+  const got = installed("expo-share-intent");
+  if (!got) no("expo-share-intent is not installed", "run `npm install`");
+  else if (want && Number(got.split(".")[0]) !== want) {
+    no(`expo-share-intent ${got} against Expo SDK ${sdk}`, `SDK ${sdk} needs ${want}.x`);
+  } else ok(`expo-share-intent ${got} matches SDK ${sdk}`);
+
+  for (const dep of ["expo-linking", "expo-constants"]) {
+    if (!installed(dep)) no(`${dep} is missing`, "expo-share-intent needs it at runtime; the app crashes on launch without it");
+  }
+
+  // ANDROID DOES NOT FOLLOW THE SYSTEM SCHEME WITHOUT THIS. `prebuild` says so
+  // in one grey line and carries on — "userInterfaceStyle: Install
+  // expo-system-ui to enable this feature" — and the build succeeds. Every
+  // screen in this app is designed twice; shipping one where dark mode does
+  // nothing is a defect nobody would think to check for.
+  if (app.userInterfaceStyle && app.userInterfaceStyle !== "light" && !installed("expo-system-ui")) {
+    no(`app.json asks for userInterfaceStyle "${app.userInterfaceStyle}" but expo-system-ui is not installed`,
+       "on Android that setting is silently ignored — the app builds and dark mode never turns on");
+  } else if (installed("expo-system-ui")) {
+    ok("expo-system-ui is present, so Android honours the system colour scheme");
+  }
+}
+
+if (!app.android?.package) {
+  no("app.json has no android.package", "EAS refuses to start an Android build without one");
+} else {
+  ok(`Android package ${app.android.package}`);
+}
+
+const fg = app.android?.adaptiveIcon?.foregroundImage;
+if (!fg) no("app.json has no android.adaptiveIcon.foregroundImage", "Android ships a default green robot otherwise");
+else if (!existsSync(here(fg))) no(`the adaptive icon ${fg} does not exist`, "run `npm run assets`");
+else ok("the Android adaptive icon exists");
+
 // ── 6. the app knows where the server is ─────────────────────────────────────
 try {
   const eas = read("./eas.json");
@@ -132,6 +191,20 @@ try {
   else if (url !== fallback) no(`eas.json (${url}) and api.ts (${fallback}) point at different servers`,
                                 "they are read on different launch paths — make them agree");
   else ok(`the app will talk to ${url}`);
+
+  // AN AAB CANNOT BE SIDELOADED. It is a Play upload format, and every profile
+  // here is internal distribution — so a default build produces a file that
+  // downloads and then will not install, with no error that says why.
+  for (const profile of ["development", "preview"]) {
+    const type = eas.build?.[profile]?.android?.buildType;
+    if (type !== "apk") {
+      no(`eas.json ${profile}.android.buildType is ${type ?? "unset"}`,
+         "set it to \"apk\" — an .aab downloads fine and cannot be installed on a phone");
+    }
+  }
+  if (["development", "preview"].every((p) => eas.build?.[p]?.android?.buildType === "apk")) {
+    ok("both Android profiles build an installable APK");
+  }
 } catch (_) {
   no("could not read eas.json or src/api.ts");
 }

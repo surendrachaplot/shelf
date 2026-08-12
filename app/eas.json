@@ -14,7 +14,10 @@
         "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
         "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
       },
-      "channel": "development"
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -25,7 +28,10 @@
         "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
         "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      }
     }
   }
 }

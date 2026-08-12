@@ -20,6 +20,15 @@
         ]
       }
     },
+    "android": {
+      "package": "com.surendrachaplot.shelf",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "icon": "./assets/icon.png"
+    },
     "plugins": [
       [
         "expo-splash-screen",
@@ -53,6 +62,16 @@
             }
           ],
           "height": 420
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "disableIOS": true,
+          "androidIntentFilters": [
+            "text/*",
+            "image/*"
+          ]
         }
       ]
     ],

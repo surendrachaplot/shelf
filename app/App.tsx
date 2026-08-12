@@ -23,9 +23,10 @@
 // does not read as a swatch book. A missing cover is a design brief, not a hole.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, AppState, Image, Linking, RefreshControl, ScrollView, StyleSheet,
-  Text, TextInput, View,
+  ActivityIndicator, AppState, Image, Linking, Platform, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TextInput, View,
 } from "react-native";
+import { useShareIntent } from "expo-share-intent";
 import {
   legacyExport, resolveLink, takeQueue, type ListName, LISTS,
 } from "./src/api";
@@ -37,6 +38,7 @@ import { Add } from "./src/Add";
 import { ExLibris } from "./src/ExLibris";
 import { Profile } from "./src/Profile";
 import { ShareSheet } from "./src/ShareSheet";
+import { ShareBoards } from "./src/ShareBoards";
 import { Press } from "./src/Press";
 import { Reveal } from "./src/Reveal";
 import { scrollKeyboardProps } from "./src/KeyboardSafe";
@@ -186,6 +188,33 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ANDROID HAS NO SHARE EXTENSION. On iOS, sharing a reel opens a separate
+  // process over Instagram, which writes to the shared Keychain and closes —
+  // the app never sees the share happen. Android has no such thing: ACTION_SEND
+  // opens THIS app, with the URL in the intent. So the same boards render here
+  // instead, full screen, and write to the same queue the extension writes to.
+  // `drainShares` is untouched and does not know which platform filled it.
+  //
+  // `disabled` on iOS rather than a conditional hook: hooks cannot be called
+  // conditionally, and the option exists precisely so the native call is
+  // skipped on a platform that has nothing to answer with.
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({
+    disabled: Platform.OS !== "android",
+    // The boards are on screen until tapped, so clearing the intent when the
+    // app is backgrounded would lose a share somebody was mid-decision on.
+    resetOnBackground: false,
+  });
+  const [incoming, setIncoming] = useState<{ url: string | null; text: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!hasShareIntent) return;
+    // webUrl is the link Android pulled out of the shared text — Instagram
+    // sends "Check this out: <url>" rather than a bare URL, so taking `text`
+    // as the link would file the sentence.
+    setIncoming({ url: shareIntent?.webUrl ?? null, text: shareIntent?.text ?? null });
+    resetShareIntent();
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
+
   // COMING BACK FROM INSTAGRAM. iOS does not remount a backgrounded app, so
   // without this the shelf shows whatever it showed at the last cold start no
   // matter how many reels went in. This shipped once and was reported, exactly
@@ -279,6 +308,20 @@ export default function App() {
     // if it sat inside this it would be inset once here and again by its own
     // root — the notch paid for twice.
     <View style={s.screen}>
+      {/* THE ANDROID STATUS BAR, which is a painted surface and not a
+          transparent overlay the way iOS's is. The generated theme hardcodes
+          it to opaque white in values/styles.xml, so in dark mode a pale strip sat
+          above a near-black app — a defect iOS could never have, since there
+          the bar floats over whatever is behind it.
+
+          Set here rather than in the theme XML because the theme cannot follow
+          the scheme per launch, and because this is JS: it reaches a phone
+          that already has the app over the air, which a values-night change
+          would not. */}
+      <StatusBar
+        barStyle={dark ? "light-content" : "dark-content"}
+        backgroundColor={c.bg}
+      />
       <Screen>
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>shelf</Text>
@@ -413,6 +456,27 @@ export default function App() {
             onClose={() => setScreen("case")}
             onChange={commit}
             onShare={() => setSharing({ kind: "profile", title: "Your whole card" })}
+          />
+        </View>
+      ) : null}
+
+      {/* The Android share, hosted. Above every other overlay on purpose: it
+          arrived from another app and it is the only thing on screen the
+          person is currently thinking about. */}
+      {incoming ? (
+        <View style={s.over}>
+          <ShareBoards
+            url={incoming.url}
+            text={incoming.text}
+            hosted
+            onDone={async () => {
+              setIncoming(null);
+              if (!shelf) return;
+              setBusy(true);
+              // Straight into the same drain the extension's shares go through
+              // — so what happens next is identical on both platforms.
+              await drainShares(shelf).finally(() => setBusy(false));
+            }}
           />
         </View>
       ) : null}

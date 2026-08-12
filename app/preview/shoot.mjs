@@ -80,6 +80,16 @@ const SHOTS = [
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },
   { name: "share-done-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light", click: "Restaurants" },
+  // THE ANDROID SHARE, at Android sizes. There is no extension and no 420pt
+  // sheet: ACTION_SEND opens the app, so the same boards fill the screen. Six
+  // bands over ~800pt is a different composition from six over 420 — the bands
+  // stretch, and whether that reads as a shelf unit or as six stripes is only
+  // answerable by looking. 412×915 is a Pixel; 360×800 is the small Android
+  // that most cheap phones actually are.
+  { name: "android-share-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light" },
+  { name: "android-share-412-dark", q: "?screen=android-share", w: 412, h: 915, scheme: "dark" },
+  { name: "android-share-360-light", q: "?screen=android-share", w: 360, h: 800, scheme: "light" },
+  { name: "android-share-done-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light", click: "Travel" },
 ];
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });

@@ -1,0 +1,92 @@
+# Build the app, from a machine that can reach Expo.
+#
+# WHY THIS EXISTS: `npm run ship` needs a shell on a machine with network
+# access to api.expo.dev, and the sandbox this repo is written in denies that
+# host at the gateway. Same shape as the diagnose workflow — put the command on
+# a runner and read the job log — except this one produces an installable file
+# at the end of it.
+#
+# ANDROID IS THE REASON IT EXISTS NOW. An iOS build needs an Apple account and
+# a device UDID; an Android APK needs neither, so this is the one platform that
+# can go from a push to something on a phone without anybody signing anything.
+#
+# ONE-TIME SETUP: repository secret `EXPO_TOKEN` (already set — the OTA update
+# workflow uses the same one).
+name: Build the app
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which platform to build"
+        required: true
+        default: android
+        type: choice
+        options: [android, ios, all]
+      profile:
+        description: "EAS build profile"
+        required: true
+        default: preview
+        type: choice
+        options: [preview, development]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # An Android build is 10-25 minutes on the free tier's queue. The default
+    # job timeout is six hours, but a queue that never moves should not hold a
+    # runner all afternoon.
+    timeout-minutes: 90
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Check the token is set
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN is not set on this repository. Settings → Secrets and variables → Actions. Create the token at https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      # The same gate the local build runs, and it now covers Android: the
+      # share-intent plugin being Android-only, the package name, the adaptive
+      # icon, expo-system-ui, and the APK-not-AAB build type. Ten minutes of
+      # queue is a slow way to be told about a missing icon.
+      - run: npm run preflight
+
+      - name: Build
+        id: build
+        run: |
+          set -o pipefail
+          npx --yes eas-cli@latest build \
+            --platform "${{ inputs.platform }}" \
+            --profile "${{ inputs.profile }}" \
+            --non-interactive \
+            --json 2>&1 | tee /tmp/build.json
+
+      # The whole point of the run: a link somebody can open on a phone. Pulled
+      # out of the JSON so it is the last thing in the log rather than the
+      # thing you scroll a build transcript to find.
+      - name: Where to install it
+        if: always()
+        run: |
+          if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
+          # --json prints an array of builds (one per platform). Anything that
+          # is not JSON — an error, a prompt — falls through to the raw tail.
+          if jq -e . /tmp/build.json >/dev/null 2>&1; then
+            jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)"' /tmp/build.json
+          else
+            echo "--- not JSON, last 40 lines ---"
+            tail -40 /tmp/build.json
+          fi

@@ -30,6 +30,11 @@ const SCREENS = [
   { name: "pair 375", q: "?paired=0", w: 375, h: 812 },
   { name: "share 375", q: "?screen=share", w: 375, h: 320 },
   { name: "share 320", q: "?screen=share", w: 320, h: 320 },
+  // The Android host. Same controls, very different geometry — six bands over
+  // a whole screen instead of a 320pt sheet — so the numbers are not the iOS
+  // ones and measuring only the sheet would leave the taller layout unchecked.
+  { name: "android share 412", q: "?screen=android-share", w: 412, h: 915 },
+  { name: "android share 360", q: "?screen=android-share", w: 360, h: 800 },
 ];
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });

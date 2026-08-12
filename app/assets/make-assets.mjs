@@ -86,6 +86,16 @@ const JOBS = [
   { file: "splash-light.png", size: 1024, svg: splash({ ground: D.light.bg, ink: D.light.ink }) },
   { file: "splash-dark.png", size: 1024, svg: splash({ ground: D.dark.bg, ink: D.dark.ink }) },
   { file: "favicon.png", size: 196, svg: mark({ size: 196, ground: D.light.bg, ink: D.light.ink, pad: 0.10 }) },
+  // THE ANDROID ADAPTIVE ICON, which is not the iOS one with a different name.
+  // Android composites a transparent FOREGROUND over a flat background and
+  // then masks the result — to a circle on one launcher, a squircle on the
+  // next, a rounded square on a third. Only the middle ~66% is guaranteed to
+  // survive that, so the mark needs roughly twice iOS's padding: at 0.12 the
+  // outer jackets of the bookcase are inside the mask on a circular launcher
+  // and get sliced. 0.26 keeps the whole case inside the safe zone on every
+  // mask shape, which is why it is not the same number as the iOS icon.
+  { file: "adaptive-icon.png", size: 1024, transparent: true,
+    svg: mark({ ground: "transparent", ink: D.light.ink, pad: 0.26 }) },
 ];
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
@@ -93,17 +103,16 @@ for (const job of JOBS) {
   const ctx = await browser.newContext({
     viewport: { width: job.size, height: job.size },
     deviceScaleFactor: 1,
-    // The splash mark needs transparency; the icon must not have any.
-    ...(job.file.startsWith("splash") ? {} : {}),
+    // Transparency is a property of the JOB, not a guess from its filename.
   });
   const page = await ctx.newPage();
   await page.setContent(
-    `<!doctype html><style>html,body{margin:0;padding:0;background:${job.file.startsWith("splash") ? "transparent" : "#fff"}}svg{display:block}</style>${job.svg}`
+    `<!doctype html><style>html,body{margin:0;padding:0;background:${job.transparent || job.file.startsWith("splash") ? "transparent" : "#fff"}}svg{display:block}</style>${job.svg}`
   );
   await page.waitForTimeout(80);
   await page.screenshot({
     path: OUT + job.file,
-    omitBackground: job.file.startsWith("splash"),
+    omitBackground: !!job.transparent || job.file.startsWith("splash"),
   });
   console.log(`  ${job.file}  ${job.size}×${job.size}`);
   await ctx.close();
