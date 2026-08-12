@@ -71,7 +71,7 @@ QUOTES. The thing being saved is THE WORDS THEMSELVES. Put the quote in "title",
 
 TRAVEL. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
 
-TAGGED ACCOUNTS. When the caption lists things by TAGGING them rather than naming them, the tagged accounts ARE the list — use the name given for each handle as the item's title, not the handle itself, and not the caption's headline. "10 lovely bookshops @a @b @c" with those three accounts named is three items, not one item called "10 lovely bookshops". Ignore the poster's own account and any account that is plainly not one of the things listed (a photographer credit, a friend, a brand doing a giveaway).
+TAGGED ACCOUNTS. Captions very often list things by TAGGING them instead of naming them: "10 lovely bookshops with cafes … Bookshops featured: @backstory.london @funnyweatherbooks @the_bookelephant". Those accounts ARE the list — three items, not one item called "10 lovely bookshops". The handle is the only name you get, so read it as one: @backstory.london is "Backstory", @funnyweatherbooks is "Funny Weather", @the_bookelephant is "The Book Elephant". Put the city from the caption in search_hints.city on every one of them — that is what turns a name into a place. Ignore the poster's own account and any account that is plainly a photographer credit, a friend, or a brand doing a giveaway. If a handle yields no plausible name, drop it: an item called "@xyz_92" is worse than nine items instead of ten.
 
 RESTAURANTS vs TRAVEL: a place you would eat at, at home, is a restaurant. A place you would go to on a trip — including its restaurants — is travel. When the caption is about a trip, prefer travel.`;
 
@@ -90,16 +90,11 @@ export function buildPrompt(envelope, chosenList) {
   if (e.authorHandle) lines.push(`Posted by: @${e.authorHandle}`);
   if (e.locationTag) lines.push(`Location tag: ${e.locationTag}`);
   if (e.outboundUrls?.length) lines.push(`Links in caption: ${e.outboundUrls.join(" ")}`);
-  // WHO THE @HANDLES ARE. A list post very often names nothing in prose and
-  // tags eight accounts instead — "Bookshops featured: @a @b @c". Without
-  // this, the caption reads as a title and a wall of usernames and yields
-  // nothing. With it, each handle is a real name and a descriptor.
-  if (e.taggedAccounts?.length) {
-    lines.push("Accounts tagged in the caption (each is usually one of the things listed):");
-    for (const a of e.taggedAccounts) {
-      lines.push(`  @${a.handle} = ${a.name}${a.descriptor ? ` — ${a.descriptor}` : ""}`);
-    }
-  }
+  // There was a block here that listed each tagged @handle with the display
+  // name fetched from its profile. The fetch does not work from the server
+  // this runs on — 429 to a browser, a login wall to a crawler — so it fed an
+  // empty list into a prompt section asking for names, every time. The handles
+  // are in the caption below, and SYSTEM now says how to read them.
   lines.push("", "Caption:", e.caption ? String(e.caption).slice(0, 8000) : "(no caption could be read)");
   return lines.join("\n");
 }
@@ -216,6 +211,20 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(p.trimEnd().endsWith(env.caption), "caption is last, verbatim");
   ok(buildPrompt(env, null).includes("did not pick a list"), "no-choice directive");
   ok(buildPrompt(env, "wine").includes("did not pick a list"), "bogus list falls back, never trusted");
+
+  // A TAG-LIST POST — a headline and eight usernames, which is what a caption
+  // looks like when it lists places by tagging them. Nothing may fetch those
+  // profiles: from Render that returns a 429 or a login wall, so the prompt
+  // has to carry the instruction to read the handle ITSELF as a name.
+  const tagged = buildPrompt({
+    caption: "10 lovely bookshops in London\n\nBookshops featured:\n@backstory.london @the_bookelephant",
+    authorHandle: "whatshotblog",
+  }, "travel");
+  ok(tagged.includes("@backstory.london"), "the handles reach the model as caption text");
+  ok(!/=\s*$|Accounts tagged in the caption/.test(tagged),
+     "no empty roster of resolved names — that section fed the model a blank every time");
+  ok(SYSTEM.includes("@backstory.london is \"Backstory\""),
+     "SYSTEM must show how to read a handle as a name, or a tag-list post yields one item called '10 lovely bookshops'");
 
   // The model tries to re-file into movies; the user said restaurants.
   const forced = coerceItems({ items: [{ list: "movies", title: "Ganapati", subtitle: "South Indian", note: "Get the dosa", confidence: 0.9, search_hints: { author: "", year: "", city: "Peckham", cuisine: "South Indian" } }] }, "restaurants");

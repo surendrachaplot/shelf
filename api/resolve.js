@@ -126,54 +126,33 @@ export function handlesIn(text) {
 }
 
 /**
- * WHO A TAGGED ACCOUNT IS — measured, and not what was planned.
+ * WHO A TAGGED ACCOUNT IS — asked, measured, and answered NO.
  *
- * The plan was to read each tagged profile's BIO. Instagram does not give one
- * up: `biography` is absent from the page for both a browser and a crawler,
- * and to a browser the profile is the same empty JavaScript shell everything
- * else is.
+ * The plan was to read each tagged profile and turn @backstory.london into a
+ * name. Two measurements, in this order:
  *
- * What the crawler DOES get is og:description, and it carries the display
- * name and, very often, the descriptor people put after a pipe or a dash:
+ *   From a GitHub runner: no `biography` field, but og:description carries
+ *   "…videos from Backstory | independent bookshop (@backstory.london)" —
+ *   a name and a descriptor, which is what the bio was wanted for. Built on it.
  *
- *   "21K Followers, 875 Following, 543 Posts - See Instagram photos and
- *    videos from Backstory | independent bookshop (@backstory.london)"
+ *   From RENDER, where the code actually runs: browser UA → HTTP 429, zero
+ *   bytes. Crawler UA → 200 and 617 kB of login wall with NO og:description
+ *   at all. In production the path fetched eight profiles and returned eight
+ *   nothings, which is exactly what `tagged_accounts: 0` said.
  *
- * "Backstory" and "independent bookshop" is enough to geocode and enough to
- * classify — which is what the bio was wanted for. The follower counts are
- * noise and are dropped.
+ * So it is gone, rather than kept as an optimistic branch that costs eight
+ * sequential fetches on the request path to return an empty array. The two
+ * IPs disagree; the one that matters is the server's.
+ *
+ * WHAT REPLACED IT: nothing, because nothing was needed. The classifier reads
+ * @funnyweatherbooks as "Funny Weather" perfectly well, and the geocoder
+ * confirms or drops it. That was already happening underneath the dead call —
+ * all eight bookshops resolved with `tagged_accounts: 0`. classify.js now says
+ * so out loud instead of asking for names that never arrive.
+ *
+ * `probeProfile` stays: it is the instrument that measured this, and it is how
+ * you check whether Meta has changed its mind. /api/debug/reel?url=<profile>.
  */
-export function profileFromOg(og) {
-  const m = /from\s+([^()]+?)\s*\(@([A-Za-z0-9._]+)\)/i.exec(String(og || ""));
-  if (!m) return null;
-  const whole = m[1].trim();
-  // "Name | descriptor" and "Name - descriptor" are both common. Split on the
-  // FIRST separator only: a descriptor may well contain another one.
-  const sep = /\s+[|·—–-]\s+/.exec(whole);
-  const name = (sep ? whole.slice(0, sep.index) : whole).trim();
-  const descriptor = sep ? whole.slice(sep.index + sep[0].length).trim() : "";
-  if (!name) return null;
-  return { handle: m[2].toLowerCase(), name, descriptor };
-}
-
-/**
- * The accounts a caption tags, turned into names.
- *
- * CAPPED AND SEQUENTIAL on purpose. A caption can tag thirty accounts; thirty
- * fetches on the request path is a minute of somebody watching a spinner, and
- * a list post worth saving names its ten. Sequential because these are
- * unauthenticated fetches of somebody else's service and a burst of thirty
- * parallel requests is how an IP stops being welcome.
- */
-export async function resolveTaggedAccounts(handles, limit = 10) {
-  const out = [];
-  for (const handle of handles.slice(0, limit)) {
-    const { html } = await tryFetch(`https://www.instagram.com/${handle}/`, 8000, CRAWLER_HEADERS);
-    const got = profileFromOg(metaTag(html, "og:description"));
-    if (got) out.push(got);
-  }
-  return out;
-}
 
 export function embedUrl({ shortcode }) {
   // /p/<code>/embed/captioned/ serves the caption for reels as well as posts —
