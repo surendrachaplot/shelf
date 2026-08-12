@@ -107,6 +107,12 @@ async function handle(req, res, url) {
       // and because "does the server have my shelves" is the question this
       // rewrite exists to answer with a no.
       stores: "published snapshots only — no accounts, no shelves",
+      // WHICH BUILD IS ANSWERING. Without this, "is my fix live yet" is
+      // guesswork against Render's deploy timing, and a diagnosis run two
+      // minutes after a push silently measures the PREVIOUS build — which is
+      // how a tagged-accounts change got tested against the code it replaced.
+      // Render sets this; null everywhere else, and says so rather than lying.
+      commit: (process.env.RENDER_GIT_COMMIT || "").slice(0, 7) || null,
       web_base: WEB_BASE,
       app_key_required: !!process.env.SHELF_APP_KEY,
       providers: {

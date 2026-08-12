@@ -54,10 +54,19 @@ jobs:
           for i in 1 2 3 4 5 6; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' -m 30 "$SHELF_API/api/health" || echo 000)
             echo "attempt $i: $code"
-            [ "$code" = "200" ] && exit 0
+            [ "$code" = "200" ] && break
             sleep 10
+            [ "$i" = "6" ] && echo "::warning::server did not answer 200 while waking — asking anyway"
           done
-          echo "::warning::server did not answer 200 while waking — asking anyway"
+          # WHICH BUILD IS ABOUT TO ANSWER. Render deploys a push in a couple of
+          # minutes; a diagnosis triggered straight after one measures the old
+          # code and reads as a failed fix. Printed before the question so the
+          # answer can never be misread as being about the commit you just made.
+          live=$(curl -sS -m 30 "$SHELF_API/api/health" | jq -r '.commit // "unknown"')
+          echo "deployed commit: $live   ·   this workflow: ${GITHUB_SHA:0:7}"
+          if [ "$live" != "unknown" ] && [ "$live" != "${GITHUB_SHA:0:7}" ]; then
+            echo "::warning::the service is running $live, not ${GITHUB_SHA:0:7} — if you just pushed, wait for the deploy and re-run"
+          fi
 
       - name: Ask
         env:
