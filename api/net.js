@@ -1,6 +1,7 @@
 // fetch with a hard timeout. Every outbound call to a third party must use
 // this: Node's fetch has no default timeout, so a hung socket wedges the
-// request worker or the ingest drain indefinitely.
+// request in flight indefinitely — a share that never finishes is worse
+// than one that fails, because nothing on screen ever changes.
 export async function fetchT(url, opts = {}, ms = 12000) {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), ms);

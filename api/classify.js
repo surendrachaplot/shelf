@@ -63,7 +63,7 @@ Return the thing itself, never the post about it. "POV: you finally read the boo
 
 A reel can hold several things — "5 books I read in March" is five items. A reel can also hold none: if the caption is only hashtags, only a handle, or plainly about something that fits no list, return an empty array rather than inventing a title.
 
-Confidence is about the NAME, not your enthusiasm. A caption that names a restaurant and its street gets 0.9. A caption that says "this place is unreal 🤯" with no name gets 0.2 and a title of whatever you can salvage — it will land in the Inbox for the user to fix, which is the correct outcome and much better than a confident fabrication.
+Confidence is about the NAME, not your enthusiasm. A caption that names a restaurant and its street gets 0.9. A caption that says "this place is unreal 🤯" with no name gets 0.2 and a title of whatever you can salvage — it will sit unshelved for the user to fix, which is the correct outcome and much better than a confident fabrication.
 
 Never invent an author, year, or address that the caption does not support. An empty hint is useful; a wrong one sends the enrichment step off to fetch the wrong book.
 

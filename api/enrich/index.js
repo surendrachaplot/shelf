@@ -1,8 +1,8 @@
 // enrich/index.js — turn "Piranesi" into a book with a cover and an author.
 //
 // Enrichment is BEST EFFORT AND NEVER FATAL. An item that Claude named
-// correctly is already useful; a missing cover image is not a reason to send it
-// to the Inbox or to fail the ingest. Every enricher returns null on any
+// correctly is already useful; a missing cover image is not a reason to leave
+// it unshelved or to fail the share. Every enricher returns null on any
 // problem and the caller carries on with `enriched: false`.
 //
 // Google Places is the only metered provider here, so it gets the discipline

@@ -422,7 +422,7 @@ export async function resolveShare(sourceUrl) {
       if (got && got.caption) return got;
     }
     // Nothing readable. This is a normal outcome, not an error: the item still
-    // has your chosen list and a link you can open. It goes to Inbox.
+    // has your chosen list and a link you can open. It sits unshelved.
     return { ...EMPTY(), via: "none" };
   }
   if (/^https?:\/\//i.test(String(sourceUrl || ""))) {
