@@ -99,6 +99,35 @@ unaffected.
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
 
+### Sharing was quietly dropping two shelves (fixed, `4d63950`)
+
+Asked whether profiles worked. They did not, in three ways, none of which
+errored:
+
+| Where | What happened |
+|---|---|
+| `ShareSheet.tsx` | Publishing your card sent `["books","restaurants","movies","recipes"]` — a hand-written list. Quotes and travel were **silently left out of every shared card**. |
+| `api/page.js` | `LIST_LABEL`/`LIST_N` were four-entry objects, so a published quote or place rendered under the heading **"Unsorted"**, with no colour of its own, on the one surface built for someone without the app. The link preview also described "books, restaurants, movies and recipes" whatever was on the card. |
+| `api/page.js` | A shared quote was **severed mid-sentence with no ellipsis** — "…even if you win" then a wall of colour — while the full text sat in the block below it. |
+
+All three are derived from one source now (`LISTS` / `D.LIST_KEYS`), and quotes
+on a jacket use the app's own `excerpt` rule. Rendered and looked at: the card
+shows all six shelves in their own colours, and a shared travel place says
+**TRAVEL · 06**.
+
+**The class is closed, not just the instances.** A new design-gate rule
+(`no-hardcoded-lists`, 24 rules now) fires on any hand-written run of shelf
+names, with `// deliberate subset` as an explicit opt-out so a real subset —
+`KEEPS_CAPTION` is one — declares itself instead of looking out of date.
+`page.js --selftest` (35 assertions) asserts every shelf has a heading and a
+colour, and that no real shelf ever renders as Unsorted.
+
+**Why nobody saw it:** the public fixture in `preview/shoot-public.mjs` also
+stopped at four shelves, so a card with a quote on it had never once been
+rendered — and the shot was 1200px tall, which cut off after the second shelf
+anyway. Both fixed; that harness is the only thing that would have caught any
+of this.
+
 ### The thing that was built and then measured away
 
 The plan for that post was to fetch each tagged profile and turn `@handle` into
@@ -169,6 +198,15 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
   posts; the first `"caption"` in it belonged to a neighbour, and EVERY item
   resolved that way was wrong. Read the embed page; `scopeToShortcode` returns
   null rather than the whole page.
+- **A hand-written list of the lists will be wrong the next time one is added.**
+  Two copies survived quotes and travel shipping — one dropped two shelves from
+  every shared card, the other labelled them "Unsorted" — and neither errored.
+  Derive from `LISTS`/`LIST_KEYS`; the gate now refuses a hand-written run of
+  shelf names unless it says `// deliberate subset`.
+- **A fixture that stops at four shelves cannot show you the fifth.** The
+  public-page harness had books, restaurants, movies and recipes in it, so a
+  card carrying a quote had never been rendered anywhere, by anyone. Fixtures
+  are not test data — they are the only state most of this code is ever seen in.
 - **A search provider answers the question it can, not the one you asked.**
   Nominatim never says "I could not find Book Bar"; it returns the closest
   thing and a confidence-free 200. Anything that takes `results[0]` on trust is
