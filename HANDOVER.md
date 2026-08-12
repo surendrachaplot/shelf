@@ -31,24 +31,24 @@ enriched**:
 
 ```
 resolver=crawler-embed-html  caption_chars=604  tagged_handles=8  items=8
-  [travel] Backstory — Balham · London                       conf 0.80  OSM
-  [travel] Funny Weather books + coffee — Dartmouth Park     conf 0.70  OSM
-  [travel] Fable and Falcon — Chalk Farm · London            conf 0.75  OSM
-  [travel] Main Character Books — London                     conf 0.75  search
-  [travel] Book Bar UK — London                              conf 0.75  search
-  [travel] Poetry Pharmacy — London                          conf 0.75  search
-  [travel] Lala Books — Camberwell · London                  conf 0.70  OSM
-  [travel] The Book Elephant — Elephant and Castle           conf 0.75  OSM
+  [travel] Backstory — Balham · London                       conf 0.8   OSM
+  [travel] Funny Weather books + coffee — Dartmouth Park     conf 0.7   OSM
+  [travel] Fable and Falcon — Chalk Farm · London            conf 0.8   OSM
+  [travel] Main Character Books — London                     conf 0.8   search
+  [travel] Book Bar — London                                 conf 0.8   search
+  [travel] Poetry Pharmacy — London                          conf 0.8   search
+  [travel] Lala Books — Camberwell · London                  conf 0.7   OSM
+  [travel] The Book Elephant — Elephant and Castle           conf 0.8   OSM
 ```
 
 Five carry coordinates, address and area from OpenStreetMap — two of them
 opening hours, three a website — and get a `geo:` link that opens the pin.
-Three were not found and fall back to a map SEARCH url, marked
+Three are not on the map and fall back to a SEARCH url, marked
 `located: false`, so the jacket says **Find on map** rather than pretending to
-a pin. Twelve seconds end to end.
+a pin. Twelve to fifteen seconds end to end.
 
-**`@bookbaruk` is the open defect in that list**, and it is the interesting
-one. Across three runs it came back as "Book Bar UK" once and **"The Book and
+**`@bookbaruk` was the defect in that list**, and it is the interesting one.
+Across three runs it came back as "Book Bar UK" once and **"The Book and
 Record Bar" twice** — a real bookshop, in West Norwood, with a real address and
 a real pin, and NOT the shop in the post (which is Book Bar, in Bounds Green).
 The model was picking between two wrong answers depending on the roll, and the
@@ -82,9 +82,16 @@ the second, on restaurants as well as travel, and the place keeps its honest
 search link. Not a similarity score: a threshold needs examples nobody has and
 fails silently in the middle.
 
-**Still to confirm on the live service:** that Book Bar now comes back
-`located: false` with a search link, and that the five OSM-located shops are
-unaffected. `asked_as` stays as the instrument either way.
+**Confirmed on the live service** (`a83e38f`), same post, all eight items:
+
+```
+[travel] Book Bar — London                                    conf 0.8
+[travel] Funny Weather books + coffee — Dartmouth Park · London  ⟵ ASKED FOR: Funny Weather Books
+```
+
+The wrong bookshop is gone; the legitimate fuller name is kept, with the
+difference recorded rather than hidden. The five OSM-located shops are
+unaffected.
 
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
