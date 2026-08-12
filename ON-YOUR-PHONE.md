@@ -13,13 +13,13 @@ Read `OPERATIONS.md` alongside this. Where the two disagree, OPERATIONS wins.
 
 - **A paid Apple Developer account ($99/yr).** Not optional here, and not for
   the usual reason. shelf uses an **App Group** and a **Keychain access group**
-  so the share extension and the app can pass a token between them — and App
-  Groups are unavailable to free personal teams. A free account will build the
-  app and produce a share extension that cannot read your login.
+  so the share extension can hand the shared URL to the app — and App Groups
+  are unavailable to free personal teams. A free account will build the app and
+  produce a share extension whose writes go nowhere.
 - An [Expo](https://expo.dev) account (free).
-- A [Render](https://render.com) account, plus a Postgres somewhere that is
-  *not* Render — [Neon](https://neon.tech) free is what §1 assumes. The
-  blueprint declares no database on purpose; see §1.
+- A [Render](https://render.com) account. A database is **optional**: it backs
+  published `/s/<code>` links and nothing else — your shelves live on the
+  phone. [Neon](https://neon.tech) free is what §1 assumes if you want them.
 - An Anthropic API key.
 - Optional now, easy later: a TMDB key (free) and a Google Places key (paid).
   Without them the app works and *says* those two shelves aren't searchable.
@@ -60,12 +60,11 @@ by anybody who already has one.
 node api/smoke.mjs https://YOUR-API.onrender.com
 ```
 
-It checks: reachable, database attached and migrated, queue readable, which
-provider keys are present, which drain arrangement is running, that an
-unauthenticated read is refused, that a bad pairing code is refused (which
-proves the router, database and auth are all live at once), that an unknown
-share link renders the designed 404 rather than a stack trace, and where your
-share links will point.
+It checks: reachable, which commit is running, which provider keys are
+present, that `POST /api/resolve` — the route the entire app runs on — is
+mounted and validating its input, whether the app key is enforced, that an
+unknown share link renders the designed 404 rather than a stack trace, and
+where your share links will point.
 
 Every check names its own fix. A cold start is called out as a cold start
 rather than a failure, and a missing TMDB/Places key is a note rather than a
@@ -78,14 +77,16 @@ If you would rather look at it raw: `curl -s https://YOUR-API.onrender.com/api/h
 **Render sleeps the service after ~15 minutes, and Neon suspends after ~5.**
 The first request after a quiet spell pays both cold starts — a second or two.
 Slow first share, normal afterwards. That is two free tiers stacking, not the
-app.
+app. Every call in the app has a timeout and says "waking the server" rather
+than spinning, because an indefinite spinner under the wordmark was once
+reported as "stuck on the splash screen".
 
-**There is no worker service.** Render's free tier has none, so the same drain
-runs on a 15-second timer inside the web process. That does not break the one
-architectural rule here — nothing slow may happen **on the request path**, and
-a timer is not the request path. When you outgrow it, uncomment the worker in
-`render.yaml` and set `WORKER_IN_PROCESS=0`; `for update skip locked` makes
-running both at once safe, so there is no window to get wrong.
+**There is no worker and no queue.** Resolving a reel takes three to six
+seconds — a scrape, a Claude call and a catalogue lookup — and it happens
+inside the request the app makes, with a row on screen saying so. The one
+architectural rule is that none of it may happen while the share sheet is
+open: the extension writes to the shared Keychain and closes in about 420 ms,
+making no network call at all.
 
 ---
 
@@ -282,73 +283,65 @@ version bump usually means native changed too.
 
 ---
 
-## 4. Pair the phone (2 min)
+## 4. Open it (0 min)
 
-The app opens on a pairing screen. Mint a code:
+There is nothing to pair and nothing to sign into. Open the app and your
+shelves are there — empty, on your phone. Share a reel from Instagram and it
+starts filling.
 
-```bash
-curl -s -X POST https://YOUR-API.onrender.com/api/admin/pair \
-  -H "x-shelf-secret: YOUR_ADMIN_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@email.com"}'
-```
+The app checks one thing for you immediately, on your card: whether the **share
+extension can read the shared Keychain**. If it cannot you get a specific
+message about the app group entitlement, rather than a mystery where sharing
+silently does nothing.
 
-Type the 8 characters into the app. Single use, 30 minutes.
-
-There is a CLI form — `node api/auth.js --pair you@email.com` — but it needs a
-shell on the server, and **Render's Shell is a paid feature**. On the free tier
-that route does not exist, which would leave no way to sign in at all. Hence
-the endpoint: same `ADMIN_SECRET` guard as the worker route, same single-use
-short-lived code.
-
-The email is not verified and nothing is sent to it. It is the account's
-identity — the same address always reaches the same shelves, which is what lets
-you re-pair a replacement phone.
-
-The app checks one thing for you immediately: whether the **share extension can
-read the Keychain**. If it can't, you get a specific message about the app
-group entitlement rather than a mystery where sharing silently does nothing.
+**When you are ready to stop strangers spending your Claude budget:** set
+`SHELF_APP_KEY` on Render — but only AFTER a build carrying
+`EXPO_PUBLIC_SHELF_KEY` is installed on the phone. In the other order, the
+build you are holding starts answering 401 to every share. `npm run ship` does
+the build; health reports `app_key_required` so you can see which state you are
+in.
 
 ---
 
 ## 5. The six checks that actually prove it works
 
-A row appearing is not a pass. Read the titles.
+A row appearing is not a pass. **Read the titles.**
 
-1. **Share four reels from Instagram**, one per category. Then:
-   ```sql
-   select list, title, confidence, resolver from items order by created_at desc limit 10;
-   ```
-   You are checking the **titles are right**. A row saying "Instagram" in every
-   title is a passing insert and a failed feature.
+1. **Share six reels from Instagram**, one per shelf. Look at what landed: the
+   titles have to be RIGHT. A row titled "Instagram" on every shelf is a
+   working pipeline and a failed feature. There is no database to query — the
+   shelf on screen is the record.
 2. **Airplane mode → share → back online → open the app.** The item appears.
-   Proves the App Group flush; an offline share must never be a lost share.
-3. **Share the same reel twice.** One row, `attempts` incremented.
+   The extension writes to the shared Keychain and never touches the network,
+   so an offline share is not a special case; this is the check that proves it.
+3. **Share the same reel twice.** One row, not two. The id is derived from the
+   canonicalised URL, and Instagram hangs tracking junk (`?igsh=…`) off every
+   share, so this is a real thing to get wrong.
 4. **Share a screenshot** instead of a link. It resolves via the vision path —
    the one path that depends on Meta for nothing.
-5. **Search and add**: open Add, type a book, shelve it. Then check the Places
-   call count against what you'd predict after ~20 searches. A mismatch means
-   the cache isn't caching.
-6. **Share a shelf, open the link on a phone that has never seen shelf.** Then
-   revoke it and reload. It must go to the same "Nothing here" page an invented
-   code gives.
+5. **Share a list post that tags rather than names** — "10 bookshops:
+   @a @b @c…". Eight handles should become eight places with map pins, not one
+   item called "10 bookshops". Verified on the live service; unverified on a
+   phone.
+6. **Publish a shelf, open the link on a device that has never seen shelf.**
+   Then revoke it and reload. It must go to the same "Nothing here" page an
+   invented code gives — any difference between the two is a way to guess codes.
 
 ---
 
-## 6. The one thing to run before trusting the caption path
+## 6. Before trusting the caption path
 
-**From Render, not your laptop.** Datacentre IPs get blocked far more
-aggressively than residential ones, and a spike that passes at home and is
-never repeated from the server is the classic way this ships broken.
+Nothing to run by hand, and no shell needed — Render's is a paid feature
+anyway. **Actions → Diagnose the deployed service:**
 
-```bash
-# Render → shelf-api → Shell
-node api/spike-ig.mjs urls.txt     # ~20 real reel URLs, one per line
-```
+- `resolve` with a reel URL — the whole round trip, ending in the list of what
+  would land on a shelf. This is the one that answers "does it work".
+- `reel` with the same URL — the chain out loud, when the answer is no: HTTP
+  status, bytes, whether it was a bot wall, which extractor got the caption.
 
-Write the hit rate into `OPERATIONS.md` §0. It decides whether the paid
-resolver is a fallback or the primary — the only thing downstream that changes
-shape based on the answer.
+Read the **deployed commit** the workflow prints before believing either.
+Render takes a couple of minutes to ship a push, and a diagnosis run straight
+after one measures the previous build.
 
 ---
 
@@ -362,4 +355,5 @@ Honestly, so you know what you're looking at:
 - **Native scroll and blur**, and the share sheet in its real host over
   Instagram rather than in a 420pt box in a browser.
 - **Every provider call.** No key has ever been used from here.
-- **The worker draining a real reel.** It has drained fixtures only.
+- **A caption-less reel.** The unread path has copy and a Read again
+  button, and no reel has actually failed since the crawler fix.

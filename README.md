@@ -1,62 +1,71 @@
 # shelf
 
-Share a reel from Instagram, pick a list, done. It shows up later as a book
-with a cover, a restaurant with an address, a film with a year, or a recipe
-with its ingredients.
+Share a reel from Instagram and it lands on a shelf — as a book with a cover, a
+restaurant with an address, a film with a trailer, a place with a map pin, or a
+quote in the words that were actually said.
 
-Four lists: **books · restaurants · movies · recipes.**
+Six lists: **books · restaurants · movies · recipes · quotes · travel.**
 
 ```
-Instagram  ──share──▶  shelf sheet        (4 buttons, closes in <1s)
-                            │
+Instagram  ──share──▶  shelf sheet      writes to the shared Keychain,
+                            │           closes in ~420ms, no network
                             ▼
-                       POST /api/ingest    (writes one row, returns)
-                            │
+                      the app, later     POST /api/resolve
+                            │            scrape → Claude → catalogues
                             ▼
-                        worker            resolve caption → Claude → enrich
-                            │
-                            ▼
-                    a shelf, or the Inbox
+                    a shelf on YOUR PHONE
 ```
+
+**The shelves live on the phone.** One JSON file, written atomically. No
+account, no login, no pairing, no server-side rows. The API is a stateless
+resolver: you send it a URL, it tells you what that URL is, and it stores
+nothing. The only thing it keeps is a snapshot you deliberately publish by
+tapping Share — which you can revoke, and revoking is a DELETE.
 
 ## Why it is built this way
 
 **Meta has no API for this.** `instagram_business_basic` reads the media of the
 business account that authorised your app — not an arbitrary public reel. So
-reading a caption is a scrape, scrapes break, and the whole design assumes that
-and stays useful when it happens:
+reading a caption is a scrape, and the interesting part is what the scrape
+actually returns:
 
-| # | Resolver | Cost | Notes |
-|---|---|---|---|
-| 1 | `instagram.com/p/<code>/embed/captioned/` | free | The default. Verify it from a **datacentre IP**, not your laptop. |
-| 2 | `og:` tags on the canonical URL | free | Truncated, usually still enough for a title. |
-| 3 | Paid resolver | ~$0.001–0.01/reel | Inert unless `IG_RESOLVER_KEY` **and** `IG_RESOLVER_URL` are both set. |
-| 4 | Screenshot + vision | Claude tokens | Share an *image* instead of a link. Depends on Meta for nothing. |
-| 5 | Nothing | — | Item lands in the Inbox with your link and your chosen list. Still useful. |
+| ask as | what comes back |
+|---|---|
+| a browser | 600 kB of JavaScript shell — **not one og: tag** |
+| **`facebookexternalhit`** | the full metadata every chat client uses to draw a card |
 
-Which link in the chain produced a caption is recorded on every item as
-`resolver`, so when items start coming back thin you get a histogram instead of
-a hunch.
+Measured from the server that runs it, not from a laptop. The chain reads
+`instagram.com/p/<code>/embed/captioned/` — **one post by construction** — and
+touches the canonical URL only for `og:image`. Reading the canonical page for
+captions filed a reel about *Willow and Wind* as *The Wicker Man*, because that
+page carries several of the account's posts and the first caption in it belongs
+to a neighbour.
+
+If nothing can be read, the row keeps your link and says which of the three
+causes it was. Sharing a **screenshot** instead of a link goes to vision and
+depends on Meta for nothing.
 
 **Your tap wins.** If you picked a list at share time, the model may not
 override it — it only fills in the fields. It cannot see the reel; you can.
 
-**Confidence routes, it does not gate.** Above 0.6 an item files itself. Below,
-it waits in the Inbox with whatever was salvaged, one tap from filed or binned.
-Nothing is ever silently dropped.
+**Confidence routes, it does not gate.** A thin item waits unshelved with
+whatever was salvaged, one tap from filed or binned. Nothing is silently
+dropped, and nothing is silently invented.
 
 ## Layout
 
 ```
-api/     node:http + Postgres. No framework.
-  resolve.js    the caption chain           (--selftest, fixtures)
-  classify.js   one Claude call, structured (--selftest)
-  enrich/       Open Library · TMDB · Places · schema.org (--selftest)
-  ingest.js     the hot path — a row and a return, nothing else
-  worker.js     everything slow lives here
+api/     node:http. No framework. Postgres only for published links.
+  resolve.js      the caption chain              (--selftest, fixtures)
+  classify.js     one Claude call, structured    (--selftest)
+  enrich/         Open Library · TMDB · OpenStreetMap · schema.org
+  resolveRoute.js the whole service, in one request — stores nothing
+  publish.js      the snapshots you chose to hand somebody
+  probe.js        /api/debug/reel — the instrument, not a feature
 app/     Expo + expo-share-extension
-  ShareExtension.tsx  the sheet over Instagram
-  App.tsx             four shelves + Inbox + pairing
+  ShareExtension.tsx  the sheet over Instagram (no network at all)
+  App.tsx             six shelves, the pile, your card
+  store.ts            the shelf, on the phone
 ```
 
 ## Running it
@@ -64,25 +73,19 @@ app/     Expo + expo-share-extension
 ```bash
 cd api
 npm install
-export DATABASE_URL=postgres://…
 export ANTHROPIC_API_KEY=sk-ant-…
-npm run migrate
-npm run selftest          # 100 assertions, no network
+npm run selftest          # every parser, prompt and renderer. No network.
 node serve.js             # :8080
-node worker.js            # the drain loop
-node auth.js --pair you@example.com   # prints a pairing code for the app
 ```
 
-Before trusting the caption path, run the spike **from the server** — it is the
-one measurement everything else depends on:
+`DATABASE_URL` is **optional**: attach one if you want `/s/<code>` links to
+work. Without it everything else runs and those two routes degrade with a
+sentence rather than a stack trace.
 
-```bash
-node spike-ig.mjs urls.txt     # ~20 reel URLs, one per line
-```
-
-Optional keys — each one missing degrades to `enriched: false`, never an error:
-`TMDB_API_KEY`, `GOOGLE_PLACES_KEY`, `IG_RESOLVER_KEY` + `IG_RESOLVER_URL`,
-`ADMIN_SECRET` (guards `POST /api/worker/run` for cron), `SHELF_MODEL`.
+Optional keys — each missing one degrades to `enriched: false`, never an error:
+`TMDB_API_KEY`, `GOOGLE_PLACES_KEY` (OpenStreetMap covers most of it and needs
+no key), `IG_RESOLVER_KEY` + `IG_RESOLVER_URL`, `ADMIN_SECRET` (guards the
+probe), `SHELF_APP_KEY`, `SHELF_MODEL`.
 
 ```bash
 cd app
@@ -95,43 +98,30 @@ npx eas build -p ios --profile development
 build, not a QR code. Discovering that late costs a rebuild cycle.
 
 ```bash
-npm run verify    # design gate: contrast, type scale, 4pt grid,
-                  # and every transition simulated frame by frame at 120Hz
-npm run frames    # print the frame table for each spring
+npm run preflight # the design gate's grep half, ~1s
+npm run verify    # the same plus rendering every screen and MEASURING taps
 ```
 
-`DESIGN.md` is the bar and the rules. shelf is **iOS-only** — there is no web or
-Android surface, stated explicitly because soundcheck's standing rule is that
-every change ships everywhere unless you say which surface can't have it.
+`DESIGN.md` is the bar and the rules. shelf is **iOS-only** — no web, no
+Android surface, stated explicitly because the standing rule is that every
+change ships everywhere unless you say which surface cannot have it.
 
-## Health
+## Asking the live service anything
 
-`GET /api/health` reports queue depth and the age of the oldest pending share,
-and goes **503 with a plain-English warning** when shares are queuing but not
-resolving — the failure that otherwise looks exactly like a working app.
+`GET /api/health` reports which commit is running, what it stores, and which
+providers it can reach. Beyond that, **Actions → Diagnose the deployed
+service**: `health`, `reel` (the resolver chain out loud for one URL, from the
+machine whose IP is the question), or `resolve` (the whole round trip, ending
+in a list of what would land on a shelf).
 
 ## What is verified, and what is not
 
-Verified here: all module selftests, and 62 end-to-end checks against real
-Postgres (`node api/e2e.mjs`) — pairing, single-use codes, auth gating, the
-dedup claim (one reel re-shared with different tracking params = one row),
-multi-item reels, Inbox routing, cross-account isolation, handles and their
-reserved words, the ex-libris seed surviving a rename, catalogue dedupe on
-search-and-add, link minting and revoking, a revoked link being
-indistinguishable from one that never existed, the public pages rendering real
-rows, and a send arriving as a COPY that records who sent it.
+Verified: every module selftest, the design gate, 201 tap targets measured off
+the live layout, every screen rendered and looked at in both schemes at two
+widths — and, on the live service, a real post whose caption is nothing but a
+headline and eight @handles resolving into eight enriched places.
 
-That suite has been mutation-tested: breaking the user filter, the catalogue
-dedupe and the sender field each produce named failures. It is also where the
-design gate's own habit paid off twice — the harness used to die on an
-unexpected shape and silently skip every check after it.
-
-Every screen is rendered and looked at (`npm run preview` in `app/`), and 201
-controls are measured off the live layout rather than eyeballed — including the
-four screens that only open on a tap, which were unverified until the audit
-learned to open them.
-
-**Not verified from this sandbox** (the agent proxy blocks `instagram.com`, and
-there is no iOS toolchain here): live caption extraction, the Claude call, the
-provider lookups, and anything requiring a built IPA. `OPERATIONS.md` says what
-to run first and in what order.
+Not verified from this sandbox — the proxy blocks `instagram.com`,
+`onrender.com` and `api.expo.dev`, and there is no iOS toolchain here: anything
+needing a built IPA, and the share extension in its real host. `HANDOVER.md`
+holds the current open list; `OPERATIONS.md` says what to run first.

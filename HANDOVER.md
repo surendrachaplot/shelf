@@ -30,21 +30,27 @@ a headline and eight @handles — resolved into **eight travel items, every one
 enriched**:
 
 ```
-resolver=crawler-embed-html  caption_chars=604  items=8
-  [travel] Backstory — Balham · London                      conf 0.75  OSM
+resolver=crawler-embed-html  caption_chars=604  tagged_handles=8  items=8
+  [travel] Backstory — Balham · London                       conf 0.80  OSM
   [travel] Funny Weather books + coffee — Dartmouth Park     conf 0.70  OSM
-  [travel] Fable and Falcon — Chalk Farm · London            conf 0.70  OSM
-  [travel] Main Character Books — London                     conf 0.70  search
-  [travel] The Book and Record Bar — West Norwood            conf 0.70  OSM
-  [travel] Poetry Pharmacy — London                          conf 0.70  search
+  [travel] Fable and Falcon — Chalk Farm · London            conf 0.75  OSM
+  [travel] Main Character Books — London                     conf 0.75  search
+  [travel] Book Bar UK — London                              conf 0.75  search
+  [travel] Poetry Pharmacy — London                          conf 0.75  search
   [travel] Lala Books — Camberwell · London                  conf 0.70  OSM
-  [travel] The Book Elephant — Elephant and Castle           conf 0.70  OSM
+  [travel] The Book Elephant — Elephant and Castle           conf 0.75  OSM
 ```
 
-Six carry coordinates, address and area from OpenStreetMap — two of them
-opening hours and a website — and get a `geo:` link that opens the pin. Two
-were not found and fall back to a map SEARCH url, marked `located: false`, so
-the jacket says **Find on map** rather than pretending to a pin.
+Five carry coordinates, address and area from OpenStreetMap — two of them
+opening hours, three a website — and get a `geo:` link that opens the pin.
+Three were not found and fall back to a map SEARCH url, marked
+`located: false`, so the jacket says **Find on map** rather than pretending to
+a pin. Twelve seconds end to end.
+
+**"Book Bar UK" is the visible defect in that list.** The shop is called Book
+Bar; the "uk" came off the handle `@bookbaruk` and OSM has no such place, which
+is why it fell back to a search. The prompt now says to drop country and city
+suffixes from a handle (`562c16b`) — **not yet re-measured.**
 
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
