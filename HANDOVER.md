@@ -51,9 +51,12 @@ a pin. Twelve to fifteen seconds end to end.
 Across three runs it came back as "Book Bar UK" once and **"The Book and
 Record Bar" twice** — a real bookshop, in West Norwood, with a real address and
 a real pin, and NOT the shop in the post (which is Book Bar, in Bounds Green).
-The model was picking between two wrong answers depending on the roll, and the
-second kind is the dangerous one: a wrong place that geocodes cannot be told
-from a right one by anything downstream.
+Those two were **not the same failure**, which is the whole reason this entry
+is long. "Book Bar UK" was the classifier keeping a suffix off the handle; the
+map then found nothing, so the row was visibly thin and harmless. "The Book and
+Record Bar" was the classifier asking correctly for "Book Bar" and the
+GEOCODER substituting a neighbour — its name AND its coordinates. One is a
+prompt problem; the other is not. From outside they looked identical.
 
 **Three prompt edits failed to shift it** — the third measured against a
 confirmed-deployed build (`deployed commit: 3d5f8b9 · this workflow: 3d5f8b9`)
