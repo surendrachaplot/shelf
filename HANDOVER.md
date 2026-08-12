@@ -55,16 +55,31 @@ The model was picking between two wrong answers depending on the roll, and the
 second kind is the dangerous one: a wrong place that geocodes cannot be told
 from a right one by anything downstream.
 
-`d0a5dc6` makes the rule mechanical — build the name out of the letters in the
-handle and nothing else, split into words, drop a trailing city or country,
-stop — and the selftest pins it. **Not yet re-measured on the live service.**
+**Three prompt edits failed to shift it**, the third measured against a
+confirmed-deployed build (`deployed commit: 3d5f8b9 · this workflow: 3d5f8b9`).
+That is the useful part of the story: none of the three established WHICH LAYER
+produced the name. The classifier could have guessed "The Book and Record Bar",
+or it could have asked for "Book Bar" and Nominatim's fuzzy search could have
+handed back a neighbour. Two different bugs, in two different files, with
+byte-identical output — and I edited the prompt three times without checking.
+
+**So the next run answers it instead of me.** `canonical.asked_as` (`4bc8cd7`)
+carries the name we searched with whenever it differs from the name that came
+back, and the `resolve` diagnosis prints it as `⟵ ASKED FOR: …`. Articles and
+punctuation do not count as a difference; "Book Bar" against "The Book and
+Record Bar" does.
+
+- `asked_as` present, showing "Book Bar" → **the geocoder** picked the wrong
+  place, and the fix is in `enrichTravel`, not the prompt.
+- `asked_as` absent → **the classifier** produced that name outright, and the
+  prompt is genuinely not holding.
 
 **A code guard was considered and rejected.** The obvious one is to reject an
 OSM match whose name introduces words the query did not have. It would catch
 "Book Bar" → "The Book and Record Bar" and would also throw away "Funny
 Weather" → "Funny Weather books + coffee", which is correct and is how five of
 the eight resolved. Token overlap cannot separate those two cases; the
-difference is semantic, so the fix belongs in the prompt.
+difference is semantic. Hence a recorded note rather than a rejection.
 
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
@@ -170,6 +185,12 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
 
 ## Standing rules
 
+- **A fix you cannot attribute is a guess, however green it looks.** Three
+  prompt edits went at a wrong bookshop name before anybody asked which of the
+  two layers had produced it — and the answer was unobtainable from outside,
+  because both produce the same bytes. Build the thing that tells them apart
+  FIRST. This is the same rule as the one below, failed in a fresh way on the
+  same day it was written down.
 - **Measure before theorising.** When a symptom has three candidate causes,
   build the instrument that separates them before writing the fix for the
   likeliest one. Every instrument here — `/api/debug/reel`, the diagnose
