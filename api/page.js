@@ -329,8 +329,20 @@ if (isMain(import.meta.url)) {
     // The card IS the share. A link with no preview is a grey rectangle in a
     // message and no amount of design on the page fixes that.
     ok(/og:title/.test(profile) && /og:description/.test(profile), "a shared page shipped with no link preview");
-    ok(/og:url" content="https?:\/\//.test(profile), "og:url is missing or not absolute — a relative one is ignored and the card has nothing to attach to");
-    ok(canonical("/s/abc") === `${WEB_BASE}/s/abc`, "canonical url building");
+    // BOTH configurations, because the selftest runs in both, and an assertion
+    // that only holds in one is a test that fails on a laptop and passes on
+    // Render. This one only failed when the file was finally put back into
+    // `npm run selftest` — the script had been naming three files that the
+    // rewrite deleted, so nothing in here had run at all.
+    if (WEB_BASE) {
+      ok(/og:url" content="https?:\/\//.test(profile), "og:url is missing or not absolute — a relative one is ignored and the card has nothing to attach to");
+      ok(canonical("/s/abc") === `${WEB_BASE}/s/abc`, "canonical url building");
+    } else {
+      // No known host: emit NOTHING. A relative og:url is worse than none — a
+      // crawler ignores it either way, and it reads as configured.
+      ok(!/og:url/.test(profile), "with no WEB_BASE the page must omit og:url rather than emit a relative one");
+      ok(canonical("/s/abc") === null, "canonical returns null rather than a relative path when the host is unknown");
+    }
     // Render tells the process its own address, so the common deploy needs no
     // configuration. Checked because "it defaults correctly" is the sort of
     // claim that is true right up until somebody reorders an expression.

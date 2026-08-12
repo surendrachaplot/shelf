@@ -11,8 +11,29 @@
 // It is also how the Wicker Man bug was found: reporting the caption TEXT and
 // not merely its length showed two different captions coming back from two
 // URLs for the same reel.
+import { isMain } from "./ismain.js";
 import { json } from "./http.js";
-import { probeShare } from "./resolve.js";
+import { probeShare, probeProfile, parseInstagramUrl } from "./resolve.js";
+
+/**
+ * `instagram.com/backstory.london/` — a profile, not a post. One path segment,
+ * and none of the ones Instagram reserves for its own routes.
+ *
+ * Worth its own branch because a profile page is a DIFFERENT question from a
+ * post: the post is the thing you shared, the profile is what the tagged
+ * accounts in it point at, and the two are gated separately. Measured on a
+ * GitHub runner the profile gives up an og:description; measured from Render
+ * it gave up nothing, and nothing is exactly what the tagged-accounts path
+ * returned in production. This is how that gets checked rather than assumed.
+ */
+export function profileHandleIn(raw) {
+  if (parseInstagramUrl(raw)) return null;              // it is a post or a reel
+  const m = /^https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9._]+)\/?$/i.exec(String(raw || "").trim());
+  if (!m) return null;
+  const handle = m[1].toLowerCase();
+  const RESERVED = new Set(["p", "reel", "reels", "tv", "stories", "explore", "accounts", "direct"]);
+  return RESERVED.has(handle) ? null : handle;
+}
 
 /**
  * GET /api/debug/reel?url=… — run the resolver chain out loud.
@@ -28,40 +49,24 @@ export async function probeRoute(req, res, url) {
   // reports what came back.
   const target = url.searchParams.get("url");
   if (!target) return json(res, 400, { ok: false, error: "url required" });
+  const handle = profileHandleIn(target);
+  if (handle) return json(res, 200, { ok: true, ...(await probeProfile(handle)) });
   return json(res, 200, { ok: true, ...(await probeShare(target)) });
 }
 
-// One tap from the Inbox: accept it, move it, or bin it.
-export async function updateItem(req, res, body) {
-  const me = await getUser(req);
-  if (!me) return json(res, 401, { ok: false, error: "not signed in" });
-  const id = String(body?.id || "");
-  if (!id) return json(res, 400, { ok: false, error: "id required" });
+if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
+  let fail = 0;
+  const ok = (c, l) => { if (!c) { fail++; console.error("FAIL", l); } };
 
-  const sets = [];
-  const params = [id, me.id];
-  const push = (frag, val) => { params.push(val); sets.push(`${frag} = $${params.length}`); };
+  ok(profileHandleIn("https://www.instagram.com/backstory.london/") === "backstory.london", "profile handle read");
+  ok(profileHandleIn("https://instagram.com/BackStory") === "backstory", "no www, lowercased");
+  ok(profileHandleIn("https://www.instagram.com/p/DboDS-UAJEb/") === null, "a post is not a profile");
+  ok(profileHandleIn("https://www.instagram.com/reel/DAbCdEf/") === null, "a reel is not a profile");
+  // The trap: /p/ and /reel/ are single segments too, and reading them as
+  // handles would probe a profile called "p" instead of the post you shared.
+  ok(profileHandleIn("https://www.instagram.com/p/") === null, "reserved segments are not handles");
+  ok(profileHandleIn("https://example.com/someone/") === null, "another site is not a profile");
 
-  if (body.action === "discard") sets.push(`status = 'discarded'`);
-  if (body.action === "file") { sets.push(`status = 'filed'`); sets.push(`filed_at = now()`); }
-  if (typeof body.list === "string" && ALL_LISTS.includes(body.list)) push("list", body.list);
-  if (typeof body.title === "string") push("title", body.title.trim().slice(0, 200));
-  if (typeof body.subtitle === "string") push("subtitle", body.subtitle.trim().slice(0, 200));
-  if (typeof body.note === "string") push("note", body.note.trim().slice(0, 1000));
-  if (!sets.length) return json(res, 400, { ok: false, error: "nothing to update" });
-
-  const r = await query(
-    `update items set ${sets.join(", ")} where id = $1 and user_id = $2 returning id, list, status`,
-    params
-  );
-  if (!r.rows.length) return json(res, 404, { ok: false, error: "no such item" });
-  return json(res, 200, { ok: true, item: r.rows[0] });
-}
-
-export async function counts(userId) {
-  const r = await query(
-    `select list, status, count(*)::int as n from items
-      where user_id = $1 and status <> 'discarded' group by list, status`, [userId]
-  );
-  return r.rows;
+  console.log(fail ? `probe selftest FAILED (${fail})` : "probe selftest ok");
+  process.exit(fail ? 1 : 0);
 }

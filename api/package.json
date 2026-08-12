@@ -6,9 +6,8 @@
   "scripts": {
     "start": "node serve.js",
     "dev": "node --env-file=.env serve.js",
-    "worker": "node --env-file=.env worker.js --once",
     "migrate": "node --env-file=.env -e \"import('./db.js').then(m=>m.migrate()).then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)})\"",
-    "selftest": "node resolve.js --selftest && node classify.js --selftest && node items.js --selftest && node auth.js --selftest && node ingest.js --selftest && node enrich/index.js --selftest"
+    "selftest": "node resolve.js --selftest && node classify.js --selftest && node url.js --selftest && node resolveRoute.js --selftest && node publish.js --selftest && node probe.js --selftest && node page.js --selftest && node search.js --selftest && node enrich/index.js --selftest && SHELF_WEB_BASE=https://shelf.example node page.js --selftest"
   },
   "engines": {
     "node": ">=20"

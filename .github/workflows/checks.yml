@@ -1,0 +1,50 @@
+# Run the selftests on every push.
+#
+# WHY THIS EXISTS: `npm run selftest` in api/ spent the whole local-first
+# rewrite naming three files that the rewrite had deleted — items.js, auth.js,
+# ingest.js. It therefore failed instantly on the first missing file and nobody
+# noticed, because nothing ran it. Underneath that, page.js had two assertions
+# that only hold when a web host is configured, so they had never passed on a
+# machine without one.
+#
+# Neither is exotic. Both are what happens when a test suite has no automatic
+# caller. This is the caller.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # No `npm ci`: the selftests are deliberately offline and dependency-free
+      # — they run over saved fixtures, which is what makes them fast enough to
+      # be worth running on every push.
+      - name: API selftests
+        working-directory: api
+        run: npm run selftest
+
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        working-directory: app
+        run: npm ci
+      # DESIGN-RULES §0.1 — grep the new class names — as a machine step. The
+      # rendered pass (preview/) needs Chromium and lives in `npm run verify`;
+      # this is the half that can run in seconds on every push.
+      - name: Design rules
+        working-directory: app
+        run: npm run preflight
