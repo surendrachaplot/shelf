@@ -110,7 +110,7 @@ jobs:
               # failure from no items at all, and invisible without this.
               echo "--- what landed ---"
               jq -r '"resolver=\(.resolver) caption_chars=\(.caption_chars) tagged_handles=\(.tagged_handles) items=\(.items|length)",
-                     (.items[]? | "  [\(.list)] \(.title // "—") — \(.subtitle // "") · enriched=\(.enriched) conf=\(.confidence)")' \
+                     (.items[]? | "  [\(.list)] \(.title // "—") — \(.subtitle // "") · enriched=\(.enriched) conf=\(.confidence)\(if .canonical.asked_as then "   ⟵ ASKED FOR: \(.canonical.asked_as)" else "" end)")' \
                 /tmp/out.json || true
               exit 0
               ;;

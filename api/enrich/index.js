@@ -31,8 +31,9 @@ import { parseLd, extractWebPage } from "../resolve.js";
  *
  *   v2 — trailers, runtime, cast, streaming, book pages, OSM places
  *   v3 — travel places (located, city, search fallback)
+ *   v4 — asked_as, when the map answers with a different name
  */
-export const SHAPE = "v3";
+export const SHAPE = "v4";
 
 export const cacheKey = (parts) =>
   [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
@@ -357,6 +358,20 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
  * The item says which it got. "Here is the pin" and "here is a search that
  * should find it" are different promises and the app renders them differently.
  */
+/**
+ * Are these the same name, allowing for the punctuation and articles a map and
+ * a caption disagree about? "The Book Elephant" and "Book Elephant" are; "Book
+ * Bar" and "The Book and Record Bar" are NOT, and the whole point is that the
+ * second pair must not pass quietly.
+ */
+export function sameName(a, b) {
+  const norm = (x) => String(x || "").toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\b(the|and|a|an|of|at)\b/g, " ")
+    .split(/\s+/).filter(Boolean).join(" ");
+  return norm(a) === norm(b);
+}
+
 export function searchMapUrl(title, city) {
   const q = [title, city].filter(Boolean).join(", ");
   // geo:0,0?q= is the universal form: iOS opens Apple Maps, Android opens
@@ -375,7 +390,24 @@ export async function enrichTravel({ title, search_hints }, homeCity) {
         // The subtitle for a place you are travelling to is WHERE, not what
         // cuisine it serves. That is the field you scan on a shelf of places.
         subtitle: [osm.canonical.area, city].filter((v, i, a) => v && a.indexOf(v) === i).join(" · ") || city,
-        canonical: { ...osm.canonical, city, located: true },
+        // WHAT WE ASKED FOR, when the map answered with a different name.
+        //
+        // This is a diagnostic that had to exist. A tagged handle resolved to
+        // "The Book and Record Bar" — a real London bookshop with a real
+        // address, and not the one in the post — and there was NO WAY to tell
+        // whether the classifier had guessed that name or whether it asked for
+        // "Book Bar" and Nominatim's fuzzy search handed back a neighbour.
+        // Two completely different bugs, in two different files, with
+        // identical output. Three prompt edits went past before that was
+        // noticed, which is what guessing costs.
+        //
+        // Absent when the names agree, so it is only ever present on a row
+        // worth looking at. INSIDE canonical, because resolveRoute's shape() is
+        // an allow-list and a new top-level field would be dropped on the way
+        // to the phone — silently, which is the failure this field exists to
+        // stop happening to something else.
+        canonical: { ...osm.canonical, city, located: true,
+                     ...(sameName(title, osm.title) ? {} : { asked_as: title }) },
       };
     }
     // Not on the map, still worth having. Named honestly so the app can say
@@ -538,6 +570,17 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   // it passes whichever way the code happens to behave.
   ok(humanDuration("P1DT2H") === "26h", "a day folds into hours (overnight proving)", humanDuration("P1DT2H"));
   ok(humanDuration("") === null && humanDuration(null) === null && humanDuration("PT0M") === null, "no duration → null, never '0 min'");
+
+  // NAME DRIFT. A map answering with a different name is either a harmless
+  // tidy-up or a different place entirely, and the difference is not something
+  // code can judge — so it is recorded rather than resolved.
+  ok(sameName("The Book Elephant", "Book Elephant"), "an article is not a different shop");
+  ok(sameName("St. John", "St John") && sameName("Ganapati ", "ganapati"), "punctuation and case are not a difference");
+  ok(!sameName("Book Bar", "The Book and Record Bar"),
+     "THE case this exists for: a real, adjacent, wrong bookshop must not read as a match");
+  ok(!sameName("Funny Weather", "Funny Weather books + coffee"),
+     "a fuller name is still a difference worth recording — it is a note, not a rejection");
+  ok(SHAPE === "v4", "adding asked_as without bumping SHAPE would serve the old answer back forever");
 
   // The rich film fields, from the shape TMDB actually returns.
   const md = pickMovieDetail(
