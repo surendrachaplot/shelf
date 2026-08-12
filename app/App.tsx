@@ -71,6 +71,7 @@ type Route = "case" | "add" | "profile";
  * a list of pins. Quotes keep theirs for the same reason: the surrounding text
  * is often where the attribution lives.
  */
+// deliberate subset — only these two shelves keep the caption.
 const KEEPS_CAPTION = new Set(["travel", "quotes"]);
 const keepCaption = (it: { list?: string; caption?: string }) =>
   KEEPS_CAPTION.has(it.list ?? "") ? (it.caption || "").slice(0, 4000) : undefined;

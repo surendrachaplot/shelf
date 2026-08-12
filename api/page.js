@@ -18,7 +18,22 @@ import { isMain } from "./ismain.js";
 import * as D from "../app/src/design.js";
 import { plateSvg, plateColours, plateFor } from "../app/src/exlibris.js";
 
-const LIST_LABEL = { books: "Books", restaurants: "Restaurants", movies: "Movies", recipes: "Recipes" };
+// DERIVED, never restated. This was a hand-written object with four entries in
+// it, and it stayed at four when quotes and travel shipped — so a published
+// travel place rendered under the heading "Unsorted", on the one surface built
+// for handing to somebody who does not have the app. A list of lists written
+// out by hand is a list that will be wrong the next time a shelf is added.
+//
+// `unsorted` is dropped: it is a state, not a shelf, and it is the fallback
+// every other branch here falls back TO.
+const LIST_LABEL = Object.fromEntries(
+  D.LIST_KEYS.filter((k) => k !== "unsorted").map((k) => [k, k[0].toUpperCase() + k.slice(1)])
+);
+
+// The plate numbering, in the same order the app shows the shelves in.
+const LIST_N = Object.fromEntries(
+  D.LIST_KEYS.filter((k) => k !== "unsorted").map((k, i) => [k, String(i + 1).padStart(2, "0")])
+);
 
 // Where these pages actually live. og:url has to be ABSOLUTE — a relative one
 // is ignored, and the preview card then has no canonical address to attach to,
@@ -35,10 +50,22 @@ const LIST_LABEL = { books: "Books", restaurants: "Restaurants", movies: "Movies
 // that silently sends people somewhere else.
 export const WEB_BASE = (process.env.SHELF_WEB_BASE || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
 export const canonical = (path) => (WEB_BASE ? `${WEB_BASE}${path}` : null);
-const LIST_N = { books: "01", restaurants: "02", movies: "03", recipes: "04" };
-
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/**
+ * "books, restaurants and travel" — the shelves that actually have something on
+ * them, in shelf order, as English. The hardcoded version of this sentence
+ * described four lists on a card that might be four quotes and a bookshop.
+ */
+export function listSentence(lists) {
+  const named = D.LIST_KEYS
+    .filter((k) => k !== "unsorted" && (lists?.[k]?.length ?? 0) > 0)
+    .map((k) => LIST_LABEL[k].toLowerCase());
+  if (!named.length) return "nothing yet";
+  if (named.length === 1) return named[0];
+  return `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}`;
+}
 
 // The app's own jacket rules, in CSS. Kept as ONE block that reads the tokens
 // so a change to the type ladder or the board thickness moves both surfaces.
@@ -47,10 +74,8 @@ function stylesheet() {
   return `
 :root{
   --paper:${D.light.bg}; --ink:${D.light.ink}; --soft:${D.light.inkSoft}; --faint:${D.light.inkFaint};
-  --books:${D.light.books}; --restaurants:${D.light.restaurants}; --movies:${D.light.movies};
-  --recipes:${D.light.recipes}; --unsorted:${D.light.unsorted};
-  --on-books:${D.listOn.books}; --on-restaurants:${D.listOn.restaurants};
-  --on-movies:${D.listOn.movies}; --on-recipes:${D.listOn.recipes};
+  ${D.LIST_KEYS.map((k) => `--${k}:${D.light[k]};`).join(" ")}
+  ${D.LIST_KEYS.map((k) => `--on-${k}:${D.listOn[k]};`).join(" ")}
   --board:${D.BOARD}px; --rule:${D.RULE}px; --key:${D.COVER_KEYLINE}px;
 }
 /* Dark is not a v2 thing here either. Only the STRUCTURE colour inverts; the
@@ -128,6 +153,12 @@ a{color:inherit}
  * One jacket, using the app's own three compositions and the same hash, so a
  * shelf looks the same in a browser as it does on the phone it came from.
  */
+// How much of a quote fits on a jacket before it stops being readable and
+// starts being a paragraph in a box. Derived, not chosen: the jacket is
+// ~104pt wide, `.jtitle` clamps to about 11cqw, and at that size a
+// line holds roughly 22 characters over the ~7 lines a jacket has room for.
+const QUOTE_ON_JACKET = 150;
+
 function jacket(item) {
   const list = LIST_LABEL[item.list] ? item.list : "unsorted";
   const dims = D.coverFor(item.title ?? item.id);
@@ -136,7 +167,17 @@ function jacket(item) {
   const inverted = dims.comp === 2;
   const field = inverted ? on : fill;
   const mark = inverted ? fill : on;
-  const title = esc(D.mainTitle(item.title ?? "") || "Untitled");
+  // A QUOTE IS THE WORDS, so it is not a title and must not be trimmed like
+  // one. The app solves quote type against the jacket it has (`quoteType`);
+  // this page has no measuring pass, so it uses the same `excerpt` rule the
+  // app uses for the overflow case — cut on a word boundary, with an ellipsis
+  // that says there is more. Before this, a shared quote was severed mid
+  // sentence with no mark at all: "…even if you win" and then a wall of
+  // colour, while the full sentence sat in the text below it.
+  const raw = item.list === "quotes"
+    ? D.excerpt(item.title ?? "", QUOTE_ON_JACKET)
+    : D.mainTitle(item.title ?? "") || "Untitled";
+  const title = esc(raw);
 
   if (item.image_url) {
     return `<div class="jacket" style="background:${field}"><img src="${esc(item.image_url)}" alt="${title}" loading="lazy"
@@ -222,7 +263,10 @@ export function renderProfile({ owner, lists, note, url }) {
     ${Object.entries(lists).map(([l, items]) => bookcase(l, items)).join("")}`;
   return shell({
     title: `${owner.display_name} on shelf`,
-    description: owner.bio || `${total} things ${owner.display_name} has shelved — books, restaurants, movies and recipes.`,
+    // The shelves that actually have something on them, named. "books,
+    // restaurants, movies and recipes" was hardcoded here too, and described a
+    // card that might be four quotes and a bookshop.
+    description: owner.bio || `${total} things ${owner.display_name} has shelved — ${listSentence(lists)}.`,
     image: firstImage(Object.values(lists).flat()),
     url: url ?? canonical(`/@${owner.handle}`),
     body,
@@ -329,6 +373,29 @@ if (isMain(import.meta.url)) {
     // The card IS the share. A link with no preview is a grey rectangle in a
     // message and no amount of design on the page fixes that.
     ok(/og:title/.test(profile) && /og:description/.test(profile), "a shared page shipped with no link preview");
+
+    // EVERY SHELF ON THE CARD. The labels were a hand-written object of four,
+    // so a card with a quote or a place on it rendered those under the heading
+    // "Unsorted" — and the app was only publishing four of the six anyway.
+    // Derived from LIST_KEYS now, and pinned here so the next shelf cannot
+    // ship half-labelled.
+    const six = {};
+    for (const k of D.LIST_KEYS.filter((l) => l !== "unsorted")) six[k] = items;
+    const full = renderProfile({ owner, lists: six });
+    for (const k of D.LIST_KEYS.filter((l) => l !== "unsorted")) {
+      const label = k[0].toUpperCase() + k.slice(1);
+      ok(full.includes(`>${label}<`), `the card has no heading for the ${k} shelf`);
+      ok(full.includes(`--${k}:`), `the page defines no colour for the ${k} shelf`);
+    }
+    ok(!/>Unsorted</.test(full), "a real shelf must never render as Unsorted");
+    // A quote is the words. On a jacket it gets the app's excerpt rule, so it
+    // ends on a word boundary with a mark saying there is more — not severed
+    // mid-sentence into a wall of colour, which is what shipped.
+    const longQuote = "a".repeat(40) + " " + "b".repeat(40) + " " + "c".repeat(40) + " " + "d".repeat(40);
+    const q = renderItem({ owner, item: { id: "q", list: "quotes", title: longQuote, subtitle: "Someone" } });
+    ok(q.includes("…"), "a long quote on a jacket must say that it is cut");
+    ok(listSentence({ books: items, travel: items }) === "books and travel", "the card describes the shelves it actually has");
+    ok(listSentence({}) === "nothing yet", "an empty card does not claim shelves");
     // BOTH configurations, because the selftest runs in both, and an assertion
     // that only holds in one is a test that fails on a laptop and passes on
     // Render. This one only failed when the file was finally put back into

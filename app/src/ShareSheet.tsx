@@ -14,7 +14,7 @@
 // the thing, not like a system dialog.
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Share, StyleSheet, Text, TextInput, View } from "react-native";
-import { publish, revokePublish, shareUrl, type PublishKind } from "./api";
+import { publish, revokePublish, shareUrl, LISTS, type PublishKind } from "./api";
 import { shelfOf, type Item, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
@@ -60,8 +60,11 @@ export function ShareSheet({ kind, item, list, title, shelf, onClose, onLinked }
     const body =
       kind === "item" ? { kind, owner, item }
       : kind === "shelf" ? { kind, owner, target: listKey, items: shelfOf(shelf, listKey) }
-      : { kind, owner, lists: Object.fromEntries(
-            ["books", "restaurants", "movies", "recipes"].map((l) => [l, shelfOf(shelf, l)])) };
+      // EVERY shelf, from the one list of shelves. This was written out by hand
+      // and stayed at four when quotes and travel shipped — so sharing your
+      // card silently left two shelves out of it, with no error and nothing on
+      // the page to say anything was missing.
+      : { kind, owner, lists: Object.fromEntries(LISTS.map((l) => [l, shelfOf(shelf, l)])) };
 
     publish(body)
       .then((r) => {

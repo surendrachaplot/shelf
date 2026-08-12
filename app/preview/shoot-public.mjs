@@ -28,17 +28,33 @@ const lists = {
   restaurants: mk("restaurants", [["Ganapati", "Peckham"], ["Kiln", "Soho"], ["St. John", "Smithfield"], ["Mangal II", "Dalston"]]),
   movies: mk("movies", [["Sinners", "2025"], ["Petrol", "2022"], ["La Chimera", "2023"]]),
   recipes: mk("recipes", [["Lemon dal", "30 min"], ["Cacio e pepe", "15 min"], ["Pot-au-feu", "3 hr"]]),
+  // THE TWO SHELVES THIS FIXTURE DID NOT HAVE. It stopped at four, so the
+  // shared card had never once been rendered with a quote or a place on it —
+  // which is precisely why nobody saw that the page could not label either,
+  // and rendered a travel place under the heading "Unsorted".
+  quotes: mk("quotes", [["The trouble with the rat race is that even if you win, you're still a rat.", "Lily Tomlin"],
+    ["A person who has not been completely alienated is a person who can still be surprised.", "John Berger"]]),
+  travel: mk("travel", [["Backstory", "Balham · London"], ["Lala Books", "Camberwell · London"],
+    ["Praia da Ursa", "Sintra"]]),
 };
 
 const PAGES = [
   ["public-profile", renderProfile({ owner, lists })],
   ["public-shelf", renderShelf({ owner, list: "restaurants", items: lists.restaurants, note: "Everywhere I'd send you in south London." })],
   ["public-item", renderItem({ owner, item: { ...lists.books[0], note: "The one everyone in my feed could not shut up about.", source_url: "https://instagram.com/reel/x" }, note: "You'll like this one." })],
+  // A place and a quote, each shared on its own. Both rendered as "Unsorted"
+  // until the labels stopped being a hand-written list of four.
+  ["public-item-travel", renderItem({ owner, item: { ...lists.travel[0], note: "Cafe at the back, open late on Thursdays.", source_url: "https://instagram.com/p/x" } })],
+  ["public-item-quote", renderItem({ owner, item: lists.quotes[0] })],
+  ["public-shelf-travel", renderShelf({ owner, list: "travel", items: lists.travel, note: "Bookshops worth the trip." })],
   ["public-gone", renderGone()],
 ];
 
 const SHOTS = [
-  { w: 390, h: 1200, scheme: "light", tag: "390-light" },
+  // Tall enough to reach the BOTTOM of a full card. At 1200 the viewport cut
+  // off after the second shelf, so the two shelves that were missing from a
+  // shared card were also the two nobody could have seen in a screenshot.
+  { w: 390, h: 3400, scheme: "light", tag: "390-light" },
   { w: 390, h: 1200, scheme: "dark", tag: "390-dark" },
   { w: 320, h: 1100, scheme: "light", tag: "320-light" },
 ];

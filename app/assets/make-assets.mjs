@@ -20,8 +20,6 @@ import * as D from "../src/design.js";
 const OUT = fileURLToPath(new URL("./", import.meta.url));
 await mkdir(OUT, { recursive: true });
 
-const LISTS = ["books", "restaurants", "movies", "recipes"];
-
 /**
  * A BOOKCASE: two boards, three jackets each, filling the square.
  *

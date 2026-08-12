@@ -101,6 +101,27 @@ async function bridgeGaps() {
 
 const staticRules = [
   {
+    id: "no-hardcoded-lists",
+    why: "§0 — the shelves are enumerated in ONE place. Two hand-written copies survived quotes and travel shipping: sharing your card silently published four of six shelves, and a published travel place rendered under the heading 'Unsorted'. Neither errored; both were invisible until somebody opened a link. A DELIBERATE subset is fine and common — say so with `// deliberate subset` on the line or the one above, which also tells the next reader it is not just out of date.",
+    check: (src) => {
+      const out = [];
+      // Two or more shelf names side by side, quoted, comma-separated — what a
+      // hand-maintained list of lists looks like in every language here.
+      // LISTS / LIST_KEYS / LIST_ORDER are the real thing and may say it.
+      const NAMES = "books|restaurants|movies|recipes|quotes|travel";
+      const RE = new RegExp(`(["'\`])(${NAMES})\\1\\s*,\\s*(["'\`])(${NAMES})\\3`);
+      const lines = src.split("\n");
+      lines.forEach((line, i) => {
+        if (/LIST_KEYS|LIST_ORDER|^\s*export const LISTS|ListName\s*=/.test(line)) return;
+        if (!RE.test(line)) return;
+        // The opt-out is a claim a person makes on purpose, not a silence.
+        if (/deliberate subset/.test(line) || /deliberate subset/.test(lines[i - 1] ?? "")) return;
+        out.push({ n: i + 1, msg: `shelf names written out by hand — import LISTS, or mark it \`// deliberate subset\`: ${line.trim()}` });
+      });
+      return out;
+    },
+  },
+  {
     id: "type-scale",
     why: "§1 — never a raw font size. One screen once carried 14 distinct sizes, none of them chosen.",
     check: (src) => linesWithStyleName(src)
@@ -616,6 +637,15 @@ function printFrames() {
 // is as useless as one that fires on nothing.
 
 const STATIC_PROBES = {
+  // The exact line that shipped, and the three shapes that must stay quiet:
+  // the real source of truth, a declared subset, and the import that replaced
+  // the defect.
+  "no-hardcoded-lists": {
+    bad: `const body = { lists: ["books", "restaurants", "movies", "recipes"].map(f) };`,
+    good: `export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];\n`
+        + `// deliberate subset\nconst KEEPS = new Set(["travel", "quotes"]);\n`
+        + `const body = { lists: LISTS.map(f) };`,
+  },
   "type-scale": { bad: `const s = {\n  x: {\n    fontSize: 34,\n  },\n};`, good: `const s = {\n  x: {\n    fontSize: glyph.lg,\n  },\n};` },
   "touch-target": { bad: `const s = {\n  btn: {\n    minHeight: 40,\n  },\n};`, good: `const s = {\n  btn: {\n    minHeight: 44,\n  },\n  thumb: {\n    height: 20,\n  },\n};` },
   "no-stretched-buttons": { bad: `const s = {\n  pairBtn: {\n    width: "100%",\n  },\n};`, good: `const s = {\n  pairBtn: {\n    alignSelf: "center",\n  },\n  input: {\n    width: "100%",\n  },\n};` },
