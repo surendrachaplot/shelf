@@ -20,9 +20,9 @@ on:
         required: true
         default: health
         type: choice
-        options: [health, reel]
+        options: [health, reel, resolve]
       url:
-        description: "The reel URL (what=reel only)."
+        description: "The reel URL (what=reel or resolve)."
         required: false
         type: string
 
@@ -36,9 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # `health` is public and needs nothing, so this workflow can be proven to
-      # work before any secret exists. Only the two that read your data need it.
+      # work before any secret exists. `resolve` is the app's own endpoint and
+      # takes the app key, not the admin secret — so only `reel` needs this.
       - name: Check the secret is set
-        if: inputs.what != 'health'
+        if: inputs.what == 'reel'
         run: |
           if [ -z "${{ secrets.SHELF_ADMIN_SECRET }}" ]; then
             echo "::error::SHELF_ADMIN_SECRET is not set on this repository. Settings → Secrets and variables → Actions → New repository secret, name SHELF_ADMIN_SECRET, value = ADMIN_SECRET from Render."
@@ -61,6 +62,7 @@ jobs:
       - name: Ask
         env:
           SECRET: ${{ secrets.SHELF_ADMIN_SECRET }}
+          APP_KEY: ${{ secrets.SHELF_APP_KEY }}
           WHAT: ${{ inputs.what }}
           URL: ${{ inputs.url }}
         run: |
@@ -76,6 +78,32 @@ jobs:
               path="/api/debug/reel"
               curl -sS -m 120 --get --data-urlencode "url=$URL" \
                 -H "x-shelf-secret: $SECRET" "$SHELF_API$path" | tee /tmp/out.json | jq . || cat /tmp/out.json
+              exit 0
+              ;;
+            resolve)
+              # THE WHOLE ROUND TRIP, exactly as the phone makes it: scrape,
+              # tagged accounts if the caption only names handles, Claude,
+              # then the catalogues. `reel` shows what Instagram handed over;
+              # this shows what a person would end up with on a shelf, which
+              # is the only claim worth making.
+              if [ -z "$URL" ]; then
+                echo "::error::what=resolve needs a url input"; exit 1
+              fi
+              # jq builds the body, so a URL containing quotes or backslashes
+              # cannot break out of the JSON.
+              jq -n --arg u "$URL" '{url:$u}' > /tmp/body.json
+              curl -sS -m 180 -X POST "$SHELF_API/api/resolve" \
+                -H "content-type: application/json" \
+                ${APP_KEY:+-H "x-shelf-key: $APP_KEY"} \
+                --data @/tmp/body.json | tee /tmp/out.json | jq . || cat /tmp/out.json
+              # A summary under the dump, because eight items of full JSON is
+              # a page you scroll past. `enriched` false everywhere means the
+              # names came out but nothing was found for them — a different
+              # failure from no items at all, and invisible without this.
+              echo "--- what landed ---"
+              jq -r '"resolver=\(.resolver) caption_chars=\(.caption_chars) tagged_accounts=\(.tagged_accounts) items=\(.items|length)",
+                     (.items[]? | "  [\(.list)] \(.title // "—") — \(.subtitle // "") · enriched=\(.enriched) conf=\(.confidence)")' \
+                /tmp/out.json || true
               exit 0
               ;;
           esac
