@@ -49,12 +49,27 @@ const asText = (t: (typeof D.type)[keyof typeof D.type], extra: TextStyle = {}):
 });
 
 /**
- * One family, four jobs. Display is set SOLID (line-height below the size) —
- * a wordmark and a band label are single lines and leading is dead space in
- * both. Everything caps-and-tracked is chrome; only item titles are not.
+ * One family, four jobs. Everything caps-and-tracked is chrome; only item
+ * titles are not.
+ *
+ * DISPLAY IS SET TIGHT, NOT SOLID — and that distinction cost a bug report.
+ * The wordmark was 42pt type in a 38pt line box, four points shorter than the
+ * type it holds. On the web that is fine: CSS line-height smaller than the
+ * font size overflows the box and draws anyway. **On iOS the glyph is clipped
+ * to the line box**, and what gets clipped is whatever reaches highest — in
+ * "shelf" that is the f, whose hook is the tallest thing in the word. Reported
+ * from a device as "the f of shelf is getting cut".
+ *
+ * The render harness could never have caught it: react-native-web emits CSS
+ * line-height, which does not clip. Same shape as the safe-area bug — the
+ * harness is a browser, and a browser is not the phone.
+ *
+ * 48 is fontSize + 6: above the type with headroom for an ascender, and still
+ * well under the ~50pt this face would take naturally. The header row is
+ * 44pt of tap target either way, so this costs four points of chrome.
  */
 export const t = {
-  wordmark: { ...asText(D.type.display), fontWeight: "700" as const, fontSize: 42, lineHeight: 38, letterSpacing: -2.6 },
+  wordmark: { ...asText(D.type.display), fontWeight: "700" as const, fontSize: 42, lineHeight: 48, letterSpacing: -2.6 },
   band: { ...asText(D.type.title), fontWeight: "700" as const, fontSize: 31, lineHeight: 31, letterSpacing: -1.5, textTransform: "uppercase" as const },
   itemTitle: { ...asText(D.type.heading), fontWeight: "700" as const, letterSpacing: -0.4 },
   // A jacket title. Set solid-ish and ranged left, the way a cover is set —

@@ -265,6 +265,27 @@ would have shipped a server that dies on its first import. It now builds with
 difference between the two is an oracle for guessing codes. `renderGone()` takes
 no argument for exactly that reason.
 
+### Giving it a real name
+
+Right now a shared link reads `https://shelf-api-u8xy.onrender.com/s/vbn4kt2p`
+— it works, and it looks like a server. A domain is **two settings that must
+agree**, and setting one without the other is worse than setting neither:
+
+| Where | What | Why |
+|---|---|---|
+| `app/eas.json` → `EXPO_PUBLIC_SHELF_WEB` | both profiles | what the APP puts in the link it hands you |
+| Render → `SHELF_WEB_BASE` | the service | what the SERVER writes into `og:url` on the page |
+
+Point the domain at the Render service (CNAME), add it under Custom Domains
+there, set both values, then **rebuild the app** — `EXPO_PUBLIC_SHELF_*` is
+baked in at build time, so an over-the-air update cannot change where links
+point.
+
+Half-configured, every link you hand out works while its preview card points
+somewhere else, or carries no canonical address and renders as a grey
+rectangle in a message. `node api/smoke.mjs <url>` compares the two and fails
+if they disagree.
+
 **`SHELF_WEB_BASE` is an override, not a requirement.** The server falls back to
 `RENDER_EXTERNAL_URL`, which Render sets to the service's own address — so the
 ordinary deploy needs no configuration for this at all. That is deliberate: the

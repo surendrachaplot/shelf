@@ -105,6 +105,22 @@ async function bridgeGaps() {
 
 const staticRules = [
   {
+    id: "line-box",
+    files: ["src/theme.ts"],
+    why: "§1 — a line box shorter than the type it holds is a clip on iOS, not tight leading. The scale in design.js is checked by `type-complete`; this reads the OVERRIDES in theme.ts, which is where the 42pt-in-38pt wordmark actually lived and where the gate was not looking.",
+    check: (src) => {
+      const out = [];
+      src.split("\n").forEach((line, i) => {
+        const size = /fontSize:\s*([\d.]+)/.exec(line);
+        const lh = /lineHeight:\s*([\d.]+)/.exec(line);
+        if (!size || !lh) return;
+        if (Number(lh[1]) >= Number(size[1])) return;
+        out.push({ n: i + 1, msg: `lineHeight ${lh[1]} is shorter than fontSize ${size[1]} — iOS clips the tall glyphs: ${line.trim()}` });
+      });
+      return out;
+    },
+  },
+  {
     id: "no-hardcoded-lists",
     why: "§0 — the shelves are enumerated in ONE place. Two hand-written copies survived quotes and travel shipping: sharing your card silently published four of six shelves, and a published travel place rendered under the heading 'Unsorted'. Neither errored; both were invisible until somebody opened a link. A DELIBERATE subset is fine and common — say so with `// deliberate subset` on the line or the one above, which also tells the next reader it is not just out of date.",
     check: (src) => {
@@ -327,10 +343,10 @@ const systemRules = [
   },
   {
     id: "type-complete",
-    why: "§1 — every step ships with its paired line-height and tracking. A bare size is half a decision. Display type may set SOLID (leading below the size) because a wordmark is one line, but never below 0.85 or the ascenders collide.",
+    why: "§1 — every step ships with its paired line-height and tracking. A bare size is half a decision. AND the line box is never shorter than the type: this rule used to allow 'solid' down to 0.85, which is precisely what let a 42pt wordmark ship in a 38pt box. On the web that overflows and draws; on iOS the glyph is CLIPPED, and what goes first is whatever reaches highest — the f in 'shelf'.",
     check: (d) => Object.values(d.type)
-      .filter((t) => !(t.lineHeight >= t.fontSize * 0.85) || typeof t.letterSpacing !== "number")
-      .map((t) => ({ msg: `${t.name}: lineHeight ${t.lineHeight} against size ${t.fontSize} — below the 0.85 solid floor` })),
+      .filter((t) => !(t.lineHeight >= t.fontSize) || typeof t.letterSpacing !== "number")
+      .map((t) => ({ msg: `${t.name}: lineHeight ${t.lineHeight} is below its own size ${t.fontSize} — iOS clips the ascenders` })),
   },
   {
     id: "spacing-grid",
@@ -590,9 +606,17 @@ async function run() {
       console.error(`    ${rule.why}`);
     }
   }
-  for (const file of SOURCES) {
+  // A rule may name its own files. Nearly all of them read the components;
+  // `line-box` reads theme.ts, where the type scale is turned into real styles
+  // and where an override outranks anything design.js says. Putting theme.ts
+  // into SOURCES instead made `type-scale` fire on the very file whose job is
+  // to declare those sizes — a rule shouting at the definition it depends on.
+  const filesFor = (rule) => rule.files ?? SOURCES;
+  const everyFile = [...new Set(staticRules.flatMap(filesFor))];
+  for (const file of everyFile) {
     const src = await readFile(new URL(file, import.meta.url), "utf8");
     for (const rule of staticRules) {
+      if (!filesFor(rule).includes(file)) continue;
       for (const f of rule.check(src)) {
         findings++;
         console.error(`${file}:${f.n}  [${rule.id}] ${f.msg}`);
@@ -608,7 +632,7 @@ async function run() {
   const nEasings = Object.keys(D.easing).length;
   const nPairs = D.PAIRINGS.length * 2;
   console.log(`design gate clean`);
-  console.log(`  ${staticRules.length} static rules over ${SOURCES.join(", ")}`);
+  console.log(`  ${staticRules.length} static rules over ${everyFile.join(", ")}`);
   console.log(`  ${nPairs} contrast pairings (light + dark), all ≥ 4.5:1`);
   console.log(`  ${nSprings + nEasings} transitions simulated at ${D.FRAME_HZ}Hz, frame by frame`);
   console.log(`
@@ -641,6 +665,14 @@ function printFrames() {
 // is as useless as one that fires on nothing.
 
 const STATIC_PROBES = {
+  // The wordmark exactly as it shipped, and as it now is. `type-complete`
+  // passed this for months because it allowed "solid" down to 0.85.
+  "line-box": {
+    bad: `  wordmark: { fontSize: 42, lineHeight: 38, letterSpacing: -2.6 },`,
+    good: `  wordmark: { fontSize: 42, lineHeight: 48, letterSpacing: -2.6 },\n`
+        + `  band: { fontSize: 31, lineHeight: 31 },\n`
+        + `  coverTitle: { lineHeight: Math.round(x * 1.05) },`,
+  },
   // The exact line that shipped, and the three shapes that must stay quiet:
   // the real source of truth, a declared subset, and the import that replaced
   // the defect.

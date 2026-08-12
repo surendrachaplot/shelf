@@ -12,6 +12,8 @@
 // the phone. What is left to check after a deploy is whether the process is up,
 // which providers it can actually reach, and whether the routes the app calls
 // are mounted.
+import { readFileSync } from "node:fs";
+
 const BASE = (process.argv[2] || process.env.SHELF_BASE || "").replace(/\/+$/, "");
 if (!BASE) {
   console.error("usage: node api/smoke.mjs https://your-api.onrender.com");
@@ -107,6 +109,36 @@ if (resolve.status === 400 && /url is required/.test(resolve.text)) {
 } else {
   no(`POST /api/resolve returned ${resolve.status}: ${resolve.text.slice(0, 120)}`,
      "the app cannot do anything at all if this route is not answering");
+}
+
+// A DOMAIN IS TWO SETTINGS, AND HALF OF IT IS WORSE THAN NEITHER. The app
+// builds its share links from EXPO_PUBLIC_SHELF_WEB; the SERVER writes og:url
+// into the page from SHELF_WEB_BASE. Set one and not the other and every link
+// you hand out works while its preview card points somewhere else — or has no
+// canonical address at all.
+{
+  const easWeb = (() => {
+    try {
+      const eas = JSON.parse(readFileSync(new URL("../app/eas.json", import.meta.url), "utf8"));
+      return eas.build?.preview?.env?.EXPO_PUBLIC_SHELF_WEB ?? null;
+    } catch (_) { return null; }
+  })();
+  const trim = (u) => String(u ?? "").replace(/\/+$/, "");
+  if (!easWeb) {
+    meh("eas.json names no EXPO_PUBLIC_SHELF_WEB", "the app falls back to the API host for share links");
+  } else if (!h.web_base) {
+    // Not "agree". An empty web_base is the server not knowing its own
+    // address — it emits no og:url at all, so every shared link is a grey
+    // rectangle in a message. Reporting that as agreement is the exact false
+    // green this check exists to prevent.
+    no(`the app hands out ${easWeb}/s/… but this server does not know its own address`,
+       "on Render RENDER_EXTERNAL_URL supplies it; locally set SHELF_WEB_BASE");
+  } else if (trim(easWeb) !== trim(h.web_base)) {
+    no(`the app hands out ${easWeb}/s/… but this server thinks it lives at ${h.web_base}`,
+       "set SHELF_WEB_BASE on the service to match eas.json, or the preview card on every shared link points elsewhere");
+  } else {
+    ok(`shared links and the pages they open agree on ${easWeb}`);
+  }
 }
 
 if (h.app_key_required) ok("the app key is enforced — only builds carrying it can spend money here");

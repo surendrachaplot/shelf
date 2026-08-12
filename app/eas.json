@@ -12,7 +12,8 @@
       },
       "env": {
         "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
-        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
+        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY",
+        "EXPO_PUBLIC_SHELF_WEB": "https://shelf-api-u8xy.onrender.com"
       },
       "channel": "development",
       "android": {
@@ -26,7 +27,8 @@
       },
       "env": {
         "EXPO_PUBLIC_SHELF_API": "https://shelf-api-u8xy.onrender.com",
-        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY"
+        "EXPO_PUBLIC_SHELF_KEY": "$SHELF_APP_KEY",
+        "EXPO_PUBLIC_SHELF_WEB": "https://shelf-api-u8xy.onrender.com"
       },
       "channel": "preview",
       "android": {
