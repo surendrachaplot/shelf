@@ -47,10 +47,24 @@ Three were not found and fall back to a map SEARCH url, marked
 `located: false`, so the jacket says **Find on map** rather than pretending to
 a pin. Twelve seconds end to end.
 
-**"Book Bar UK" is the visible defect in that list.** The shop is called Book
-Bar; the "uk" came off the handle `@bookbaruk` and OSM has no such place, which
-is why it fell back to a search. The prompt now says to drop country and city
-suffixes from a handle (`562c16b`) — **not yet re-measured.**
+**`@bookbaruk` is the open defect in that list**, and it is the interesting
+one. Across three runs it came back as "Book Bar UK" once and **"The Book and
+Record Bar" twice** — a real bookshop, in West Norwood, with a real address and
+a real pin, and NOT the shop in the post (which is Book Bar, in Bounds Green).
+The model was picking between two wrong answers depending on the roll, and the
+second kind is the dangerous one: a wrong place that geocodes cannot be told
+from a right one by anything downstream.
+
+`d0a5dc6` makes the rule mechanical — build the name out of the letters in the
+handle and nothing else, split into words, drop a trailing city or country,
+stop — and the selftest pins it. **Not yet re-measured on the live service.**
+
+**A code guard was considered and rejected.** The obvious one is to reject an
+OSM match whose name introduces words the query did not have. It would catch
+"Book Bar" → "The Book and Record Bar" and would also throw away "Funny
+Weather" → "Funny Weather books + coffee", which is correct and is how five of
+the eight resolved. Token overlap cannot separate those two cases; the
+difference is semantic, so the fix belongs in the prompt.
 
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
@@ -125,6 +139,12 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
   posts; the first `"caption"` in it belonged to a neighbour, and EVERY item
   resolved that way was wrong. Read the embed page; `scopeToShortcode` returns
   null rather than the whole page.
+- **The same failure came back through a different door.** Reading `@bookbaruk`
+  as "The Book and Record Bar" is the Wicker Man bug wearing a name instead of
+  a caption: a plausible expansion, confirmed by a catalogue, indistinguishable
+  from a correct answer. Wherever a guess is handed to a provider that will
+  cheerfully confirm something adjacent, the guess has to be constrained at the
+  point it is made — not checked afterwards.
 - **A test suite with no automatic caller rots.** `npm run selftest` named
   three deleted files for the whole rewrite and nobody saw, because nothing ran
   it. Two `page.js` assertions had never passed without a web host configured.
