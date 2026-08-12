@@ -17,7 +17,7 @@
 //              Any difference between them is an oracle for guessing codes.
 import { isMain } from "./ismain.js";
 import { randomBytes } from "node:crypto";
-import { query } from "./db.js";
+import { query, dbReady } from "./db.js";
 import { json, normList } from "./http.js";
 
 export const KINDS = ["profile", "shelf", "item"];
@@ -94,6 +94,11 @@ export function buildSnapshot(body) {
 export async function createPublish(req, res, body) {
   const snap = buildSnapshot(body);
   if (!snap) return json(res, 400, { ok: false, error: "nothing publishable in that request" });
+  // Say which of the two it is. "Publishing is switched off on this server" is
+  // something a person can act on; a 500 from a failed insert is not.
+  if (!dbReady()) {
+    return json(res, 503, { ok: false, error: "publishing is switched off on this server — it has no database" });
+  }
   const code = makeCode();
   await query(
     `insert into published (code, kind, target, payload, note) values ($1, $2, $3, $4, $5)`,
@@ -127,6 +132,13 @@ export async function publishStats(req, res, body) {
 export async function readPublished(code, { count = false } = {}) {
   const c = String(code || "").toLowerCase();
   if (!/^[0-9a-z]{4,16}$/.test(c)) return null;
+  // NO DATABASE, NO LINKS — and that renders as "nothing here", not as a stack
+  // trace on a public URL. A deploy with no DATABASE_URL is a legitimate way to
+  // run this (resolving and shelving need none); every /s/ link was answering
+  // 500 in that configuration, which the smoke test caught before anyone met it.
+  // Only the UNCONFIGURED case is swallowed: a pool that is attached and
+  // failing still throws, because that is an outage and it should look like one.
+  if (!dbReady()) return null;
   const r = count
     ? await query(`update published set views = views + 1 where code = $1 returning *`, [c])
     : await query(`select * from published where code = $1`, [c]);

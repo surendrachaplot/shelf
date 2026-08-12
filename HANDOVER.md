@@ -7,182 +7,162 @@ summary. Replace it wholesale at the end of the next substantial session.
 
 ## What shelf is
 
-Share an Instagram reel → it lands on one of four shelves (books, restaurants,
-movies, recipes). Plus: a person, a public page, and a way to hand a shelf to
-somebody. One repo, two folders: `api/` (plain `node:http` + Postgres) and
-`app/` (Expo + a share extension).
+Share an Instagram reel → it lands on one of six shelves: **books ·
+restaurants · movies · recipes · quotes · travel**. One repo, two folders:
+`api/` (plain `node:http`) and `app/` (Expo + a share extension).
 
-## Where it actually stands (2026-08-11)
+**The shelves live on the phone.** One JSON file, written atomically. No
+accounts, no login, no pairing, no server-side rows. The API is a stateless
+resolver — you send it a URL, it tells you what that URL is, and stores
+nothing. The only thing it keeps is a snapshot you deliberately publish by
+tapping Share, which you can revoke (a DELETE, not a flag).
 
-**It is on a phone.** A `preview` EAS build is installed, the shelf has been
-claimed, and reels have been shared into it from Instagram. That is further
-than any previous handover — everything below is now reported behaviour, not
-speculation.
+## Where it stands (2026-08-12)
 
-**Reels resolve.** A shared reel gets a caption, a title, a cover and — for
-films — a TMDB match, verified on real rows below. Pushes publish themselves to
-the phone. The live service can be interrogated without anybody opening a
-terminal. What remains is a Places key and a run on the device itself.
+**On a phone, resolving real reels, updating itself over the air.** The
+local-first rewrite shipped and was published OTA; quotes and travel shipped
+after it (EAS Update succeeded 2026-08-11 23:44Z on `efe48a4`).
 
-### Milestone 0: measured, and the answer was none of the theories (2026-08-11)
+### Verified today, on the live service
 
-Four months of documents said Instagram blocks datacentre IPs. It does not.
-Measured from Render against a live reel, seconds apart:
-
-| user agent | bytes | caption |
-|---|---|---|
-| browser (embed) | 606,013 | **0 chars** |
-| browser (canonical) | 605,958 | **0 chars** |
-| **crawler (canonical)** | 928,763 | **1,240 chars** + og:image + author |
-| **crawler (embed)** | 130,640 | **1,806 chars** |
-
-Not a block — HTTP 200, no wall. Meta renders posts client-side for a browser
-(`<title>Instagram</title>`, `data-sjs` bootstrap blobs, **not one og: tag**)
-and serves the full metadata to link-preview crawlers, because a reel pasted
-into WhatsApp has to draw a card. `viaCrawler` asks as `facebookexternalhit`.
-It is Meta's own crawler and the preview metadata every chat client is served.
-
-**READ THE EMBED PAGE, NEVER THE CANONICAL ONE.** The first crawler version
-tried the canonical URL first and filed a reel about *Willow and Wind* as
-*The Wicker Man* — because that URL returns ~930kB carrying SEVERAL of the
-account's posts, and the extractor took the first `"caption"` in document
-order: a neighbouring post. `/embed/captioned/` is ~130kB and holds exactly one
-post by construction. The canonical page is used only for `og:image`, a
-page-level tag that cannot belong to another post.
-
-It was not one bad row. EVERY item resolved through the canonical URL was
-wrong, including a restaurant nobody had questioned — its caption went from 46
-characters (a neighbour) to 428 (its own). **A wrong resolution is worse than
-an empty one: it is confident, well-formed, catalogue-matched and silent.**
-`scopeToShortcode` narrows any multi-post page to the requested post and
-returns null — never the whole page — when the shortcode is absent.
-
-**Proven end to end on real rows**, after the fix:
+A real post — `instagram.com/p/DboDS-UAJEb/`, a caption whose entire content is
+a headline and eight @handles — resolved into **eight travel items, every one
+enriched**:
 
 ```
-movies      · 1,805 chars · "Willow and Wind" · 2003 · tmdb 247447 · 0.95 · enriched · cover
-restaurants ·   428 chars · "Multi Story" · Peckham Levels Level 6 · 0.95 · cover
+resolver=crawler-embed-html  caption_chars=604  items=8
+  [travel] Backstory — Balham · London                      conf 0.75  OSM
+  [travel] Funny Weather books + coffee — Dartmouth Park     conf 0.70  OSM
+  [travel] Fable and Falcon — Chalk Farm · London            conf 0.70  OSM
+  [travel] Main Character Books — London                     conf 0.70  search
+  [travel] The Book and Record Bar — West Norwood            conf 0.70  OSM
+  [travel] Poetry Pharmacy — London                          conf 0.70  search
+  [travel] Lala Books — Camberwell · London                  conf 0.70  OSM
+  [travel] The Book Elephant — Elephant and Castle           conf 0.70  OSM
 ```
 
-Share → embed page → caption → classify → TMDB → filed with artwork. The
-discarded row was correctly left alone. NOTE: the caption says 1999 and TMDB
-says 2003 for that film; unresolved, and small.
+Six carry coordinates, address and area from OpenStreetMap — two of them
+opening hours and a website — and get a `geo:` link that opens the pin. Two
+were not found and fall back to a map SEARCH url, marked `located: false`, so
+the jacket says **Find on map** rather than pretending to a pin.
 
-### Asking the live service anything — without a laptop
+**Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
+`url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
 
-The sandbox this repo is written in has an **egress policy denying
-`onrender.com`, `api.expo.dev` and `instagram.com`** at the gateway. Reported,
-not routed around. Diagnosis runs on a GitHub runner instead:
+### The thing that was built and then measured away
 
-Actions → **Diagnose the deployed service** → `health` | `items` | `reel` |
-`retry`. `health` needs no secret; the rest need `SHELF_ADMIN_SECRET`
-(= Render's `ADMIN_SECRET`). `retry` re-reads every untitled item, so a
-resolver fix reaches what is already sitting there. See `SETUP-ONCE.md`.
+The plan for that post was to fetch each tagged profile and turn `@handle` into
+a name. **It does not work from the machine it runs on.** From a GitHub runner
+a profile gives up an og:description with a name and descriptor; from Render,
+a browser UA gets **HTTP 429 and zero bytes** and a crawler UA gets 200 and
+617 kB of login wall with **no og:description at all**. In production it
+fetched eight profiles and returned eight nothings — `tagged_accounts: 0`.
 
-**Live reading, 2026-08-11 15:16Z:** `db: true`, `worker: "in-process"`,
-`claude: true`, `tmdb: true`, **`places: false`**, `ig_resolver: false`.
+It is deleted. Nothing replaced it, because all eight bookshops resolved
+correctly without it: the classifier reads `@funnyweatherbooks` as "Funny
+Weather" and the geocoder confirms or drops it. `classify.js` now states that
+rule out loud instead of asking for names that never arrive. `probeProfile`
+stays as the instrument — `?url=` a profile on the `reel` diagnosis.
+
+**Live health, 2026-08-12:** `stores: "published snapshots only — no accounts,
+no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
+`places_osm: true`, `places_google: false`.
 
 ## Shipped and verified
 
 | Thing | The check that proves it |
 |---|---|
-| Ingest, resolve, classify, enrich | `node api/resolve.js --selftest`, `classify.js`, `items.js`, `search.js`, `profile.js` — all green |
-| `api/page.js --selftest` | Green **only with `SHELF_WEB_BASE` set**. Unset, 2 of 19 fail on `og:url` being relative — correct behaviour (the code refuses to emit a canonical URL it cannot know), confusing to meet cold. On Render `RENDER_EXTERNAL_URL` supplies it. |
-| The whole API, against real Postgres | `node api/e2e.mjs` → **62 checks**. Mutation-tested three ways (OPERATIONS §4d) |
-| The design system | `node app/verify-design.mjs` → **21 rules + the theme bridge**; `--selftest` proves every one fires on a deliberate violation AND stays quiet on clean input |
-| Every screen, looked at | `node app/preview/shoot.mjs` → 29 PNGs, 320 + 375, both schemes |
-| The public pages, looked at | `node app/preview/shoot-public.mjs` → 10 PNGs, 320 + 390, both schemes, horizontal overflow MEASURED |
-| Tap targets | `node app/preview/measure.mjs` → **201 controls**, smallest effective 52pt |
-| The deployed API | health reports `db: true`, `worker: "in-process"`, `web_base` self-resolved, queue zeros |
+| Every parser, prompt, clamp, cache key, renderer | `cd api && npm run selftest` — 9 files, all green |
+| The design gate | `cd app && npm run preflight`; full `npm run verify` renders every screen |
+| Tap targets | `node app/preview/measure.mjs` → 201 controls, smallest effective 52pt |
+| Every screen, looked at | `node app/preview/shoot.mjs` → 320 + 375, both schemes, including quotes and travel |
+| A deploy | `node api/smoke.mjs <url>` — commit, providers, routing, public pages |
+| The real round trip | Actions → Diagnose → `resolve` (above) |
+| Selftests can't rot again | `.github/workflows/checks.yml` runs them on every push |
 
 ## Open, with the check that would close it
 
-- **`places: false` on the live service** — confirmed from health, not
-  inferred. Restaurants cannot enrich, so they file with a Claude-derived title
-  and no address. Not fatal (`enriched:false`), but it is why a restaurant
-  looks thinner than a book. Closes with: a `GOOGLE_PLACES_KEY` on Render, then
-  `GET /api/search?q=…` and reading the rows.
-- **Nobody has watched a reel go in on the phone since the fix.** The rows
-  prove the pipeline; they do not prove the share sheet, the refresh, or the
-  cover rendering in iOS. Closes with: share one reel per category, then look.
-- **A caption-less reel is still untested.** `by_resolver` showed `none: 1` —
-  that row was discarded, so it proves nothing either way.
-- **The share extension in its real host, iOS fonts, native scroll and blur**
-  remain unverified by anything but a device.
+- **The repo is still public.** Actions logs are world-readable and have
+  carried item titles and captions. Closes with: Settings → General → Change
+  visibility. This is the one item on the list that leaks something.
+- **`SHELF_APP_KEY` is not set**, so anybody who finds the URL can spend the
+  Claude budget. Order matters: `npm run ship`, install the build, THEN set it
+  on Render — do it the other way round and the build you are holding 401s on
+  every share. Health reports `app_key_required`.
+- **The legacy wipe has not been run.** Old server-side rows still exist from
+  the account era. Deliberately held until the phone is confirmed to have them
+  (`GET /api/legacy/export` pulls them; the wipe needs `ADMIN_SECRET`).
+- **Nothing has been watched on the device since quotes and travel shipped.**
+  The rows prove the pipeline; they do not prove the share sheet, the refresh,
+  or how a wall of quote jackets reads on a real screen at arm's length.
+- **No end-to-end coverage of publish → read → revoke against real Postgres.**
+  `e2e.mjs` tested the deleted schema and is gone (OPERATIONS §4d). Needs a
+  scratch database this sandbox does not have.
+- **City filter on travel and restaurants** — asked for as "eventually", not
+  built. The data is already there: `city`, `area` and coordinates are on every
+  enriched place.
+- **`GOOGLE_PLACES_KEY` unset.** OSM covers most of it; the two unlocated
+  bookshops above are what the gap looks like.
 
 ## Traps already paid for
 
-- **Four faults can hide behind one symptom.** "The app doesn't auto-update"
-  was, in order: no EXPO_TOKEN · `github.event.before` empty on a manual run so
-  the range said "nothing changed" · `github.event.head_commit` absent so
-  `--message ""` was rejected · a ROBOT token needing an explicit `owner` in
-  app.json. Each fix revealed the next. Never conclude from one green fix.
+- **Measure from the machine that will run the code.** The tagged-account path
+  was built on a measurement taken on a GitHub runner and shipped dead. The
+  same lesson in the opposite direction: the datacentre-IP theory was in the
+  plan, in OPERATIONS §0 and in two handovers, and was wrong for posts.
+- **Read which commit is answering before believing a diagnosis.** Render
+  deploys a push in a couple of minutes; the tagged-accounts change was
+  measured twice against the code it replaced. Health reports `commit` now and
+  the workflow warns when it differs from the one it was triggered from.
+- **A wrong resolution is worse than an empty one** — confident, well-formed,
+  catalogue-matched and silent. The canonical Instagram page returns several
+  posts; the first `"caption"` in it belonged to a neighbour, and EVERY item
+  resolved that way was wrong. Read the embed page; `scopeToShortcode` returns
+  null rather than the whole page.
+- **A test suite with no automatic caller rots.** `npm run selftest` named
+  three deleted files for the whole rewrite and nobody saw, because nothing ran
+  it. Two `page.js` assertions had never passed without a web host configured.
+- **A 500 on a public URL is a design failure, not just a bug.** A deploy with
+  no database answered stack traces on `/s/<code>` and `POST /api/publish`.
+  Both degrade with a sentence now — found by running `smoke.mjs` against a
+  server configured the way a stranger might configure it.
+- **iOS does not remount a backgrounded app.** Reported as "nothing is coming
+  to the shelf when I share". `AppState` + pull-to-refresh; any new screen that
+  loads on mount has this bug until it handles `active`.
+- **A boot spinner on this app looks exactly like the splash screen.** Reported
+  as "stuck on the splash screen". Every network call has an `AbortController`.
+- **A cache is keyed on the question and stores the answer.** Widening an
+  enricher's return does not change the key, so new code reads old thin answers
+  back. `SHAPE` in `cacheKey()`.
 - **A repair tool that only fixes empty rows cannot fix wrong ones.**
-  `retry-unread` skipped the mis-filed film because it HAD a title — just a
-  different film's. `?resolver=<name>` re-reads everything a named resolver
-  produced. It is opt-in because, unlike the default, it can overwrite a title.
-- **A guard that blocks its own fix gets bypassed.** `owner` had to go in
-  app.json for a robot token to publish, and app.json was on the native list —
-  so adding it would have demanded a full rebuild. `native-changed.mjs` now
-  parses both sides and ignores `owner`/`extra` specifically.
-
-- **iOS does not remount a backgrounded app.** Every fetch on mount runs once,
-  at cold start, and never again — so after sharing from another app and coming
-  back, the screen shows what it showed an hour ago. This shipped, and was
-  reported as "nothing is coming to the shelf when I share". `AppState` +
-  pull-to-refresh. Any future screen that loads on mount has this bug until it
-  handles `active`.
-- **A boot spinner on this app looks exactly like the splash screen.** The
-  pairing screen is the wordmark on white; `serverState()` had no timeout;
-  Render's free tier sleeps after ~15 min. Reported as "stuck on the splash
-  screen". Every network call now has an `AbortController`, and the screen says
-  "waking the server" once it knows that is what is happening.
-- **"Couldn't read this one" is not information.** Three different causes, three
-  different fixes, one sentence. The row now names the cause and offers **Read
-  again** (`POST /api/item/retry`).
-- **A queue receipt you did not verify is a lie.** The share sheet said "Queued"
-  when the real problem was that the extension had no key — and the queue lives
-  in the same Keychain group the key was missing from. `queueShare` now reads
-  its write back, and `NOT_PAIRED` is handled separately.
-- **An unawaited `setToken` fails silently.** The next launch is back on the
-  pairing screen with no explanation.
-- **A diagnostic nobody can see is not a diagnostic.** `verifySharedAccess()`
-  existed from day one and was rendered nowhere. It is on the card now.
-- **`rootDir: api` breaks the deploy.** `api/page.js` renders the public pages
-  from `app/src/design.js`. Pinned by `node api/page.js --selftest`.
-- **`--selftest` leaks across imports.** `process.argv` is global; `api/ismain.js`
-  exists for this.
-- **An empty `onError` is not an image fallback.** The gate rejects it.
-- **A test harness that dies is worse than one that fails.**
-- **A rule nobody has watched fail is a comment.** Every gate rule has a probe;
-  every e2e claim has a mutation.
+- **A diagnostic nobody can see is not a diagnostic.** `sharedKeychainOk()` is
+  on the card.
+- **`--selftest` leaks across imports** — `process.argv` is global;
+  `api/ismain.js` exists for this.
+- **`rootDir: api` breaks the deploy**: `api/page.js` renders the public pages
+  from `app/src/design.js`. Pinned by a selftest.
 
 ## Standing rules
 
-- **Render the state you are fixing, not the state you have.** The fixtures now
-  carry an item Instagram refused to give a caption for, because a row that
-  does not exist in `preview/stubs.js` is a row nobody has ever looked at. That
-  contact sheet caught a swatch hand-aligned to the two-line case, a label
-  riding the top of a centred row, and a spinner centring itself in a column of
-  left-aligned text — all in one pass.
-- **Reachability is a credential problem.** The device token lives in an iPhone
-  Keychain; a curl gets typed on a laptop. Diagnostics take `ADMIN_SECRET` too,
-  the same way `POST /api/admin/pair` does, and for the same reason: the free
-  tier has no shell.
-- **Measure before theorising.** The blocked-datacentre-IP theory was written
-  into the plan, into OPERATIONS §0 and into two handovers, and was wrong. One
-  probe settled it. When a symptom has three candidate causes, build the
-  instrument that separates them before writing the fix for the likeliest.
-- **A human relaying terminal output is a broken pipe, not a workflow.** When
-  the sandbox cannot reach a host, put the command on a GitHub runner and read
-  the job log. `.github/workflows/diagnose.yml`.
-- **An entry box may never sit under the keyboard.** `KeyboardSafe` +
-  `scrollKeyboardProps`, enforced by the `keyboard-safe` gate rule. (Suren's,
-  after the pairing field shipped under it.)
-- **One generator, two renderers.** The ex-libris plate returns a description;
-  the app draws it with react-native-svg and the server draws it into the page.
-- **Name the absence.** "No films matched" and "films are switched off because
-  nobody set a key" must not render the same way.
+- **Measure before theorising.** When a symptom has three candidate causes,
+  build the instrument that separates them before writing the fix for the
+  likeliest one. Every instrument here — `/api/debug/reel`, the diagnose
+  workflow, `smoke.mjs` — exists because reasoning was tried first and cost a
+  day.
+- **Delete what the measurement disproved.** The tagged-account fetch was an
+  hour of work and it went, rather than staying as an optimistic branch that
+  costs eight round trips to return an empty array.
+- **A human relaying terminal output is a broken pipe, not a workflow.** The
+  sandbox denies `onrender.com`, `api.expo.dev` and `instagram.com`; that is
+  reported, not routed around. Put the command on a GitHub runner instead.
+- **Render the state you are fixing, not the state you have.** A row that does
+  not exist in `preview/stubs.js` is a row nobody has ever looked at.
+- **Name the absence.** "No films matched" and "films are off because nobody
+  set a key" must not render the same way. `located: false` says **Find on
+  map**, not a dead pin.
+- **An entry box may never sit under the keyboard.** (Suren's, after the
+  pairing field shipped under it.)
+- **One generator, two renderers.** The ex-libris plate is described once; the
+  app draws it with react-native-svg and the server draws it into the page.
 - **Derive, then check the floor.** The placeholder mix was guessed at 0.42 and
   the gate rejected it at 2.3:1; 0.26 is the answer.
-- **Measure the screens that only open on a tap.**

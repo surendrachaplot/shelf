@@ -7,10 +7,11 @@
 // reports in sentences, because "db: false" is a fact and "DATABASE_URL did not
 // attach" is the thing you needed to know.
 //
-// It touches nothing: no rows are written, no pairing code is spent. The one
-// mutating-looking call is a deliberately invalid pair redemption, which is how
-// you prove the router, the database and auth are all alive without side
-// effects.
+// It touches nothing: no rows are written. There is nothing to write — the
+// service holds published snapshots and nothing else, and the shelves live on
+// the phone. What is left to check after a deploy is whether the process is up,
+// which providers it can actually reach, and whether the routes the app calls
+// are mounted.
 const BASE = (process.argv[2] || process.env.SHELF_BASE || "").replace(/\/+$/, "");
 if (!BASE) {
   console.error("usage: node api/smoke.mjs https://your-api.onrender.com");
@@ -56,23 +57,21 @@ if (!health.json) {
   process.exit(1);
 }
 
-// ── 2. the database ──────────────────────────────────────────────────────────
-console.log("\ndatabase");
+// ── 2. which build, and what it holds ────────────────────────────────────────
+console.log("\nbuild");
 const h = health.json;
+if (h.commit) ok(`running ${h.commit}`);
+else meh("this build does not report its commit", "redeploy from main — otherwise a fix and the code answering cannot be told apart");
+
+// A DATABASE IS NO LONGER REQUIRED FOR THE APP TO WORK. It backs published
+// links only, so `db: false` degrades one feature rather than breaking the
+// product — and saying that plainly is the difference between a smoke test and
+// an alarm nobody can act on.
 if (h.db) {
-  ok("DATABASE_URL is attached and migrations ran");
+  ok(`published links are readable — ${h.published?.links ?? 0} live, opened ${h.published?.opened ?? 0} times`);
 } else {
-  no("DATABASE_URL is not set or did not attach",
-     "paste the Neon connection string into shelf-api's environment, keeping ?sslmode=require");
-}
-if (h.queue) {
-  ok(`queue readable — ${h.queue.filed} filed, ${h.queue.inbox} in the inbox, ${h.queue.pending} pending`);
-  if (h.queue.stuck > 0) {
-    meh(`${h.queue.stuck} share(s) have failed 4 times and stopped retrying`,
-        "they are in the Inbox with whatever we got — check last_error on those rows");
-  }
-} else if (h.db) {
-  no("the database is attached but the queue could not be read", `db_error: ${h.db_error ?? "unknown"}`);
+  meh("no database attached — resolving and shelving still work, publishing a link does not",
+      "set DATABASE_URL if you want /s/<code> links; leave it unset if you do not");
 }
 
 // ── 3. what it can actually do ───────────────────────────────────────────────
@@ -81,38 +80,38 @@ const p = h.providers ?? {};
 if (p.claude) ok(`Claude key present (model ${h.model})`);
 else no("no ANTHROPIC_API_KEY — shared reels will land in the Inbox with no title",
         "everything else still works; add the key when you want the reel path");
-for (const [key, what] of [["tmdb", "Movies search"], ["places", "Restaurants search"]]) {
-  if (p[key]) ok(`${what} is on`);
-  else meh(`${what} is off (no key)`, "the Add screen says so out loud rather than returning nothing");
-}
+if (p.tmdb) ok("Movies search is on");
+else meh("Movies search is off (no TMDB_API_KEY)", "the Add screen says so out loud rather than returning nothing");
+// PLACES HAS TWO PROVIDERS AND ONE OF THEM IS FREE. Reporting only the paid one
+// would say "restaurants are off" about a service that geocodes them fine.
+if (p.places_osm) ok(`Places: OpenStreetMap${p.places_google ? " + Google (metered)" : " only — free, keyless, no billing account"}`);
+else no("no place provider at all", "OSM needs no key; if it is reporting false, the build is wrong");
 
-// ── 4. the worker ────────────────────────────────────────────────────────────
-console.log("\nworker");
-if (h.worker) ok(`drain arrangement: ${h.worker}`);
-else meh("this build predates the worker-mode report", "redeploy from main");
-if (h.warn) {
-  no(h.warn, h.worker === "in-process"
-    ? "read the Render logs for a failing resolve"
-    : "set WORKER_IN_PROCESS=1 on shelf-api — the free tier has no worker service");
-}
+// There is no worker section any more, and no queue behind it. Resolution
+// happens inside the request the app makes, with a row on screen saying so.
 
 // ── 5. the routes the app will actually call ─────────────────────────────────
 console.log("\nrouting");
-const auth = await get("/api/items?list=books");
-if (auth.status === 401) ok("an unauthenticated read is refused (auth is live)");
-else no(`GET /api/items returned ${auth.status}, expected 401`, "the router or auth is not wired as expected");
-
-const pair = await get("/api/pair/redeem", {
-  method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ code: "NOPE", device: "smoke" }),
+// THE ROUTE THE WHOLE APP RUNS ON, asked a question it must refuse. A missing
+// url is a 400 from resolveRoute itself, so a 400 here proves the router
+// reached it — without spending a Claude call or a scrape on a smoke test.
+const resolve = await get("/api/resolve", {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
 });
-if (pair.status === 401 && /bad or expired/.test(pair.text)) {
-  ok("a bad pairing code is refused — router, database and auth are all live");
-} else if (pair.status >= 500) {
-  no(`POST /api/pair/redeem returned ${pair.status}`, "almost always the database not attaching — check DATABASE_URL");
+if (resolve.status === 400 && /url is required/.test(resolve.text)) {
+  ok("POST /api/resolve is mounted and validates its input");
+} else if (resolve.status === 401) {
+  meh("POST /api/resolve wants an app key", h.app_key_required
+    ? "expected — SHELF_APP_KEY is set, so only a build carrying it can resolve"
+    : "unexpected: health says no key is required. Something is inconsistent.");
 } else {
-  no(`POST /api/pair/redeem returned ${pair.status}: ${pair.text.slice(0, 120)}`);
+  no(`POST /api/resolve returned ${resolve.status}: ${resolve.text.slice(0, 120)}`,
+     "the app cannot do anything at all if this route is not answering");
 }
+
+if (h.app_key_required) ok("the app key is enforced — only builds carrying it can spend money here");
+else meh("no SHELF_APP_KEY set: anybody who finds this URL can spend your Claude budget",
+         "set it AFTER a build carrying EXPO_PUBLIC_SHELF_KEY is installed, or the app you have gets 401s");
 
 // ── 6. the public surface ────────────────────────────────────────────────────
 console.log("\npublic pages");
@@ -146,4 +145,4 @@ if (bad) {
   process.exit(1);
 }
 console.log(`All checks passed${warn ? `, ${warn} thing(s) to note` : ""}.`);
-console.log("Next: node api/auth.js --pair you@email.com in the Render shell, then pair the app.");
+console.log("Next: share a reel into the app. There is nothing to sign into.");
