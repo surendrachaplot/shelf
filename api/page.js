@@ -20,7 +20,7 @@ import { plateSvg, plateColours, plateFor } from "../app/src/exlibris.js";
 
 // DERIVED, never restated. This was a hand-written object with four entries in
 // it, and it stayed at four when quotes and travel shipped — so a published
-// travel place rendered under the heading "Unsorted", on the one surface built
+// place rendered under the heading "Unsorted", on the one surface built
 // for handing to somebody who does not have the app. A list of lists written
 // out by hand is a list that will be wrong the next time a shelf is added.
 //
@@ -54,7 +54,7 @@ export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /**
- * "books, restaurants and travel" — the shelves that actually have something on
+ * "books, restaurants and places" — the shelves that actually have something on
  * them, in shelf order, as English. The hardcoded version of this sentence
  * described four lists on a card that might be four quotes and a bookshop.
  */
@@ -394,7 +394,7 @@ if (isMain(import.meta.url)) {
     const longQuote = "a".repeat(40) + " " + "b".repeat(40) + " " + "c".repeat(40) + " " + "d".repeat(40);
     const q = renderItem({ owner, item: { id: "q", list: "quotes", title: longQuote, subtitle: "Someone" } });
     ok(q.includes("…"), "a long quote on a jacket must say that it is cut");
-    ok(listSentence({ books: items, travel: items }) === "books and travel", "the card describes the shelves it actually has");
+    ok(listSentence({ books: items, places: items }) === "books and places", "the card describes the shelves it actually has");
     ok(listSentence({}) === "nothing yet", "an empty card does not claim shelves");
     // BOTH configurations, because the selftest runs in both, and an assertion
     // that only holds in one is a test that fails on a laptop and passes on

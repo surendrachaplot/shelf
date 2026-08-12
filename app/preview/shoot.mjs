@@ -30,8 +30,8 @@ const SHOTS = [
   { name: "app-quotes-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Quotes," },
   { name: "app-quotes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Quotes," },
   { name: "app-quotes-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Quotes," },
-  { name: "app-travel-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Travel," },
-  { name: "app-travel-unlocated-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Travel,", "Praia da Ursa"], scroll: 500 },
+  { name: "app-places-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Places," },
+  { name: "app-places-unlocated-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Places,", "Praia da Ursa"], scroll: 500 },
   { name: "app-recipes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Recipes," },
   // Tapping a jacket. The detail panel is the same two colours and the same
   // composition language at full size, so opening one reads as a zoom.
@@ -89,7 +89,7 @@ const SHOTS = [
   { name: "android-share-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light" },
   { name: "android-share-412-dark", q: "?screen=android-share", w: 412, h: 915, scheme: "dark" },
   { name: "android-share-360-light", q: "?screen=android-share", w: 360, h: 800, scheme: "light" },
-  { name: "android-share-done-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light", click: "Travel" },
+  { name: "android-share-done-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light", click: "Places" },
 ];
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });

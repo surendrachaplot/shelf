@@ -4,7 +4,7 @@
 // MUST match src/api.ts. It did not, once: two new lists were added and the
 // rail in every screenshot still showed the old five, which looked like the
 // feature had not been built.
-export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const API_BASE = "";

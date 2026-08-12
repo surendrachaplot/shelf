@@ -678,8 +678,8 @@ const STATIC_PROBES = {
   // the defect.
   "no-hardcoded-lists": {
     bad: `const body = { lists: ["books", "restaurants", "movies", "recipes"].map(f) };`,
-    good: `export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];\n`
-        + `// deliberate subset\nconst KEEPS = new Set(["travel", "quotes"]);\n`
+    good: `export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];\n`
+        + `// deliberate subset\nconst KEEPS = new Set(["places", "quotes"]);\n`
         + `const body = { lists: LISTS.map(f) };`,
   },
   "type-scale": { bad: `const s = {\n  x: {\n    fontSize: 34,\n  },\n};`, good: `const s = {\n  x: {\n    fontSize: glyph.lg,\n  },\n};` },

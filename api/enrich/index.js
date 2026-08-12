@@ -325,7 +325,7 @@ async function googlePlace(key, title, city) {
   return pickPlace(j?.places?.[0]);
 }
 
-export async function enrichPlace({ title, search_hints }, homeCity) {
+export async function enrichRestaurant({ title, search_hints }, homeCity) {
   // The city matters twice: it disambiguates ("Ganapati" exists in several
   // cities) and it is part of the cache key, so the same name in two cities is
   // two questions rather than one wrong answer reused.
@@ -338,7 +338,7 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
   // account, every restaurant filed with no address whatsoever.
   return cached("place", cacheKey(["place", title, city, gkey ? "g" : "osm"]), async () => {
     const osm = await osmPlace(title, city).catch(() => null);
-    // Same guard as travel: a restaurant that geocodes to a different
+    // Same guard as places: a restaurant that geocodes to a different
     // restaurant with a similar name is the worst row this app can produce.
     if (osm && nameFound(title, osm.title)) return osm;
     if (gkey) {
@@ -349,7 +349,7 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
   });
 }
 
-// ── travel: a name on a map ──────────────────────────────────────────────────
+// ── places: a name on a map ──────────────────────────────────────────────────
 
 /**
  * A place you could actually navigate to.
@@ -409,9 +409,9 @@ export function searchMapUrl(title, city) {
   return `geo:0,0?q=${encodeURIComponent(q)}`;
 }
 
-export async function enrichTravel({ title, search_hints }, homeCity) {
+export async function enrichPlace({ title, search_hints }, homeCity) {
   const city = search_hints?.city || homeCity || "";
-  return cached("travel", cacheKey(["travel", title, city]), async () => {
+  return cached("places", cacheKey(["places", title, city]), async () => {
     const found = await osmPlace(title, city).catch(() => null);
     // A match whose name is not ours is a different place, and a wrong pin is
     // worse than no pin: it is confident, navigable, and silent. Fall through
@@ -538,8 +538,8 @@ export async function enrich(item, { outboundUrls = [], homeCity = null } = {}) 
   try {
     if (item.list === "books") got = await enrichBook(item);
     else if (item.list === "movies") got = await enrichMovie(item);
-    else if (item.list === "restaurants") got = await enrichPlace(item, homeCity);
-    else if (item.list === "travel") got = await enrichTravel(item, homeCity);
+    else if (item.list === "restaurants") got = await enrichRestaurant(item, homeCity);
+    else if (item.list === "places") got = await enrichPlace(item, homeCity);
     else if (item.list === "recipes") got = await enrichRecipe(item, outboundUrls);
     // Quotes deliberately fall through: see above. The item Claude read IS the
     // finished item, and `enriched: false` on a quote is not a shortfall.

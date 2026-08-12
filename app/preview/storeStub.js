@@ -46,7 +46,7 @@ const SHELVED = {
     "We tell ourselves stories in order to live. We look for the sermon in the suicide, for the social or moral lesson in the murder of five. We interpret what we see, select the most workable of the multiple choices, and we live entirely by the imposition of a narrative line upon disparate images.",
   ],
   // A trip is one reel and many places — the whole point of one item per place.
-  travel: ["Miradouro da Senhora do Monte", "Time Out Market", "Belém", "A Cevicheria", "Praia da Ursa"],
+  places: ["Miradouro da Senhora do Monte", "Time Out Market", "Belém", "A Cevicheria", "Praia da Ursa"],
 };
 
 const QUOTE_BY = {
@@ -82,7 +82,7 @@ const mk = (list, title, i) => {
   const perList =
     list === "quotes"
       ? { subtitle: QUOTE_BY[title] ?? "", canonical: { author: QUOTE_BY[title] ?? null } }
-      : list === "travel"
+      : list === "places"
         ? { subtitle: [TRAVEL[title]?.area, TRAVEL[title]?.city].filter(Boolean).join(" · ") || "Lisbon",
             canonical: TRAVEL[title] ?? { city: "Lisbon", located: false, map_url: `geo:0,0?q=${encodeURIComponent(title)}` } }
         : {};

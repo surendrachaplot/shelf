@@ -12,7 +12,7 @@
 import { isMain } from "./ismain.js";
 import { readFile } from "node:fs/promises";
 
-export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
 
 // Opus 5 by default. Sonnet 5 is a drop-in via SHELF_MODEL if this ever runs
 // hot enough to care — a per-share extraction is a few thousand tokens, so at
@@ -57,7 +57,7 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with six lists: books, restaurants, movies, recipes, quotes, travel.
+const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with six lists: books, restaurants, movies, recipes, quotes, places.
 
 Return the thing itself, never the post about it. "POV: you finally read the book everyone's talking about 📚 Piranesi by Susanna Clarke" is one item titled "Piranesi", not "POV: you finally read...".
 
@@ -69,11 +69,11 @@ Never invent an author, year, or address that the caption does not support. An e
 
 QUOTES. The thing being saved is THE WORDS THEMSELVES. Put the quote in "title", verbatim — the person's actual sentence, not a summary of it and not a label for it. Strip surrounding quotation marks, hashtags, and the "follow for more" tail; keep the wording, the punctuation and the line breaks inside it exactly as written. Put whoever said it in "subtitle" and in search_hints.author. If the caption does not say who said it, leave both empty rather than guessing — a misattributed quote is worse than an unattributed one. A quote with no attribution is still a perfectly good quote.
 
-TRAVEL. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
+PLACES. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
 
 TAGGED ACCOUNTS. Captions very often list things by TAGGING them instead of naming them: "10 lovely bookshops with cafes … Bookshops featured: @backstory.london @funnyweatherbooks @the_bookelephant". Those accounts ARE the list — three items, not one item called "10 lovely bookshops". The handle is the only name you get, so read it as one: @backstory.london is "Backstory", @funnyweatherbooks is "Funny Weather", @the_bookelephant is "The Book Elephant". BUILD THE NAME OUT OF THE LETTERS IN THE HANDLE AND NOTHING ELSE. Split it into words, drop a trailing city, country, "official", "hq" or "shop", and stop: @bookbaruk is "Book Bar", not "Book Bar UK". Do not add a word the handle does not contain, and do not reach for a similar place you happen to know — an exact short name is worth more than a fuller guess, because the map is searched with what you write here. Put the city from the caption in search_hints.city on every one of them — that is what turns a name into a place. Ignore the poster's own account and any account that is plainly a photographer credit, a friend, or a brand doing a giveaway. If a handle yields no plausible name, drop it: an item called "@xyz_92" is worse than nine items instead of ten.
 
-RESTAURANTS vs TRAVEL: a place you would eat at, at home, is a restaurant. A place you would go to on a trip — including its restaurants — is travel. When the caption is about a trip, prefer travel.`;
+RESTAURANTS vs PLACES: somewhere you would eat, at home, is a restaurant. Somewhere you would go on a trip — including its restaurants — is a place. When the caption is about travelling, prefer places.`;
 
 // The user's tap wins. Stated separately from SYSTEM so it is impossible to
 // accidentally drop when the prompt is edited.
@@ -219,7 +219,7 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   const tagged = buildPrompt({
     caption: "10 lovely bookshops in London\n\nBookshops featured:\n@backstory.london @the_bookelephant",
     authorHandle: "whatshotblog",
-  }, "travel");
+  }, "places");
   ok(tagged.includes("@backstory.london"), "the handles reach the model as caption text");
   ok(!/=\s*$|Accounts tagged in the caption/.test(tagged),
      "no empty roster of resolved names — that section fed the model a blank every time");

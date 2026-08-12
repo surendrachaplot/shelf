@@ -24,11 +24,11 @@ export const lists = {
   movies: { label: "Movies", one: "film", n: "03" },
   recipes: { label: "Recipes", one: "recipe", n: "04" },
   quotes: { label: "Quotes", one: "quote", n: "05" },
-  travel: { label: "Travel", one: "place", n: "06" },
+  places: { label: "Places", one: "place", n: "06" },
   unsorted: { label: "Not shelved", one: "item", n: "00" },
 } as const;
 
-export const LIST_ORDER = ["books", "restaurants", "movies", "recipes", "quotes", "travel"] as const;
+export const LIST_ORDER = ["books", "restaurants", "movies", "recipes", "quotes", "places"] as const;
 
 // Indexed by a string that came off the wire — a share target, a received
 // delivery, a search hit — where the type system cannot know it is one of the

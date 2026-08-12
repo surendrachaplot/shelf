@@ -39,6 +39,17 @@ export function appKeyOk(req) {
   return diff === 0;
 }
 
-export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
+export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
 export const ALL_LISTS = [...LISTS, "unsorted"];
-export const normList = (l) => (ALL_LISTS.includes(l) ? l : "unsorted");
+
+// OLD NAMES NEVER STOP ARRIVING. "travel" became "places", and a phone still
+// running the previous build keeps sending the old word — as does every
+// snapshot already published under it. Without this they fall through to
+// "unsorted", which is not an error anybody sees: the share just lands on the
+// wrong shelf. An alias costs one line and outlives the rename.
+const RENAMED = { travel: "places" };
+
+export const normList = (l) => {
+  const named = RENAMED[l] ?? l;
+  return ALL_LISTS.includes(named) ? named : "unsorted";
+};

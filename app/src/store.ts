@@ -82,10 +82,43 @@ export async function load(): Promise<Shelf> {
     const raw = await FileSystem.readAsStringAsync(FILE);
     const parsed = JSON.parse(raw) as Shelf;
     if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.items)) return emptyShelf();
-    return { ...emptyShelf(), ...parsed };
+    return migrate({ ...emptyShelf(), ...parsed });
   } catch {
     return emptyShelf();
   }
+}
+
+/**
+ * RENAMES ARE A DATA PROBLEM, not a find-and-replace.
+ *
+ * The travel shelf became "places". Everything already saved on this phone
+ * says `list: "travel"`, and a shelf key nothing recognises does not error —
+ * it falls through `normList` to "unsorted", so a rename shipped without this
+ * would quietly empty somebody's shelf into the pile and look like data loss.
+ *
+ * Applied on read and written back by the next save, so it costs one pass and
+ * then never runs again. Old names stay here forever: this phone may not have
+ * been opened for a year.
+ */
+const RENAMED: Record<string, string> = { travel: "places" };
+
+export function migrate(shelf: Shelf): Shelf {
+  let touched = false;
+  const items = shelf.items.map((it) => {
+    const to = RENAMED[it.list as string];
+    if (!to) return it;
+    touched = true;
+    return { ...it, list: to };
+  });
+  // The published links carry a shelf name too — a card shared as "travel"
+  // should still say what it was.
+  const links = shelf.links.map((l) => {
+    const to = l.target ? RENAMED[l.target] : null;
+    if (!to) return l;
+    touched = true;
+    return { ...l, target: to };
+  });
+  return touched ? { ...shelf, items, links } : shelf;
 }
 
 export async function save(shelf: Shelf): Promise<void> {

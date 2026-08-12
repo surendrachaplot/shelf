@@ -25,8 +25,8 @@ const APP_KEY = process.env.EXPO_PUBLIC_SHELF_KEY ?? "";
 export const SHARE_BASE = process.env.EXPO_PUBLIC_SHELF_WEB ?? API_BASE;
 export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
 
-export type ListName = "books" | "restaurants" | "movies" | "recipes" | "quotes" | "travel" | "unsorted";
-export const LISTS: ListName[] = ["books", "restaurants", "movies", "recipes", "quotes", "travel"];
+export type ListName = "books" | "restaurants" | "movies" | "recipes" | "quotes" | "places" | "unsorted";
+export const LISTS: ListName[] = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
 
 /** What the resolver hands back. The device turns this into a stored Item. */
 export type Resolved = {

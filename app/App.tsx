@@ -74,7 +74,7 @@ type Route = "case" | "add" | "profile";
  * is often where the attribution lives.
  */
 // deliberate subset — only these two shelves keep the caption.
-const KEEPS_CAPTION = new Set(["travel", "quotes"]);
+const KEEPS_CAPTION = new Set(["places", "quotes"]);
 const keepCaption = (it: { list?: string; caption?: string }) =>
   KEEPS_CAPTION.has(it.list ?? "") ? (it.caption || "").slice(0, 4000) : undefined;
 type Sharing = { kind: "item" | "shelf" | "profile"; item?: Item; list?: string; title: string };
@@ -916,7 +916,10 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
 function Facts({ item, on, fill, s }: {
   item: Item; on: string; fill: string; s: ReturnType<typeof styles>;
 }) {
-  const { lede, rows, links } = factsFor(item);
+  // The platform decides what a map link looks like — see mapUrl() in facts.js.
+  // Passed in rather than read there because facts.js has no imports on
+  // purpose: the server renders the same rows into the public page.
+  const { lede, rows, links } = factsFor(item, { platform: Platform.OS });
   if (!lede && !rows.length && !links.length) return null;
 
   return (

@@ -35,6 +35,24 @@ const NATIVE = [
   { re: /^app\/package-lock\.json$/, why: "a dependency change may add or remove native code" },
   { re: /^app\/eas\.json$/, why: "build profiles and the env baked into a build" },
   { re: /^app\/metro\.config\.js$/, why: "how the extension's bundle is produced" },
+
+  // THE SHARE EXTENSION CANNOT BE UPDATED OVER THE AIR. Not "should not" —
+  // cannot: expo-share-extension EXCLUDES expo-updates from the extension's
+  // bundle by default, because including it crashes the extension. So the
+  // sheet you get over Instagram is frozen at whatever the last BUILD
+  // contained, no matter how many updates the app itself takes.
+  //
+  // This shipped and was reported: quotes and travel went out over the air,
+  // the app grew two shelves, and the share sheet kept offering four. The app
+  // and its own share sheet disagreed about how many shelves exist, and this
+  // file — whose entire job is to say "that needs a build" — said nothing,
+  // because ShareExtension.tsx is .tsx under app/ and looked like ordinary JS.
+  { re: /^app\/ShareExtension\.tsx$/, why: "the iOS share extension: expo-updates is excluded from its bundle, so nothing here travels over the air" },
+  { re: /^app\/index\.share\.js$/, why: "the extension's entry point — same bundle, same rule" },
+  { re: /^app\/src\/ShareBoards\.tsx$/, why: "the picker the extension renders; a change here is invisible until you build" },
+  // What the picker imports. Not everything in src/ — just the files it
+  // actually pulls in, because over-reporting trains you to ignore the answer.
+  { re: /^app\/src\/(api|theme|Press|design)\.(ts|js)$/, why: "the share extension renders this, and its bundle does not update over the air" },
 ];
 
 let files;

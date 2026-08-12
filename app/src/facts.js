@@ -18,9 +18,53 @@ const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 const list = (v) => (Array.isArray(v) ? v.filter(Boolean) : []);
 
 /**
+ * A MAP LINK THE PHONE WILL ACTUALLY OPEN.
+ *
+ * `geo:` is an ANDROID scheme. iOS does not handle it, so every Map button in
+ * this app opened nothing on an iPhone — silently, because `Linking.openURL`
+ * on an unhandled scheme just fails. Reported as "map button on the
+ * restaurants is not working", and it was broken on travel too: one server
+ * built one URL for two platforms that do not agree about what a map link is.
+ *
+ * So the SERVER stores the facts — a name, a city, coordinates — and the
+ * DEVICE builds the link, because only the device knows what it can open.
+ * `canonical.map_url` is left alone and no longer read; it is the Android form
+ * and this returns it verbatim on Android.
+ *
+ * The third case is not a phone at all: the public `/s/<code>` page is opened
+ * on anything, and a `geo:` link in a browser is a dead link. That gets a
+ * plain https maps URL, which works everywhere including as a fallback.
+ */
+export function mapUrl(item, platform) {
+  const c = (item && item.canonical) || {};
+  const name = (item && item.title) || "";
+  const q = [name, c.city].filter(Boolean).join(", ");
+  const pinned = isNum(c.lat) && isNum(c.lng);
+  if (!q && !pinned) return null;
+  const label = encodeURIComponent(name || q);
+
+  // Apple Maps opens on the pin AND keeps the name on it, which is why both
+  // parameters go in rather than just the coordinates.
+  if (platform === "ios") {
+    return pinned
+      ? `https://maps.apple.com/?ll=${c.lat},${c.lng}&q=${label}`
+      : `https://maps.apple.com/?q=${encodeURIComponent(q)}`;
+  }
+  // geo: is right here, and deliberately not a Google Maps URL: it opens
+  // whichever map app the person actually uses.
+  if (platform === "android") {
+    return pinned ? `geo:${c.lat},${c.lng}?q=${label}` : `geo:0,0?q=${encodeURIComponent(q)}`;
+  }
+  return pinned
+    ? `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+/**
  * @returns {{lede: string|null, rows: Array<{label:string,value:string}>, links: Array<{label:string,url:string}>}}
  */
-export function factsFor(item) {
+export function factsFor(item, opts) {
+  const platform = (opts && opts.platform) || null;
   const c = (item && item.canonical) || {};
   const rows = [];
   const links = [];
@@ -54,7 +98,7 @@ export function factsFor(item) {
     row("Address", c.address);
     row("Open", c.opening_hours);
     row("Serves", list(c.cuisine).join(" · "));
-    link("Map", c.map_url);
+    link("Map", mapUrl(item, platform));
     link("Website", c.website);
     link("Call", c.phone ? `tel:${String(c.phone).replace(/\s+/g, "")}` : null);
   } else if (item?.list === "quotes") {
@@ -64,7 +108,7 @@ export function factsFor(item) {
     // on one screen.
     row("Said by", c.author);
     row("From", c.source);
-  } else if (item?.list === "travel") {
+  } else if (item?.list === "places") {
     row("Where", [c.area, c.city].filter((v, i, a) => v && a.indexOf(v) === i).join(" · "));
     row("Address", c.address);
     row("Open", c.opening_hours);
@@ -72,7 +116,7 @@ export function factsFor(item) {
     // ON it; an unlocated one opens a search that should find it. Labelling
     // both "Map" would make the second one feel broken the first time it lands
     // you somewhere approximate.
-    link(c.located === false ? "Find on map" : "Map", c.map_url);
+    link(c.located === false ? "Find on map" : "Map", mapUrl(item, platform));
     link("Website", c.website);
   } else if (item?.list === "recipes") {
     row("Takes", c.total_time);

@@ -131,7 +131,7 @@ export const light = {
   // the two are not the same gesture at 47pt on the rail, which is the only
   // place colour carries the meaning alone.
   quotes: "#6D28D9",
-  travel: "#C2410C",
+  places: "#C2410C",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
@@ -141,7 +141,7 @@ export const light = {
 // label on Movies.
 export const listOn = {
   books: "#FFFFFF", restaurants: "#FFFFFF", movies: "#0A0A0A",
-  recipes: "#FFFFFF", quotes: "#FFFFFF", travel: "#FFFFFF",
+  recipes: "#FFFFFF", quotes: "#FFFFFF", places: "#FFFFFF",
   unsorted: "#FFFFFF",
 };
 
@@ -176,12 +176,12 @@ export const dark = {
   // the two are not the same gesture at 47pt on the rail, which is the only
   // place colour carries the meaning alone.
   quotes: "#6D28D9",
-  travel: "#C2410C",
+  places: "#C2410C",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
 
-export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "quotes", "travel", "unsorted"];
+export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "quotes", "places", "unsorted"];
 
 // Depth instead of outlines. A hairline border around every surface is the
 // visual equivalent of underlining every sentence: it flattens the hierarchy

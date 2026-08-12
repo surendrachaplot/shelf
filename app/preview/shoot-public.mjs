@@ -34,7 +34,7 @@ const lists = {
   // and rendered a travel place under the heading "Unsorted".
   quotes: mk("quotes", [["The trouble with the rat race is that even if you win, you're still a rat.", "Lily Tomlin"],
     ["A person who has not been completely alienated is a person who can still be surprised.", "John Berger"]]),
-  travel: mk("travel", [["Backstory", "Balham · London"], ["Lala Books", "Camberwell · London"],
+  places: mk("places", [["Backstory", "Balham · London"], ["Lala Books", "Camberwell · London"],
     ["Praia da Ursa", "Sintra"]]),
 };
 
@@ -46,7 +46,7 @@ const PAGES = [
   // until the labels stopped being a hand-written list of four.
   ["public-item-travel", renderItem({ owner, item: { ...lists.travel[0], note: "Cafe at the back, open late on Thursdays.", source_url: "https://instagram.com/p/x" } })],
   ["public-item-quote", renderItem({ owner, item: lists.quotes[0] })],
-  ["public-shelf-travel", renderShelf({ owner, list: "travel", items: lists.travel, note: "Bookshops worth the trip." })],
+  ["public-shelf-travel", renderShelf({ owner, list: "places", items: lists.travel, note: "Bookshops worth the trip." })],
   ["public-gone", renderGone()],
 ];
 
