@@ -137,7 +137,16 @@ measured (225 across the app, all clear of 44pt). 360×800 is the tight case,
 not the Pixel.
 
 **Building it:** Actions → **Build the app** → `platform=android`,
-`profile=preview`. The sandbox cannot reach `api.expo.dev`, same as
+`profile=preview`. **The first build was accepted and queued** — status
+`IN_QUEUE`, build `a8fcfdfe-5d5f-4aa2-8199-27dd85932ff4`, which is proof that
+credentials resolved (EAS generated the Android keystore without a prompt) and
+that nothing in the config was rejected. The free-tier queue is the only thing
+between that and an APK.
+
+**An EAS build runs on Expo's servers, not on the runner.** A runner timeout
+does not cancel it. `what=status` asks Expo what actually happened in about
+forty seconds, which is the difference between knowing and starting a second
+build to find out. The sandbox cannot reach `api.expo.dev`, same as
 `onrender.com`. Both Android profiles build an **APK, not an AAB** — an AAB is
 a Play upload format that downloads fine and cannot be installed, with no error
 saying why. Preflight checks that too.
