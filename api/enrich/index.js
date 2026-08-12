@@ -32,8 +32,9 @@ import { parseLd, extractWebPage } from "../resolve.js";
  *   v2 — trailers, runtime, cast, streaming, book pages, OSM places
  *   v3 — travel places (located, city, search fallback)
  *   v4 — asked_as, when the map answers with a different name
+ *   v5 — a match whose name is not ours is refused, not adopted
  */
-export const SHAPE = "v4";
+export const SHAPE = "v5";
 
 export const cacheKey = (parts) =>
   [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
@@ -337,8 +338,13 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
   // account, every restaurant filed with no address whatsoever.
   return cached("place", cacheKey(["place", title, city, gkey ? "g" : "osm"]), async () => {
     const osm = await osmPlace(title, city).catch(() => null);
-    if (osm) return osm;
-    if (gkey) return googlePlace(gkey, title, city).catch(() => null);
+    // Same guard as travel: a restaurant that geocodes to a different
+    // restaurant with a similar name is the worst row this app can produce.
+    if (osm && nameFound(title, osm.title)) return osm;
+    if (gkey) {
+      const g = await googlePlace(gkey, title, city).catch(() => null);
+      if (g && nameFound(title, g.title)) return g;
+    }
     return null;
   });
 }
@@ -358,18 +364,41 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
  * The item says which it got. "Here is the pin" and "here is a search that
  * should find it" are different promises and the app renders them differently.
  */
+const normName = (x) => String(x || "").toLowerCase()
+  .replace(/[^a-z0-9 ]+/g, " ")
+  .replace(/\b(the|and|a|an|of|at)\b/g, " ")
+  .split(/\s+/).filter(Boolean).join(" ");
+
 /**
  * Are these the same name, allowing for the punctuation and articles a map and
- * a caption disagree about? "The Book Elephant" and "Book Elephant" are; "Book
- * Bar" and "The Book and Record Bar" are NOT, and the whole point is that the
- * second pair must not pass quietly.
+ * a caption disagree about? "The Book Elephant" and "Book Elephant" are.
  */
 export function sameName(a, b) {
-  const norm = (x) => String(x || "").toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .replace(/\b(the|and|a|an|of|at)\b/g, " ")
-    .split(/\s+/).filter(Boolean).join(" ");
-  return norm(a) === norm(b);
+  return normName(a) === normName(b);
+}
+
+/**
+ * DID THE MAP FIND WHAT WE ASKED FOR, or something else nearby?
+ *
+ * Measured, after three prompt edits aimed at the wrong file: the classifier
+ * asked Nominatim for "Book Bar" and got back "The Book and Record Bar" — a
+ * real London bookshop, in West Norwood, that is not the one in the post. The
+ * enricher then adopted its name AND its coordinates, so the row was wrong in
+ * the two ways that matter and looked perfect in every way you could see.
+ *
+ * The discriminator is CONTIGUITY. A map that EXTENDS the name found your
+ * place: "Funny Weather Books" → "Funny Weather books + coffee". A map that
+ * INTERLEAVES other words found a different one: "Book Bar" → "Book and
+ * Record Bar". Both share every token; only the first keeps them adjacent.
+ *
+ * Deliberately not a similarity score. A threshold would need tuning against
+ * examples nobody has, and would fail silently in the middle. This is a rule
+ * you can check by reading it.
+ */
+export function nameFound(asked, got) {
+  const a = normName(asked), g = normName(got);
+  if (!a || !g) return false;
+  return g === a || g.includes(a);
 }
 
 export function searchMapUrl(title, city) {
@@ -383,7 +412,11 @@ export function searchMapUrl(title, city) {
 export async function enrichTravel({ title, search_hints }, homeCity) {
   const city = search_hints?.city || homeCity || "";
   return cached("travel", cacheKey(["travel", title, city]), async () => {
-    const osm = await osmPlace(title, city).catch(() => null);
+    const found = await osmPlace(title, city).catch(() => null);
+    // A match whose name is not ours is a different place, and a wrong pin is
+    // worse than no pin: it is confident, navigable, and silent. Fall through
+    // to the honest search link instead.
+    const osm = found && nameFound(title, found.title) ? found : null;
     if (osm) {
       return {
         ...osm,
@@ -580,7 +613,18 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
      "THE case this exists for: a real, adjacent, wrong bookshop must not read as a match");
   ok(!sameName("Funny Weather", "Funny Weather books + coffee"),
      "a fuller name is still a difference worth recording — it is a note, not a rejection");
-  ok(SHAPE === "v4", "adding asked_as without bumping SHAPE would serve the old answer back forever");
+
+  // THE GUARD, and the row that earned it. Every one of these shares its
+  // tokens with the query; only the adjacency tells them apart.
+  ok(nameFound("Funny Weather Books", "Funny Weather books + coffee"),
+     "a map that EXTENDS the name found the place");
+  ok(nameFound("Ganapati", "Ganapati Restaurant") && nameFound("The Book Elephant", "Book Elephant"),
+     "a suffix, and an article, are not a different place");
+  ok(!nameFound("Book Bar", "The Book and Record Bar"),
+     "a map that INTERLEAVES other words found a DIFFERENT place — this row shipped with the wrong pin");
+  ok(!nameFound("Ganapati", "Ganesha") && !nameFound("", "Anything") && !nameFound("Something", ""),
+     "no name, no match — never a coincidental one");
+  ok(SHAPE === "v5", "changing what a lookup RETURNS without bumping SHAPE serves the old answer back forever");
 
   // The rich film fields, from the shape TMDB actually returns.
   const md = pickMovieDetail(

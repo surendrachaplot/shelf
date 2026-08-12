@@ -71,7 +71,7 @@ QUOTES. The thing being saved is THE WORDS THEMSELVES. Put the quote in "title",
 
 TRAVEL. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten items, each titled with the individual place — the restaurant, the viewpoint, the neighbourhood, the shop — and NOT one item called "Lisbon". Put the city or area in search_hints.city on every one of them, because that is what turns a name into a point on a map. If the reel names a city with no specific places in it, that is one item titled with the city. A place with a name you cannot make out is better dropped than saved as "amazing rooftop bar".
 
-TAGGED ACCOUNTS. Captions very often list things by TAGGING them instead of naming them: "10 lovely bookshops with cafes … Bookshops featured: @backstory.london @funnyweatherbooks @the_bookelephant". Those accounts ARE the list — three items, not one item called "10 lovely bookshops". The handle is the only name you get, so read it as one: @backstory.london is "Backstory", @funnyweatherbooks is "Funny Weather", @the_bookelephant is "The Book Elephant". BUILD THE NAME OUT OF THE LETTERS IN THE HANDLE AND NOTHING ELSE. Split it into words, drop a trailing city, country, "official", "hq" or "shop", and stop. Never add a word the handle does not contain: @bookbaruk is "Book Bar" — not "Book Bar UK", and NOT "The Book and Record Bar", which is a real but different shop that a map will happily confirm with a real address. A wrong place that geocodes is worse than a right name that does not, because nothing downstream can tell it is wrong. Put the city from the caption in search_hints.city on every one of them — that is what turns a name into a place. Ignore the poster's own account and any account that is plainly a photographer credit, a friend, or a brand doing a giveaway. If a handle yields no plausible name, drop it: an item called "@xyz_92" is worse than nine items instead of ten.
+TAGGED ACCOUNTS. Captions very often list things by TAGGING them instead of naming them: "10 lovely bookshops with cafes … Bookshops featured: @backstory.london @funnyweatherbooks @the_bookelephant". Those accounts ARE the list — three items, not one item called "10 lovely bookshops". The handle is the only name you get, so read it as one: @backstory.london is "Backstory", @funnyweatherbooks is "Funny Weather", @the_bookelephant is "The Book Elephant". BUILD THE NAME OUT OF THE LETTERS IN THE HANDLE AND NOTHING ELSE. Split it into words, drop a trailing city, country, "official", "hq" or "shop", and stop: @bookbaruk is "Book Bar", not "Book Bar UK". Do not add a word the handle does not contain, and do not reach for a similar place you happen to know — an exact short name is worth more than a fuller guess, because the map is searched with what you write here. Put the city from the caption in search_hints.city on every one of them — that is what turns a name into a place. Ignore the poster's own account and any account that is plainly a photographer credit, a friend, or a brand doing a giveaway. If a handle yields no plausible name, drop it: an item called "@xyz_92" is worse than nine items instead of ten.
 
 RESTAURANTS vs TRAVEL: a place you would eat at, at home, is a restaurant. A place you would go to on a trip — including its restaurants — is travel. When the caption is about a trip, prefer travel.`;
 
@@ -225,11 +225,12 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
      "no empty roster of resolved names — that section fed the model a blank every time");
   ok(SYSTEM.includes("@backstory.london is \"Backstory\""),
      "SYSTEM must show how to read a handle as a name, or a tag-list post yields one item called '10 lovely bookshops'");
-  // The rule that stops a guess becoming a confidently-wrong pin. @bookbaruk
-  // came back twice as "The Book and Record Bar" — a real London bookshop,
-  // with a real address, that is not the one in the post.
-  ok(/letters in the handle/i.test(SYSTEM) && SYSTEM.includes("Book and Record Bar"),
-     "SYSTEM must forbid adding words a handle does not contain, and name the case that taught it");
+  // The name written here is what the map gets searched with, so a fuller
+  // guess is worse than an exact short name. (The wrong-bookshop row that
+  // looked like a prompt failure was NOT one — measured, and it was the
+  // geocoder adopting a near match. The guard for that lives in enrich/.)
+  ok(/letters in the handle/i.test(SYSTEM) && /@bookbaruk is "Book Bar"/.test(SYSTEM),
+     "SYSTEM must forbid adding words a handle does not contain");
 
   // The model tries to re-file into movies; the user said restaurants.
   const forced = coerceItems({ items: [{ list: "movies", title: "Ganapati", subtitle: "South Indian", note: "Get the dosa", confidence: 0.9, search_hints: { author: "", year: "", city: "Peckham", cuisine: "South Indian" } }] }, "restaurants");
