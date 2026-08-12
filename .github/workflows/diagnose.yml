@@ -91,8 +91,7 @@ jobs:
               ;;
             resolve)
               # THE WHOLE ROUND TRIP, exactly as the phone makes it: scrape,
-              # tagged accounts if the caption only names handles, Claude,
-              # then the catalogues. `reel` shows what Instagram handed over;
+              # Claude, then the catalogues. `reel` shows what Instagram gave;
               # this shows what a person would end up with on a shelf, which
               # is the only claim worth making.
               if [ -z "$URL" ]; then
@@ -110,7 +109,7 @@ jobs:
               # names came out but nothing was found for them — a different
               # failure from no items at all, and invisible without this.
               echo "--- what landed ---"
-              jq -r '"resolver=\(.resolver) caption_chars=\(.caption_chars) tagged_accounts=\(.tagged_accounts) items=\(.items|length)",
+              jq -r '"resolver=\(.resolver) caption_chars=\(.caption_chars) tagged_handles=\(.tagged_handles) items=\(.items|length)",
                      (.items[]? | "  [\(.list)] \(.title // "—") — \(.subtitle // "") · enriched=\(.enriched) conf=\(.confidence)")' \
                 /tmp/out.json || true
               exit 0
