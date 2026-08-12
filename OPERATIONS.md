@@ -204,6 +204,36 @@ sheet they cannot dismiss is worse than any latency you can measure.
 - `metro.config.js` must wrap `withShareExtension`, or metro only ever builds
   the app bundle and the extension ships stale JS.
 
+## 4a2. Android
+
+Android has **no share extension**. `ACTION_SEND` opens the app, so the same
+picker (`src/ShareBoards.tsx`) renders inside it and writes the same queue. The
+mechanism differs; everything after the tap does not.
+
+- **`expo-share-intent` is configured `disableIOS: true`, and that is not
+  cosmetic.** Both it and `expo-share-extension` build an iOS share-extension
+  target. With both enabled the target is written twice and the **iOS** build
+  fails — an Android change breaking the other platform. Preflight refuses it.
+- **Build an APK, never an AAB.** The default is an app bundle, which is a Play
+  upload format: it downloads onto a phone and will not install, with no error
+  that says why. Both profiles pin `android.buildType: "apk"`.
+- **`expo-system-ui` must stay installed.** Without it `userInterfaceStyle` is
+  silently ignored on Android and dark mode never turns on. `prebuild` mentions
+  it in one grey line and then succeeds.
+- **The status bar is painted, not floated.** The generated theme hardcodes it,
+  so it is set from the colour scheme in JS instead — which also means the fix
+  travels over the air.
+- **Read the manifest, do not assume the plugin worked.** `npx expo prebuild -p
+  android` then `android/app/src/main/AndroidManifest.xml`: it must carry
+  `android.intent.action.SEND` with `text/*` and `image/*`, and
+  `launchMode="singleTask"` so a share into a running app arrives as a new
+  intent rather than a second copy of the activity. `android/` is gitignored —
+  a checked-in copy silently outranks the plugins that generate it.
+
+**Nothing about Android needs an Apple account, a device UDID or a paid
+membership.** It is the short path from a push to something installed on a
+phone, which is why it is the platform to test a change on first.
+
 ## 4b. The public web surface
 
 ONE URL shape, because it is the only one that still means anything:

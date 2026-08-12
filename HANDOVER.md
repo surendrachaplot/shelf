@@ -9,7 +9,7 @@ summary. Replace it wholesale at the end of the next substantial session.
 
 Share an Instagram reel → it lands on one of six shelves: **books ·
 restaurants · movies · recipes · quotes · travel**. One repo, two folders:
-`api/` (plain `node:http`) and `app/` (Expo + a share extension).
+`api/` (plain `node:http`) and `app/` (Expo, **iOS + Android**).
 
 **The shelves live on the phone.** One JSON file, written atomically. No
 accounts, no login, no pairing, no server-side rows. The API is a stateless
@@ -98,6 +98,49 @@ unaffected.
 
 **Reproduce it:** Actions → *Diagnose the deployed service* → `what=resolve`,
 `url=<the post>`. It prints the whole JSON and then a one-line-per-item summary.
+
+### Android (2026-08-12)
+
+**shelf is two platforms now.** The work was not "port the extension" — Android
+has no extension to port. `ACTION_SEND` opens the app itself, so the app grew a
+second front door and both platforms share one picker.
+
+| | iOS | Android |
+|---|---|---|
+| How a share arrives | a share extension: separate process, over Instagram | `ACTION_SEND` opens the app |
+| Plugin | `expo-share-extension` | `expo-share-intent` **with `disableIOS: true`** |
+| Who writes the queue | the extension, then it closes | the app, from the intent |
+| After that | identical — `drainShares` never knew the difference | identical |
+
+`src/ShareBoards.tsx` is the picker; `ShareExtension.tsx` is twelve lines that
+pass it `close()`. **`disableIOS` is load-bearing**: both packages build an iOS
+share-extension target, and two of them is an iOS build failure caused by an
+Android change. Preflight refuses a config without it.
+
+**Two real defects, both found by rendering rather than reasoning:**
+
+- **Android paints its status bar; iOS floats it.** The generated theme
+  hardcodes it opaque white, so dark mode had a pale strip above a near-black
+  app. Now set from the scheme in JS — which also means it reaches an installed
+  phone over the air, where a `values-night` change would not.
+- **`expo-system-ui` was missing**, so `userInterfaceStyle: automatic` was
+  silently ignored on Android. Every screen in this app is designed twice and
+  dark mode would simply never have turned on. `prebuild` says so in one grey
+  line and the build succeeds; preflight now fails instead.
+
+**What is actually checked, on a Linux box with no Android toolchain:**
+`expo prebuild -p android` runs and the generated `AndroidManifest.xml` is
+read — `ACTION_SEND` for `text/*` and `image/*`, `launchMode="singleTask"` so a
+share into a running app does not stack a second copy. The Android host is
+rendered at 412×915 and 360×800 in both schemes, and its 7 controls are
+measured (225 across the app, all clear of 44pt). 360×800 is the tight case,
+not the Pixel.
+
+**Building it:** Actions → **Build the app** → `platform=android`,
+`profile=preview`. The sandbox cannot reach `api.expo.dev`, same as
+`onrender.com`. Both Android profiles build an **APK, not an AAB** — an AAB is
+a Play upload format that downloads fine and cannot be installed, with no error
+saying why. Preflight checks that too.
 
 ### Sharing was quietly dropping two shelves (fixed, `4d63950`)
 
