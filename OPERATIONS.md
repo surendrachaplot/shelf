@@ -148,6 +148,15 @@ sheet they cannot dismiss is worse than any latency you can measure.
   back and looks broken. Bump `SHAPE` whenever the returned object grows a
   field. This cost a confusing hour when trailers and opening hours shipped and
   nothing appeared.
+- **A place provider returns its best guess, never "not found".** Nominatim
+  answered a search for "Book Bar" with "The Book and Record Bar" — a real
+  bookshop in another borough — and the enricher adopted its name AND its
+  coordinates. HTTP 200, no score, nothing to catch. `nameFound()` now requires
+  the returned name to CONTAIN the asked-for name as a contiguous phrase:
+  "Funny Weather Books" → "Funny Weather books + coffee" passes, "Book Bar" →
+  "Book and Record Bar" does not. A refused match keeps the honest map-search
+  link. `canonical.asked_as` records the difference on the ones that pass, and
+  the `resolve` diagnosis prints it.
 - **City is part of the Places cache key.** "Ganapati" exists in several
   cities; keying on the name alone reuses the wrong answer forever.
 - Open Library and schema.org recipe parsing need no key. TMDB needs a free
