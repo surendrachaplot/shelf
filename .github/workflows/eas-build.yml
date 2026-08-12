@@ -17,6 +17,12 @@ name: Build the app
 on:
   workflow_dispatch:
     inputs:
+      what:
+        description: "Start a build, or just ask what happened to the last one"
+        required: true
+        default: build
+        type: choice
+        options: [build, status]
       platform:
         description: "Which platform to build"
         required: true
@@ -65,7 +71,20 @@ jobs:
       # queue is a slow way to be told about a missing icon.
       - run: npm run preflight
 
+      # WHY THIS EXISTS: an EAS build runs on Expo's servers, not here. When the
+      # free-tier queue is long the runner can hit its own timeout while the
+      # build carries on perfectly happily — and killing the runner does not
+      # kill the build. `status` asks Expo what actually happened, in twenty
+      # seconds, instead of starting a second build to find out.
+      - name: What happened to the last builds
+        if: inputs.what == 'status'
+        run: |
+          npx --yes eas-cli@latest build:list \
+            --platform "${{ inputs.platform }}" --limit 5 --non-interactive --json 2>/dev/null \
+            | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)\n"'
+
       - name: Build
+        if: inputs.what == 'build'
         id: build
         run: |
           set -o pipefail
@@ -79,7 +98,7 @@ jobs:
       # out of the JSON so it is the last thing in the log rather than the
       # thing you scroll a build transcript to find.
       - name: Where to install it
-        if: always()
+        if: always() && inputs.what == 'build'
         run: |
           if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
           # --json prints an array of builds (one per platform). Anything that
