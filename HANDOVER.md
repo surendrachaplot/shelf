@@ -8,7 +8,10 @@ summary. Replace it wholesale at the end of the next substantial session.
 ## What shelf is
 
 Share an Instagram reel → it lands on one of six shelves: **books ·
-restaurants · movies · recipes · quotes · travel**. One repo, two folders:
+restaurants · movies · recipes · quotes · places**. (`travel` was renamed to
+`places` on 2026-08-12; `store.ts` migrates old items on read and the server
+aliases the old name for good. Log excerpts below that say `[travel]` predate
+it and are otherwise accurate.) One repo, two folders:
 `api/` (plain `node:http`) and `app/` (Expo, **iOS + Android**).
 
 **The shelves live on the phone.** One JSON file, written atomically. No
@@ -17,11 +20,85 @@ resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
 
-## Where it stands (2026-08-12)
+## Where it stands (2026-08-13)
 
 **On a phone, resolving real reels, updating itself over the air.** The
-local-first rewrite shipped and was published OTA; quotes and travel shipped
+local-first rewrite shipped and was published OTA; quotes and places shipped
 after it (EAS Update succeeded 2026-08-11 23:44Z on `efe48a4`).
+
+**START HERE: a shelf came up empty on a device on 2026-08-13** and the app
+could not say why, because it was built not to. Read the next section before
+anything else — the code is fixed and published, but whether that person's
+items came back is the one thing in this file that is still unknown.
+
+### The shelf that would not open (2026-08-13)
+
+Reported, in the only words the app made available: **"WTF there is nothing on
+my shelf now?"** — the morning after the `travel` → `places` rename went out
+over the air.
+
+`store.ts` ended its read with `catch { return emptyShelf() }`, under a comment
+calling it the kind thing to do. It is the opposite. **Every** read failure —
+a truncated file, a key of the wrong type, a bug in a migration written months
+later, a genuine first launch — drew the identical empty boards and said
+nothing. The app knew more than the person did and had no way to tell them.
+
+**The line that did it** was `{ ...emptyShelf(), ...parsed }`. It reads like it
+fills in gaps and does not: a spread does not skip a key whose value is wrong,
+it takes it. A stored `links: null` beat the `links: []` default, `migrate`
+called `.map` on it one frame later, and the catch turned that throw into an
+empty shelf. The rename shipped `shelf.links.map` with nothing between it and
+somebody's books.
+
+**Reproduced in a test, not argued about.** `app/store-selftest.mjs` bundles
+the REAL `store.ts` against an in-memory `expo-file-system`
+(`preview/fakeFs.js`) with esbuild, so there is no second copy of the logic to
+drift. With the old code restored it fails with the exact message the phone
+could not show:
+
+```
+Couldn't read your shelf file (315 bytes): Cannot read properties of null (reading 'map').
+```
+
+**Fixed in three rules, `91012c0`, published OTA:**
+
+| Rule | What it means |
+|---|---|
+| An empty shelf and an unreadable one are different answers | `load` returns `fresh` / `read` / `unreadable`, and the app prints the byte count and the real error on screen. A missing file next to a backup is a loss, not a first launch. |
+| Nothing is overwritten until it has been copied | A file that will not parse is kept verbatim as `shelf.broken.json` **once**, so a second bad boot cannot replace the good copy. A save that SHRINKS the shelf copies what it replaces to `shelf.prev.json` first — the only save that can lose anything, and also the undo you want after binning the wrong thing. |
+| A backup nobody can restore is not a backup | A **Put N back** button, which MERGES rather than replaces — by the time somebody taps it they may have added things to the shelf they were handed. |
+
+Plus `salvage()`, for the failure the atomic write cannot prevent: a phone that
+dies mid-write leaves a valid PREFIX, and a brace counter lifts whole items out
+of it. 41 books survive the 42nd being half-written.
+
+Plus `normalise()`, which checks every field of a file on disk for the SHAPE
+the code expects rather than for being present.
+
+**Six probes.** Each defence was removed in turn and the suite watched to fail.
+One assertion passed with its guard removed — it staged one bad boot where the
+guard is about the second — and was rewritten until it failed for the right
+reason. A test that has never failed is a test that proves nothing.
+
+**The state has a picture now**, light and dark:
+`preview/shots/app-unreadable-375-{light,dark}.png`, via `?broken=1` in the
+store stub. Part of why this shipped is that the empty state and the broken
+state were the same screenshot, so nobody had ever looked at one of them.
+
+**What is NOT known:** whether the reporter's own items came back. Three
+outcomes are consistent with what was reported and they are distinguishable on
+the device, not from here:
+
+1. The file was intact and the migration threw — the fix alone restores it.
+2. The file was damaged — **Put N back** appears with a count, and tapping it
+   is the fix.
+3. It was a fresh install of the new Android build. Shelves are local-only and
+   do not sync, so a second device legitimately starts empty. That is the
+   design working, and it is indistinguishable from a loss without looking.
+
+**The check that closes it:** open the app after the update. Either the shelf
+is there, or a notice names the file and the byte count and offers the items
+back, or it says nothing — and "nothing" now means case 3.
 
 ### Verified today, on the live service
 
@@ -204,15 +281,20 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
 | Thing | The check that proves it |
 |---|---|
 | Every parser, prompt, clamp, cache key, renderer | `cd api && npm run selftest` — 9 files, all green |
-| The design gate | `cd app && npm run preflight`; full `npm run verify` renders every screen |
-| Tap targets | `node app/preview/measure.mjs` → 201 controls, smallest effective 52pt |
-| Every screen, looked at | `node app/preview/shoot.mjs` → 320 + 375, both schemes, including quotes and travel |
+| The design gate | `cd app && node verify-design.mjs` — 25 rules, all probe-tested; full `npm run verify` renders every screen |
+| Build config, facts, and the shelf file | `cd app && npm run preflight` — preflight + facts selftest + **store selftest** |
+| The file that holds everything you saved | `node app/store-selftest.mjs` — real `store.ts` over an in-memory FS, six probes |
+| Tap targets | `node app/preview/measure.mjs` → 225 controls, smallest effective 52pt |
+| Every screen, looked at | `node app/preview/shoot.mjs` → 320 + 375 + Android 412/360, both schemes, including the unreadable-shelf state |
 | A deploy | `node api/smoke.mjs <url>` — commit, providers, routing, public pages |
 | The real round trip | Actions → Diagnose → `resolve` (above) |
-| Selftests can't rot again | `.github/workflows/checks.yml` runs them on every push |
+| Selftests can't rot again | `.github/workflows/checks.yml` runs them on every push — and now actually runs the design gate, which its "Design rules" step had never done |
 
 ## Open, with the check that would close it
 
+- **Did the reporter's shelf come back?** The only way to know is to open the
+  app on that phone after the update. Three outcomes, all distinguishable on
+  screen — see the section above. Until somebody looks, this is open.
 - **The repo is still public.** Actions logs are world-readable and have
   carried item titles and captions. Closes with: Settings → General → Change
   visibility. This is the one item on the list that leaks something.
@@ -280,6 +362,27 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
 - **A cache is keyed on the question and stores the answer.** Widening an
   enricher's return does not change the key, so new code reads old thin answers
   back. `SHAPE` in `cacheKey()`.
+- **A `catch` that returns a default is a claim about the user's data.**
+  `catch { return emptyShelf() }` looked defensive and meant that every read
+  failure in `store.ts` told somebody their shelf was empty, silently, with no
+  way to tell that from a first launch. If a fallback would assert something
+  about what a person owns, it has to say which case it is in — and it must not
+  overwrite what it could not read.
+- **A spread does not fill gaps, it takes keys.** `{ ...defaults, ...parsed }`
+  over a file on disk hands you `links: null` whenever the file says so. Check
+  each field for the SHAPE you need, not for being present.
+- **A failure state with no picture will ship.** The unreadable shelf and the
+  first launch rendered the same screenshot, so one of them had never been
+  looked at by anyone. Every state worth handling is worth a frame on the
+  contact sheet.
+- **A named CI step that does not do what it is named after is worse than no
+  step.** The app job's "Design rules" ran `preflight`, which checks package
+  versions and plugin order and has never looked at a colour or a type size.
+  It read green for weeks. Read what the step RUNS, not what it is called.
+- **A guard that fires on a change it knows is harmless gets bypassed.**
+  `native-changed.mjs` blocked the empty-shelf fix over a `scripts` edit in
+  package.json — the same false positive its own `owner`/`extra` exemption was
+  written for. Exempt narrowly, and probe that the exemption does not over-fire.
 - **A repair tool that only fixes empty rows cannot fix wrong ones.**
 - **A diagnostic nobody can see is not a diagnostic.** `sharedKeychainOk()` is
   on the card.
@@ -316,5 +419,13 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
   pairing field shipped under it.)
 - **One generator, two renderers.** The ex-libris plate is described once; the
   app draws it with react-native-svg and the server draws it into the page.
+- **Never let an error become a statement about somebody's data.** An app that
+  cannot read a file knows something; drawing an empty screen throws that away
+  and replaces it with the most frightening thing it could have said. Say which
+  failure it is, keep the bytes, offer the way back.
+- **A test that has never failed proves nothing.** Every assertion in the store
+  selftest was watched to fail with its defence removed. One passed anyway —
+  it was staging the wrong scenario — and was rewritten. Probe first, then
+  believe it.
 - **Derive, then check the floor.** The placeholder mix was guessed at 0.42 and
   the gate rejected it at 2.3:1; 0.26 is the answer.
