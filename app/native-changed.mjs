@@ -64,32 +64,49 @@ try {
 }
 
 /**
- * app.json is on the native list because almost everything in it — plugins,
- * entitlements, bundle id, icons — is baked at prebuild. But TWO of its keys
- * are not: `owner` and `extra`, which only tell EAS which account and project
- * this is. Changing those changes nothing a build produces.
+ * TWO FILES ARE ON THE NATIVE LIST FOR MOST OF THEIR CONTENT, NOT ALL OF IT.
  *
- * Worth the special case because the alternative is worse than it sounds:
+ * app.json, because almost everything in it — plugins, entitlements, bundle
+ * id, icons — is baked at prebuild. But `owner` and `extra` only tell EAS
+ * which account and project this is, and changing them changes nothing a
+ * build produces.
+ *
+ * package.json, because a dependency change may add or remove native code.
+ * But `scripts` are commands that run on a laptop. Adding a selftest to
+ * `npm run preflight` cannot alter a binary, and being sent on a twenty-minute
+ * TestFlight round trip for it — while a fix somebody is waiting for sits
+ * unpublished — is precisely how a guard stops being read.
+ *
+ * Worth the special cases because the alternative is worse than it sounds:
  * `owner` had to be added for a robot access token to publish at all, and
  * without this, adding it would have blocked the very publish it enables, with
  * "run a full rebuild" as the advice. A guard that fires on a change it knows
- * to be harmless teaches you to bypass the guard.
+ * to be harmless teaches you to ignore the guard — and the one time it is
+ * right is the time it matters.
  *
- * Anything else in app.json still counts as native. When the file cannot be
- * read from either side, it counts as native too — unknown is not safe.
+ * Everything ELSE in both files still counts. When a file cannot be read from
+ * either side, it counts too: unknown is not safe.
  */
-function appJsonIsOnlyAccountKeys(range) {
+const EXEMPT = {
+  "app/app.json": { keys: "`owner`/`extra`", why: "EAS account routing, not the native project",
+                    strip: (j) => { delete j?.expo?.owner; delete j?.expo?.extra; } },
+  "app/package.json": { keys: "`scripts`", why: "commands that run on a laptop, not code that ships",
+                        strip: (j) => { delete j?.scripts; } },
+};
+
+function onlyExemptKeysChanged(file, range) {
+  const rule = EXEMPT[file];
+  if (!rule) return false;
   const [base, head] = String(range).split("..");
   if (!base || !head) return false;
-  const strip = (ref) => {
+  const at = (ref) => {
     try {
-      const j = JSON.parse(execSync(`git show ${ref}:app/app.json`, { encoding: "utf8" }));
-      delete j?.expo?.owner;
-      delete j?.expo?.extra;
+      const j = JSON.parse(execSync(`git show ${ref}:${file}`, { encoding: "utf8" }));
+      rule.strip(j);
       return JSON.stringify(j);
     } catch (_) { return null; }
   };
-  const a = strip(base), b = strip(head);
+  const a = at(base), b = at(head);
   return a !== null && b !== null && a === b;
 }
 
@@ -103,8 +120,9 @@ const hits = [];
 for (const f of app) {
   const rule = NATIVE.find((r) => r.re.test(f));
   if (!rule) continue;
-  if (f === "app/app.json" && appJsonIsOnlyAccountKeys(range)) {
-    console.log("app.json changed, but only `owner`/`extra` — EAS account routing, not the native project");
+  if (onlyExemptKeysChanged(f, range)) {
+    const { keys, why } = EXEMPT[f];
+    console.log(`${f.replace("app/", "")} changed, but only ${keys} — ${why}`);
     continue;
   }
   hits.push({ f, why: rule.why });
