@@ -73,27 +73,57 @@ jobs:
             echo
           done
 
-      # Republishing puts an OLD bundle at the TOP of the branch, so the next
+      # Republishing puts an OLD bundle at the TOP of a branch, so the next
       # launch takes it. It does not delete anything — the broken update stays
       # in the history where it can be read.
-      - name: Republish that group to every channel
+      #
+      # `--group` and `--branch` are MUTUALLY EXCLUSIVE, which cost a failed
+      # run: a group already knows which branch it belongs to, so `--group`
+      # alone republishes it onto its own branch. Reaching a DIFFERENT branch
+      # is a separate flag, and the name has moved between eas-cli versions —
+      # so the help is printed first and the fallbacks are explicit rather
+      # than assumed. Guessing a flag from memory is what produced the failure
+      # this comment exists under.
+      - name: The flags this version of eas-cli actually has
+        if: inputs.action == 'republish'
+        run: eas update:republish --help || true
+
+      - name: Republish that group
         if: inputs.action == 'republish'
         run: |
           if [ -z "${{ inputs.group }}" ]; then
             echo "::error::republish needs a group ID. Run this with action=list first."
             exit 1
           fi
-          FAILED=""
-          for BRANCH in preview development; do
-            echo "── republishing ${{ inputs.group }} to $BRANCH"
-            eas update:republish \
-              --group "${{ inputs.group }}" \
-              --branch "$BRANCH" \
-              --message "Back to a bundle this binary can actually run" \
-              --non-interactive || FAILED="$FAILED $BRANCH"
+          GROUP="${{ inputs.group }}"
+
+          # 1. Back onto its own branch. This is the one that matters — it is
+          #    the branch the group was published to in the first place.
+          echo "── republishing $GROUP onto its own branch"
+          eas update:republish --group "$GROUP" \
+            --message "Back to a bundle this binary can actually run" \
+            --non-interactive
+          echo "OK: republished onto its own branch"
+
+          # 2. And onto the other one, if this eas-cli can. A phone on the
+          #    other channel took the broken bundle too, so this is not
+          #    optional — but the flag name varies, so try both spellings and
+          #    say plainly if neither worked rather than reporting success.
+          DONE=""
+          for FLAG in --destination-branch --target-branch; do
+            echo "── trying $FLAG development"
+            if eas update:republish --group "$GROUP" "$FLAG" development \
+                 --message "Back to a bundle this binary can actually run" \
+                 --non-interactive; then
+              DONE="$FLAG"
+              break
+            fi
           done
-          if [ -n "$FAILED" ]; then
-            echo "::error::failed to republish to:$FAILED"
-            exit 1
+          if [ -n "$DONE" ]; then
+            echo "OK: also republished to development via $DONE"
+          else
+            echo "::warning::could not republish to the development branch — see the help output above for the right flag"
           fi
-          echo "Done. Force-quit the app and open it twice — expo-updates applies on the NEXT launch after it downloads."
+
+          echo
+          echo "Force-quit the app and open it TWICE — expo-updates downloads on one launch and applies on the next."
