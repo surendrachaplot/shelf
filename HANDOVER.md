@@ -26,6 +26,43 @@ tapping Share, which you can revoke (a DELETE, not a flag).
 local-first rewrite shipped and was published OTA; quotes and places shipped
 after it (EAS Update succeeded 2026-08-11 23:44Z on `efe48a4`).
 
+### THE OUTAGE (2026-08-13) — read this before publishing anything
+
+An update was published whose JavaScript the installed binary could not run.
+`App.tsx` imports `expo-share-intent` → `expo-linking` → `requireNativeModule('ExpoLinking')`
+**at module top level, no optional variant**. The phone's binary was built from
+`63ddec6` (2026-08-11 13:12Z), four hours BEFORE the local-first rewrite, and
+contains none of the five packages added since: expo-share-intent, expo-linking,
+expo-constants, expo-splash-screen, expo-system-ui.
+
+So the bundle threw during evaluation, `expo-updates` fell back to the EMBEDDED
+bundle, and the app became the old **server-backed** version — which asked a
+server for shelves that the rewrite had deleted, and said **"Couldn't reach your
+shelves"**. Indistinguishable from data loss. Nothing was lost: the code that
+reads `shelf.json` never ran.
+
+**Recovered** by republishing update group `b677fb37-618b-4ecb-b7ca-9a218888e8da`
+("Sharing your card left two shelves out of it, silently", commit `4d63950`) to
+both branches — the last bundle published before the import landed. Confirmed
+back on the device.
+
+**Three holes, all closed:**
+
+| Hole | Fix |
+|---|---|
+| `native-changed.mjs` diffs a COMMIT RANGE. It correctly refused the push that added expo-share-intent, then waved through the NEXT push, whose range was clean, carrying a bundle that imports it. | `app/update-safety.mjs` compares HEAD against the commit the last **finished build** was made from (read from `eas build:list`), cumulatively. No base commit → refuses. Wired into `eas-update.yml` before every publish. |
+| `runtimeVersion` was `appVersion`, so it stayed "0.1.0" however much native code changed, and an incompatible update was offered at all. | `{"policy": "fingerprint"}`. Expo hashes the native project; adding a package changes the hash; an old binary stops being offered updates it cannot run. **Needs a build to take effect.** |
+| The rules had no test. | `app/native-rules-selftest.mjs` over pure functions in `app/native-rules.mjs`. It found a live bug in its first minute: the share-extension rule matched `.ts`/`.js` but the file it names is `Press.tsx`, so changes to it had never been flagged. |
+
+**Also deleted:** `.eas/workflows/update.yml` — an EAS-side workflow running from
+the repo root while the project is in `app/`. It had failed on every push since
+2026-08-11 with "Run this command inside a project directory" and had never
+published anything. A permanently-red pipeline next to the one that matters is
+how a real failure gets ignored.
+
+**Verify the guard:** `cd app && node update-safety.mjs 63ddec6` — must exit 1
+and name all five packages.
+
 **START HERE: a shelf came up empty on a device on 2026-08-13** and the app
 could not say why, because it was built not to. Read the next section before
 anything else — the code is fixed and published, but whether that person's
@@ -383,6 +420,16 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
   `native-changed.mjs` blocked the empty-shelf fix over a `scripts` edit in
   package.json — the same false positive its own `owner`/`extra` exemption was
   written for. Exempt narrowly, and probe that the exemption does not over-fire.
+- **AN UPDATE THE BINARY CANNOT RUN DOES NOT ERROR — IT REVERTS THE APP.**
+  `expo-updates` falls back to the JavaScript baked in at build time, which may
+  be months old and may talk to services that no longer exist. There is no
+  crash, no message, no log. The single most expensive trap in this repo.
+- **A guard that diffs a commit range cannot see accumulated drift.** Refused at
+  commit N, published at N+1 with a clean range. If the question is about a
+  BINARY, the baseline must be the build, not the previous commit.
+- **`requireNativeModule` at a module's top level throws on import.** One
+  transitive dependency doing that is enough to take the whole bundle down
+  before a component renders. `requireOptionalNativeModule` does not.
 - **A repair tool that only fixes empty rows cannot fix wrong ones.**
 - **A diagnostic nobody can see is not a diagnostic.** `sharedKeychainOk()` is
   on the card.
@@ -427,5 +474,13 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
   selftest was watched to fail with its defence removed. One passed anyway —
   it was staging the wrong scenario — and was rewritten. Probe first, then
   believe it.
+- **Ask the person with the device one question before reading the code.**
+  "Has this build been getting updates?" would have pointed at the real cause in
+  the first minute. Instead: a `store.ts` bug found and blamed, then a channel
+  theory asserted from a command that had errored and printed "unavailable".
+  Both wrong, an hour gone, and the user's one-line correction is what solved it.
+- **Never type a CLI flag from memory in a recovery script.** `eas
+  update:republish --group X --branch Y` — mutually exclusive, failed the run,
+  while somebody was waiting. `--help` costs ten seconds.
 - **Derive, then check the floor.** The placeholder mix was guessed at 0.42 and
   the gate rejected it at 2.3:1; 0.26 is the answer.
