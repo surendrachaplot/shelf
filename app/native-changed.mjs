@@ -10,6 +10,7 @@
 //
 // This is what the CI workflow consults before telling you an update is live.
 import { execSync } from "node:child_process";
+import { NATIVE, EXEMPT, nativeHits } from "./native-rules.mjs";
 
 // Default: everything the last `git pull` brought in. `@{1}` is where HEAD was
 // before it moved, so this covers a pull of six commits as correctly as one —
@@ -24,36 +25,6 @@ function defaultRange() {
   }
 }
 const range = process.argv[2] || defaultRange();
-
-// Paths whose changes CANNOT travel over the air.
-const NATIVE = [
-  { re: /^app\/app\.json$/, why: "app.json drives the native project — plugins, entitlements, bundle id, name, icons" },
-  { re: /^app\/plugins\//, why: "config plugins only run at prebuild, which only happens in a build" },
-  { re: /^app\/ios\//, why: "native project files" },
-  { re: /^app\/android\//, why: "native project files" },
-  { re: /^app\/package\.json$/, why: "a dependency change may add or remove native code" },
-  { re: /^app\/package-lock\.json$/, why: "a dependency change may add or remove native code" },
-  { re: /^app\/eas\.json$/, why: "build profiles and the env baked into a build" },
-  { re: /^app\/metro\.config\.js$/, why: "how the extension's bundle is produced" },
-
-  // THE SHARE EXTENSION CANNOT BE UPDATED OVER THE AIR. Not "should not" —
-  // cannot: expo-share-extension EXCLUDES expo-updates from the extension's
-  // bundle by default, because including it crashes the extension. So the
-  // sheet you get over Instagram is frozen at whatever the last BUILD
-  // contained, no matter how many updates the app itself takes.
-  //
-  // This shipped and was reported: quotes and travel went out over the air,
-  // the app grew two shelves, and the share sheet kept offering four. The app
-  // and its own share sheet disagreed about how many shelves exist, and this
-  // file — whose entire job is to say "that needs a build" — said nothing,
-  // because ShareExtension.tsx is .tsx under app/ and looked like ordinary JS.
-  { re: /^app\/ShareExtension\.tsx$/, why: "the iOS share extension: expo-updates is excluded from its bundle, so nothing here travels over the air" },
-  { re: /^app\/index\.share\.js$/, why: "the extension's entry point — same bundle, same rule" },
-  { re: /^app\/src\/ShareBoards\.tsx$/, why: "the picker the extension renders; a change here is invisible until you build" },
-  // What the picker imports. Not everything in src/ — just the files it
-  // actually pulls in, because over-reporting trains you to ignore the answer.
-  { re: /^app\/src\/(api|theme|Press|design)\.(ts|js)$/, why: "the share extension renders this, and its bundle does not update over the air" },
-];
 
 let files;
 try {
@@ -87,13 +58,6 @@ try {
  * Everything ELSE in both files still counts. When a file cannot be read from
  * either side, it counts too: unknown is not safe.
  */
-const EXEMPT = {
-  "app/app.json": { keys: "`owner`/`extra`", why: "EAS account routing, not the native project",
-                    strip: (j) => { delete j?.expo?.owner; delete j?.expo?.extra; } },
-  "app/package.json": { keys: "`scripts`", why: "commands that run on a laptop, not code that ships",
-                        strip: (j) => { delete j?.scripts; } },
-};
-
 function onlyExemptKeysChanged(file, range) {
   const rule = EXEMPT[file];
   if (!rule) return false;
@@ -116,17 +80,12 @@ if (!app.length) {
   process.exit(3);   // distinct: "nothing to do", not "needs a build"
 }
 
-const hits = [];
-for (const f of app) {
-  const rule = NATIVE.find((r) => r.re.test(f));
-  if (!rule) continue;
-  if (onlyExemptKeysChanged(f, range)) {
-    const { keys, why } = EXEMPT[f];
-    console.log(`${f.replace("app/", "")} changed, but only ${keys} — ${why}`);
-    continue;
-  }
-  hits.push({ f, why: rule.why });
-}
+const hits = nativeHits(app, (f) => {
+  if (!onlyExemptKeysChanged(f, range)) return false;
+  const { keys, why } = EXEMPT[f];
+  console.log(`${f.replace("app/", "")} changed, but only ${keys} — ${why}`);
+  return true;
+});
 
 if (!hits.length) {
   console.log(`${app.length} app file(s) changed, all JavaScript or assets — an over-the-air update covers this.`);

@@ -120,6 +120,40 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      # ── THE CHECK THAT WOULD HAVE PREVENTED THE OUTAGE ────────────────────
+      #
+      # `native-changed.mjs` above asks "does THIS PUSH add native code". It
+      # worked: it refused the push that added expo-share-intent. The next
+      # push had a clean range and the same guard waved through a bundle that
+      # imports the package the previous push was refused for.
+      #
+      # The question that matters is cumulative, and it is about a BINARY:
+      # does the JS we are about to publish need anything the installed build
+      # does not contain. So this compares HEAD against the commit that build
+      # was made from, read from EAS because it is not a fact git holds.
+      #
+      # It cost a day. The app did not error on the phone — it silently
+      # reverted to the JavaScript baked in at build time, which predated the
+      # local-first rewrite, so it asked a server for shelves that no longer
+      # exist and reported "Couldn't reach your shelves".
+      - name: Can the installed build RUN this bundle?
+        if: (steps.native.outputs.code == '0' || (steps.native.outputs.code == '1' && inputs.anyway)) && env.EXPO_TOKEN != ''
+        run: |
+          BUILT_FROM=$(eas build:list --limit 1 --status finished --non-interactive --json 2>/dev/null \
+            | jq -r '.[0].gitCommitHash // empty')
+          if [ -z "$BUILT_FROM" ]; then
+            echo "::error::Could not read the last build's commit from EAS. Unknown is not safe — refusing to publish."
+            exit 1
+          fi
+          echo "last finished build was made from $BUILT_FROM"
+          # The commit may be older than the checkout depth. fetch-depth: 0 is
+          # set above, but a build from a deleted branch would still be absent.
+          git cat-file -e "$BUILT_FROM^{commit}" 2>/dev/null || {
+            echo "::error::commit $BUILT_FROM is not in this clone — cannot compare. Refusing to publish."
+            exit 1
+          }
+          node update-safety.mjs "$BUILT_FROM"
+
       # PUBLISH TO EVERY CHANNEL A BUILD COULD BE ON.
       #
       # `eas.json` has two profiles — `development` and `preview` — on two
