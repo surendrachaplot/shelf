@@ -9,7 +9,23 @@ const art = (bg, fg, txt) => "data:image/svg+xml;base64," + btoa(
   `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="${bg}"/>` +
   `<circle cx="100" cy="118" r="52" fill="none" stroke="${fg}" stroke-width="6"/>` +
   `<text x="100" y="250" font-family="Helvetica" font-size="22" font-weight="bold" fill="${fg}" text-anchor="middle">${txt}</text></svg>`);
-const ART = { Piranesi: art("#101010", "#F5C542", "PIRANESI"), Sinners: art("#2A0A0A", "#FF6B4A", "SINNERS"), Babel: art("#0E2A4A", "#FFFFFF", "BABEL") };
+// Covers and photos. Books and films always had these — Open Library and TMDB
+// hand them over — so the contact sheet has always shown a shelf of artwork
+// next to a shelf of flat colour and nobody read that as a defect.
+//
+// A place CAN have a photo now (OSM tags, Wikidata, Foursquare), and most
+// places still will not: a listed landmark is photographed, an independent
+// bookshop is not. So the fixture is deliberately MIXED — one restaurant with
+// a photo and one without, sitting in the same row, because that is the real
+// shelf and the question is whether it looks composed or half-finished.
+const ART = {
+  Piranesi: art("#101010", "#F5C542", "PIRANESI"), Sinners: art("#2A0A0A", "#FF6B4A", "SINNERS"),
+  Babel: art("#0E2A4A", "#FFFFFF", "BABEL"),
+  "St. John": art("#3A2A18", "#F0E6D2", "ST JOHN"),
+  Kiln: art("#20160E", "#E8A33D", "KILN"),
+  "Belém": art("#1B3A5C", "#EFE7D8", "BELÉM"),
+  "Time Out Market": art("#2B1F2E", "#F2C4CE", "TIME OUT"),
+};
 
 const RICH = {
   Sinners: { tmdb_id: 7, media_type: "movie", year: "2025", director: "Ryan Coogler",

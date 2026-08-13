@@ -35,8 +35,8 @@ const SHOTS = [
   { name: "app-recipes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Recipes," },
   // Tapping a jacket. The detail panel is the same two colours and the same
   // composition language at full size, so opening one reads as a zoom.
-  { name: "app-detail-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Restaurants,", click: "St. John" },
-  { name: "app-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Restaurants,", click: "St. John" },
+  { name: "app-detail-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Restaurants,", "St. John"] },
+  { name: "app-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Restaurants,", "St. John"] },
   // The same panel with a frame off the reel — the two cases the field has to
   // hold, and the only way to see whether the empty one is composed or unfinished.
   // By LABEL, not by text: a jacket showing artwork has no text node at all,

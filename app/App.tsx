@@ -432,6 +432,7 @@ export default function App() {
             kind: "item", list: open.list, item: open,
             title: open.title ?? "This one",
           })}
+          onFail={setFlash}
           dark={dark}
           s={s} c={c}
         />
@@ -752,10 +753,11 @@ function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
  * top-aligned the block and left four fifths of the screen as an empty red
  * field, which is not "generous white space", it is a poster nobody finished.
  */
-function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
+function Detail({ item, onClose, onAct, onShare, onFail, dark, s, c }: {
   item: Item; onClose: () => void;
   onAct: (i: Item, body: Record<string, unknown>) => void;
   onShare: () => void;
+  onFail: (msg: string) => void;
   dark: boolean;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
@@ -814,7 +816,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
             the facts are why you can decide something about this thing, and
             the note is why you kept it — they are different registers and the
             order says which is yours. */}
-        <Facts item={item} on={on} fill={fill} s={s} />
+        <Facts item={item} on={on} fill={fill} s={s} onFail={onFail} />
 
         <View>
           {/* YOUR note. The thing a catalogue cannot give you and the reason a
@@ -874,7 +876,7 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
               <Text style={[s.detailBtnLabel, { color: fill }]}>Share →</Text>
             </Press>
             {item.source_url ? (
-              <Press onPress={() => Linking.openURL(item.source_url as string)} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Open the reel">
+              <Press onPress={() => openLink(item.source_url as string, onFail)} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Open the reel">
                 <Text style={[s.detailBtnLabel, { color: on }]}>Open reel →</Text>
               </Press>
             ) : null}
@@ -913,8 +915,31 @@ function Detail({ item, onClose, onAct, onShare, dark, s, c }: {
  * broken data rather than absent data, and an empty rule above an empty table
  * is a design apologising for itself.
  */
-function Facts({ item, on, fill, s }: {
+/**
+ * OPEN A LINK, OR SAY WHY NOT.
+ *
+ * `Linking.openURL` REJECTS when the OS cannot open a URL, and an unhandled
+ * rejection in a release build is completely silent. That is how every Map
+ * button in this app spent weeks doing nothing at all: the URL was a `geo:`
+ * URI, iOS cannot open those, the promise rejected into the void, and the
+ * button looked like it had simply not registered the tap.
+ *
+ * The URL is fixed (see mapUrl in facts.js), but a button that fails silently
+ * will find another way to fail. Anything that cannot be opened now says so.
+ */
+async function openLink(url: string, onFail: (msg: string) => void) {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    // Deliberately naming the URL: "couldn't open this" with nothing else is
+    // the same dead end as no message at all.
+    onFail(`Couldn't open ${url.replace(/^https?:\/\//, "").slice(0, 40)}`);
+  }
+}
+
+function Facts({ item, on, fill, s, onFail }: {
   item: Item; on: string; fill: string; s: ReturnType<typeof styles>;
+  onFail: (msg: string) => void;
 }) {
   // The platform decides what a map link looks like — see mapUrl() in facts.js.
   // Passed in rather than read there because facts.js has no imports on
@@ -942,7 +967,7 @@ function Facts({ item, on, fill, s }: {
           {links.map((l) => (
             <Press
               key={l.label}
-              onPress={() => Linking.openURL(l.url)}
+              onPress={() => openLink(l.url, onFail)}
               style={[s.detailBtnGhost, { borderColor: on }]}
               size={TOUCH_MIN}
               label={l.label}

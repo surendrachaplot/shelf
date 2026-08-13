@@ -120,6 +120,11 @@ async function handle(req, res, url) {
         tmdb: !!process.env.TMDB_API_KEY,
         places_google: !!process.env.GOOGLE_PLACES_KEY,
         places_osm: true,   // free, keyless, always available
+        // Where a place's PHOTO can come from. The first two need no key and
+        // ride along with the lookup we already make; Foursquare is the one
+        // with real coverage of restaurants, and it is off until configured.
+        photos_osm_wikidata: true,
+        photos_foursquare: !!process.env.FOURSQUARE_KEY,
         ig_resolver: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
       },
     };

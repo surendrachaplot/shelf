@@ -33,8 +33,9 @@ import { parseLd, extractWebPage } from "../resolve.js";
  *   v3 — travel places (located, city, search fallback)
  *   v4 — asked_as, when the map answers with a different name
  *   v5 — a match whose name is not ours is refused, not adopted
+ *   v6 — a photo for places: OSM tags, Wikidata P18, Foursquare
  */
-export const SHAPE = "v5";
+export const SHAPE = "v6";
 
 export const cacheKey = (parts) =>
   [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
@@ -263,6 +264,56 @@ export function pickPlace(p) {
 const humanTag = (s) =>
   String(s || "").replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase());
 
+/**
+ * A PHOTO FOR A PLACE, WITHOUT A BILL.
+ *
+ * Books get a cover from Open Library and films get a poster from TMDB, so a
+ * restaurant with a flat colour jacket next to them reads as the one the app
+ * could not be bothered with. Google Places photos would fix it and are a
+ * SECOND billed request per result — the reason this was left at null.
+ *
+ * But Nominatim already returns `extratags` in the request we are making
+ * anyway, and mappers put photos in there: `image` is a direct URL,
+ * `wikimedia_commons` is a "File:Foo.jpg" on Commons, and `wikidata` is a Q-id
+ * whose P18 claim is a photo. All three are free, keyless, and already paid
+ * for in bytes we were discarding.
+ *
+ * Coverage is honest rather than complete: a landmark or a listed building
+ * usually has one, an independent bookshop usually does not. A place with no
+ * photo keeps its typographic jacket, which is a designed state and not a hole.
+ */
+const commonsUrl = (file) => {
+  const f = String(file || "").replace(/^File:/i, "").trim();
+  // Special:FilePath redirects to the real image and takes a width, so this is
+  // one URL with no API call and no key.
+  return f ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=800` : null;
+};
+
+export function osmPhoto(extratags) {
+  const x = extratags || {};
+  // A direct URL beats everything: the mapper chose that exact picture.
+  if (/^https:\/\//.test(x.image || "")) return x.image;
+  if (x.wikimedia_commons) return commonsUrl(x.wikimedia_commons);
+  return null;
+}
+
+/**
+ * The Q-id path, which costs one request, so it is only taken when the tags
+ * carried no picture of their own. P18 is Wikidata's "image" claim.
+ */
+export async function wikidataPhoto(qid) {
+  const id = String(qid || "").trim();
+  if (!/^Q\d+$/.test(id)) return null;
+  return cached("wikidata", cacheKey(["wikidata", id]), async () => {
+    const j = await jsonGet(`https://www.wikidata.org/wiki/Special:EntityData/${id}.json`);
+    const file = j?.entities?.[id]?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    const url = commonsUrl(file);
+    // `cached` stores a MISS as a real answer, so a place with no photo is not
+    // re-asked on every open.
+    return url ? { image_url: url } : null;
+  });
+}
+
 export function pickOsmPlace(p) {
   if (!p) return null;
   const name = p.namedetails?.name || (p.display_name || "").split(",")[0] || null;
@@ -275,7 +326,9 @@ export function pickOsmPlace(p) {
     // The neighbourhood, not the full postal address: "Peckham" is what tells
     // you whether you can go tonight. The address is kept below for the map.
     subtitle: [x.cuisine ? humanTag(x.cuisine.split(";")[0]) : null, area].filter(Boolean).join(" · "),
-    image_url: null,
+    image_url: osmPhoto(x),
+    // Kept so the caller can pay for the extra request only when it wants to.
+    wikidata: x.wikidata || null,
     canonical: {
       osm_type: p.osm_type || null,
       osm_id: p.osm_id || null,
@@ -312,6 +365,44 @@ async function osmPlace(title, city) {
   return pickOsmPlace(Array.isArray(j) ? j[0] : null);
 }
 
+/**
+ * FOURSQUARE, for the photo OSM does not have.
+ *
+ * OpenStreetMap knows where a bookshop is; it very rarely knows what it looks
+ * like. Foursquare's whole business is places people photograph, so its
+ * coverage of restaurants, bars and cafés is the inverse of OSM's — which is
+ * why this is a PHOTO-ONLY fallback rather than a second geocoder. The name,
+ * the address and the pin still come from OSM, which is free and does not
+ * rate-limit us into a corner.
+ *
+ * Off unless FOURSQUARE_KEY is set, like every other keyed provider here. With
+ * no key a place keeps its typographic jacket and nothing errors.
+ */
+export async function foursquarePhoto(title, city, lat, lng) {
+  const key = process.env.FOURSQUARE_KEY;
+  if (!key || !title) return null;
+  return cached("fsq", cacheKey(["fsq", title, city]), async () => {
+    const q = new URLSearchParams({ query: title, limit: "1" });
+    // Coordinates when we have them: "Book Bar" near a point is a far better
+    // question than "Book Bar" in the world.
+    if (isNum(lat) && isNum(lng)) q.set("ll", `${lat},${lng}`);
+    else if (city) q.set("near", city);
+
+    const found = await jsonGet(`https://api.foursquare.com/v3/places/search?${q}`, {
+      headers: { Authorization: key, Accept: "application/json" },
+    });
+    const id = found?.results?.[0]?.fsq_id;
+    if (!id) return null;
+
+    const photos = await jsonGet(`https://api.foursquare.com/v3/places/${id}/photos?limit=1&classifications=outdoor`, {
+      headers: { Authorization: key, Accept: "application/json" },
+    });
+    const ph = photos?.[0];
+    // Foursquare hands back the URL in halves and expects you to choose a size.
+    return ph?.prefix && ph?.suffix ? { image_url: `${ph.prefix}800x600${ph.suffix}` } : null;
+  });
+}
+
 async function googlePlace(key, title, city) {
   const j = await jsonGet("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
@@ -323,6 +414,21 @@ async function googlePlace(key, title, city) {
     body: JSON.stringify({ textQuery: [title, city].filter(Boolean).join(" "), maxResultCount: 1 }),
   });
   return pickPlace(j?.places?.[0]);
+}
+
+/**
+ * The photo, in cost order: what OSM already told us (free, no request), then
+ * Wikidata (one request, only when a Q-id exists), then Foursquare (keyed, and
+ * only when it is configured). Every step is allowed to find nothing.
+ */
+async function photoFor(osm, city) {
+  if (!osm) return null;
+  if (osm.image_url) return osm.image_url;
+  const c = osm.canonical || {};
+  const wd = await wikidataPhoto(osm.wikidata).catch(() => null);
+  if (wd?.image_url) return wd.image_url;
+  const fsq = await foursquarePhoto(osm.title, city, c.lat, c.lng).catch(() => null);
+  return fsq?.image_url || null;
 }
 
 export async function enrichRestaurant({ title, search_hints }, homeCity) {
@@ -340,7 +446,12 @@ export async function enrichRestaurant({ title, search_hints }, homeCity) {
     const osm = await osmPlace(title, city).catch(() => null);
     // Same guard as places: a restaurant that geocodes to a different
     // restaurant with a similar name is the worst row this app can produce.
-    if (osm && nameFound(title, osm.title)) return osm;
+    if (osm && nameFound(title, osm.title)) {
+      // A restaurant with a flat colour jacket, sitting next to a book with a
+      // real cover and a film with a poster, reads as the one the app could
+      // not be bothered with. See photoFor().
+      return { ...osm, image_url: await photoFor(osm, city) };
+    }
     if (gkey) {
       const g = await googlePlace(gkey, title, city).catch(() => null);
       if (g && nameFound(title, g.title)) return g;
@@ -420,6 +531,7 @@ export async function enrichPlace({ title, search_hints }, homeCity) {
     if (osm) {
       return {
         ...osm,
+        image_url: await photoFor(osm, city),
         // The subtitle for a place you are travelling to is WHERE, not what
         // cuisine it serves. That is the field you scan on a shelf of places.
         subtitle: [osm.canonical.area, city].filter((v, i, a) => v && a.indexOf(v) === i).join(" · ") || city,
@@ -624,7 +736,35 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
      "a map that INTERLEAVES other words found a DIFFERENT place — this row shipped with the wrong pin");
   ok(!nameFound("Ganapati", "Ganesha") && !nameFound("", "Anything") && !nameFound("Something", ""),
      "no name, no match — never a coincidental one");
-  ok(SHAPE === "v5", "changing what a lookup RETURNS without bumping SHAPE serves the old answer back forever");
+  ok(SHAPE === "v6", "changing what a lookup RETURNS without bumping SHAPE serves the old answer back forever");
+
+  // ── A PHOTO FOR A PLACE ─────────────────────────────────────────────────
+  // Books have covers and films have posters; a restaurant sitting next to
+  // them with a flat colour jacket reads as the one nobody finished. These
+  // come out of extratags Nominatim was already returning and we were
+  // throwing away.
+  ok(osmPhoto({ image: "https://example.org/a.jpg" }) === "https://example.org/a.jpg",
+     "a mapper's own photo URL wins — they chose that exact picture");
+  ok(osmPhoto({ wikimedia_commons: "File:Belém Tower.jpg" })
+       === "https://commons.wikimedia.org/wiki/Special:FilePath/Bel%C3%A9m%20Tower.jpg?width=800",
+     "a Commons file becomes a real image URL with no API call and no key",
+     osmPhoto({ wikimedia_commons: "File:Belém Tower.jpg" }));
+  ok(osmPhoto({ image: "http://example.org/a.jpg" }) === null,
+     "http is refused: an insecure image does not load in the app at all");
+  ok(osmPhoto({ wikidata: "Q1" }) === null, "a Q-id is not a photo — that costs a request, so it is the caller's choice");
+  ok(osmPhoto({}) === null && osmPhoto(null) === null, "no tags, no photo, no crash");
+
+  // The place picker now carries both the photo and the Q-id to chase later.
+  const withPhoto = pickOsmPlace({
+    namedetails: { name: "Belém Tower" }, display_name: "Belém Tower, Lisbon",
+    lat: "38.69", lon: "-9.21", osm_type: "way", osm_id: 1,
+    extratags: { wikimedia_commons: "File:Torre.jpg", wikidata: "Q182872" },
+  });
+  ok(/commons\.wikimedia\.org/.test(withPhoto.image_url), "a landmark gets its Commons photo", withPhoto.image_url);
+  ok(withPhoto.wikidata === "Q182872", "the Q-id is kept for the one-request fallback");
+  const noPhoto = pickOsmPlace({ namedetails: { name: "Book Bar" }, display_name: "Book Bar, London", extratags: {} });
+  ok(noPhoto.image_url === null,
+     "and a shop nobody photographed keeps its typographic jacket — a designed state, not a hole");
 
   // The rich film fields, from the shape TMDB actually returns.
   const md = pickMovieDetail(
