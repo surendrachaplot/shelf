@@ -32,7 +32,8 @@ import {
 } from "./src/api";
 import {
   load as loadShelf, save as saveShelf, upsert, patch, remove as removeItem,
-  shelfOf, pileOf, idFor, emptyShelf, type Item, type Shelf,
+  rescue as rescueShelf, rescuable,
+  shelfOf, pileOf, idFor, emptyShelf, type Item, type Shelf, type ShelfState,
 } from "./src/store";
 import { Add } from "./src/Add";
 import { ExLibris } from "./src/ExLibris";
@@ -94,6 +95,11 @@ export default function App() {
   const [viewportH, setViewportH] = useState(0);
   const [screen, setScreen] = useState<Route>("case");
   const [sharing, setSharing] = useState<Sharing | null>(null);
+  // HOW THE READ WENT, kept because an empty shelf and a shelf that would not
+  // open are the same picture and completely different news. Until this
+  // existed the app had exactly one way of saying both, and said it silently.
+  const [health, setHealth] = useState<{ state: ShelfState; note: string | null }>({ state: "read", note: null });
+  const [canRestore, setCanRestore] = useState(0);
 
   const ready = shelf !== null;
   const shelves = useMemo(
@@ -178,10 +184,20 @@ export default function App() {
   }, [commit]);
 
   // FIRST LAUNCH. Read the file, then take anything the extension left.
+  //
+  // Draining still happens on a shelf that would not open: a share arriving
+  // while the file is broken must not be lost either, and by this point the
+  // unreadable bytes have already been copied aside (see store.ts) so writing
+  // over them costs nothing.
   useEffect(() => {
     (async () => {
-      const loaded = await loadShelf();
+      const { shelf: loaded, state, note } = await loadShelf();
       setShelf(loaded);
+      setHealth({ state, note });
+      if (state === "unreadable") {
+        const back = await rescuable().catch(() => null);
+        setCanRestore(back?.items.length ?? 0);
+      }
       await drainShares(loaded);
     })();
     // drainShares is stable; re-running this on every render would re-drain.
@@ -262,6 +278,31 @@ export default function App() {
     })();
     return () => { live = false; };
   }, [shelf, commit]);
+
+  /**
+   * Put back what was in the copies beside the shelf file.
+   *
+   * A button and not something the app does by itself, deliberately. Restoring
+   * silently at launch would mean an item you deleted on purpose reappearing
+   * with no explanation, which is its own kind of broken — and it would hide
+   * the fact that anything went wrong at all, which is the failure this whole
+   * change is about.
+   */
+  async function restore() {
+    if (!shelf) return;
+    setBusy(true);
+    try {
+      const { shelf: next, added } = await rescueShelf(shelf);
+      if (added) await commit(next);
+      setCanRestore(0);
+      setHealth({ state: "read", note: null });
+      setFlash(added ? `Put ${added} item${added > 1 ? "s" : ""} back on the shelf` : "Nothing left to put back");
+    } catch (e) {
+      setFlash(`Couldn't restore: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function retry(item: Item) {
     if (!shelf || !item.source_url) return;
@@ -395,6 +436,27 @@ export default function App() {
       >
         {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
 
+        {/* THE THING THAT WAS MISSING. A shelf that would not open used to
+            render as a shelf with nothing on it — the same picture as a
+            brand-new install, and the most frightening sentence this app can
+            say, delivered by saying nothing at all.
+
+            It now says what happened, in bytes and in the actual error, and
+            offers the copies back. Above the boards rather than inside the
+            empty state because it is true on every tab, not just the one you
+            happen to be looking at. */}
+        {health.state === "unreadable" ? (
+          <View style={[s.inset, s.rescue]}>
+            <Text style={s.emptyTitle}>Your shelf didn't open</Text>
+            <Text style={s.emptyBody}>{health.note ?? "Something went wrong reading the file. Nothing has been deleted."}</Text>
+            {canRestore ? (
+              <Press onPress={restore} style={[s.detailBtnGhost, { borderColor: c.ink }]} size={TOUCH_MIN} label={`Put ${canRestore} items back`}>
+                <Text style={[s.detailBtnLabel, { color: c.ink }]}>Put {canRestore} back →</Text>
+              </Press>
+            ) : null}
+          </View>
+        ) : null}
+
         {/* There is no "couldn't reach your shelves" any more. They are on
             this phone; the only thing that can fail is resolving a new share,
             and that failure belongs on the row it happened to. */}
@@ -404,11 +466,13 @@ export default function App() {
              anywhere, and the layout should say so before the label does. */
           <View style={[s.inset, s.pileTop]}>
             {inbox.length === 0 ? (
-              <Empty
-                title="Nothing waiting"
-                body="Share a reel from Instagram and pick a shelf. Anything we can't read lands here first."
-                s={s}
-              />
+              health.state === "unreadable" ? null : (
+                <Empty
+                  title="Nothing waiting"
+                  body="Share a reel from Instagram and pick a shelf. Anything we can't read lands here first."
+                  s={s}
+                />
+              )
             ) : inbox.map((item, i) => (
               <Reveal key={item.id} index={i}>
                 <PileRow item={item} onAct={act} onOpen={setOpen} onRetry={retry} s={s} c={c} />
@@ -416,7 +480,7 @@ export default function App() {
             ))}
           </View>
         ) : (
-          <Bookcase list={tab} items={showing} viewportH={viewportH} onOpen={setOpen} s={s} c={c} />
+          <Bookcase list={tab} items={showing} viewportH={viewportH} onOpen={setOpen} quiet={health.state === "unreadable"} s={s} c={c} />
         )}
 
         {busy ? <ActivityIndicator color={c.inkFaint} style={s.busy} /> : null}
@@ -505,9 +569,13 @@ export default function App() {
  * never sets a column too narrow to hold its type, and never paints before the
  * container is measured.
  */
-function Bookcase({ list, items, viewportH, onOpen, s, c }: {
+function Bookcase({ list, items, viewportH, onOpen, quiet, s, c }: {
   list: ListName; items: Item[]; viewportH: number;
   onOpen: (i: Item) => void;
+  // The shelf is empty because the FILE would not open, and the notice above
+  // already says so. Telling somebody to share a reel underneath it is the app
+  // answering a question nobody asked, next to the one they did.
+  quiet: boolean;
   s: ReturnType<typeof styles>; c: Palette;
 }) {
   const [width, setWidth] = useState(0);
@@ -518,9 +586,11 @@ function Bookcase({ list, items, viewportH, onOpen, s, c }: {
   return (
     <View onLayout={(e) => setWidth(e.nativeEvent.layout.width - sp.lg * 2)}>
       {items.length === 0 ? (
-        <View style={s.inset}>
-          <EmptyShelf list={list} width={grid.width} s={s} c={c} />
-        </View>
+        quiet ? null : (
+          <View style={s.inset}>
+            <EmptyShelf list={list} width={grid.width} s={s} c={c} />
+          </View>
+        )
       ) : rows.map((row, r) => (
         <Reveal key={r} index={r}>
           <View style={[s.caseRow, s.inset]}>
@@ -1043,6 +1113,10 @@ const styles = (c: Palette) => StyleSheet.create({
   // One board's worth of jackets. flex-end so every trim rests on the board
   // rather than hanging from a common top edge.
   pileTop: { paddingTop: sp.xl },
+  // alignItems, so the button inside is the width of its label. A restore
+  // stretched edge to edge reads as the primary action of the screen, and the
+  // primary action of the screen is your shelf.
+  rescue: { paddingTop: sp.lg, paddingBottom: sp.md, gap: sp.sm, alignItems: "flex-start" },
   caseRow: { flexDirection: "row", alignItems: "flex-end", gap: sp.sm, marginTop: sp.xl },
   coverSlot: { alignSelf: "flex-end" },
   // A quote is read, not glanced: regular weight and normal tracking, against

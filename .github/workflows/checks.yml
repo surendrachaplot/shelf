@@ -42,9 +42,21 @@ jobs:
       - name: Install
         working-directory: app
         run: npm ci
-      # DESIGN-RULES §0.1 — grep the new class names — as a machine step. The
-      # rendered pass (preview/) needs Chromium and lives in `npm run verify`;
-      # this is the half that can run in seconds on every push.
-      - name: Design rules
+      # Build config, the facts a catalogue produces, and the file that holds
+      # everything you have saved.
+      - name: App selftests
         working-directory: app
         run: npm run preflight
+
+      # DESIGN-RULES §0.1 — grep the new class names — as a machine step. The
+      # rendered pass (preview/) needs Chromium and lives in `npm run verify`;
+      # this is the half that runs in seconds on every push.
+      #
+      # It was NOT running here. The step above was called "Design rules" and
+      # ran `preflight`, which checks package versions and plugin order and has
+      # never looked at a colour or a type size in its life. A named step that
+      # does not do what it is named after is worse than no step at all: it
+      # reads green on the summary page, so nobody looks again.
+      - name: Design rules
+        working-directory: app
+        run: node verify-design.mjs && node verify-design.mjs --selftest

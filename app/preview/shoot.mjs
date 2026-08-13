@@ -70,6 +70,12 @@ const SHOTS = [
   // sharing from Instagram silently does nothing. It has to be legible and it
   // has to say what to do.
   { name: "app-profile-broken-375-light", q: "?keychain=0", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
+  // THE SHELF THAT WOULD NOT OPEN. Reported from a phone as "WTF there is
+  // nothing on my shelf now?" — because a read failure and a first launch drew
+  // the same empty boards and neither of them said a word. This frame is the
+  // point of the fix: what happened, in bytes, and the way back.
+  { name: "app-unreadable-375-light", q: "?broken=1", w: 375, h: 980, scheme: "light" },
+  { name: "app-unreadable-375-dark", q: "?broken=1", w: 375, h: 980, scheme: "dark" },
   // There is no pairing screen any more, so there is nothing to shoot: the app
   // opens onto your shelves. The three shots that used to live here — a code
   // field, a claim button, and "waking the server" — went with the accounts.

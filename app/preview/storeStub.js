@@ -147,8 +147,32 @@ let SHELF = {
 };
 
 export const emptyShelf = () => ({ version: 1, items: [], profile: { name: "", bio: "", seed: "", home_city: "" }, links: [] });
-export const load = async () => SHELF;
+
+/**
+ * `?broken=1` — the shelf file is there and would not open.
+ *
+ * A scenario the harness can SHOOT, because this state had no picture: an
+ * unreadable file and a brand-new install rendered as the identical empty
+ * screen, so the only report anybody could make about it was "there is
+ * nothing on my shelf". It is a frame on the contact sheet now, sitting next
+ * to the shelves it is the alternative to.
+ */
+const broken = new URLSearchParams(location.search).get("broken") === "1";
+const RESCUABLE = SHELF.items.filter((i) => i.status === "filed").slice(0, 14);
+
+export const load = async () =>
+  broken
+    ? { shelf: emptyShelf(), state: "unreadable",
+        note: `Couldn't read your shelf file (48213 bytes): Unexpected end of JSON input. ${RESCUABLE.length} items can be put back.` }
+    : { shelf: SHELF, state: "read", note: null };
 export const save = async (next) => { SHELF = next; };
+export const rescuable = async () => (broken ? { items: RESCUABLE } : null);
+export const rescue = async (current) => ({
+  shelf: { ...current, items: [...RESCUABLE, ...current.items] },
+  added: RESCUABLE.length,
+});
+export const salvage = () => RESCUABLE;
+export const migrate = (shelf) => shelf;
 
 export function idFor(seed) {
   if (!seed) return "i_" + Math.random().toString(36).slice(2, 12);
