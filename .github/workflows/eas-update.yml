@@ -120,6 +120,24 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      # PUBLISH TO EVERY CHANNEL A BUILD COULD BE ON.
+      #
+      # `eas.json` has two profiles — `development` and `preview` — on two
+      # channels of the same names, and an installed build only ever sees
+      # updates published to ITS channel. This published to `preview` alone,
+      # so a phone carrying a development build was frozen at the JS it was
+      # built with while every publish here reported success.
+      #
+      # It is not a theory. A device spent three days showing "Couldn't reach
+      # your shelves" — a string deleted from this repo on 2026-08-10, when
+      # shelves stopped coming from a server at all — through four clean
+      # publishes it was never going to receive. There is no error for this on
+      # the phone and no line in any log: the app simply never changes.
+      #
+      # Both profiles carry identical env and identical code. The only thing
+      # the split buys is a way to strand a build, so both get everything.
+      # `--branch` is created on first use, so a channel nobody has built for
+      # costs one no-op publish and nothing else.
       - name: Publish
         if: (steps.native.outputs.code == '0' || (steps.native.outputs.code == '1' && inputs.anyway)) && env.EXPO_TOKEN != ''
         run: |
@@ -129,5 +147,14 @@ jobs:
           # SUBJECT only — these commit bodies are long and full of quotes and
           # newlines, none of which belong on a one-line update label.
           MSG=$(git log -1 --pretty=%s)
-          echo "publishing: $MSG"
-          eas update --branch preview --message "$MSG"
+          FAILED=""
+          for BRANCH in preview development; do
+            echo "── publishing to $BRANCH: $MSG"
+            eas update --branch "$BRANCH" --message "$MSG" || FAILED="$FAILED $BRANCH"
+          done
+          # A branch that fails is reported, not swallowed. Half a publish
+          # looking green is the failure this whole change is about.
+          if [ -n "$FAILED" ]; then
+            echo "::error::failed to publish to:$FAILED"
+            exit 1
+          fi
