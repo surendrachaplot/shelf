@@ -76,12 +76,39 @@ jobs:
       # build carries on perfectly happily — and killing the runner does not
       # kill the build. `status` asks Expo what actually happened, in twenty
       # seconds, instead of starting a second build to find out.
+      # CHANNEL AND RUNTIME VERSION ARE ON THIS LIST FOR A REASON.
+      #
+      # An installed build only ever sees updates published to ITS channel and
+      # ITS runtime version. Get either wrong and the app on the phone stays
+      # frozen at the JS it was built with — no error, no prompt, nothing in
+      # any log, and every publish reporting success. That is exactly how a
+      # phone spent three days showing "Couldn't reach your shelves", a string
+      # deleted from this repo on 2026-08-10, while four updates published
+      # cleanly to a channel it was not listening to.
+      #
+      # `eas.json` has TWO profiles on two channels. Whichever one is on the
+      # phone is the one that matters, and it is not knowable from here.
       - name: What happened to the last builds
         if: inputs.what == 'status'
         run: |
           npx --yes eas-cli@latest build:list \
-            --platform "${{ inputs.platform }}" --limit 5 --non-interactive --json 2>/dev/null \
-            | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)\n"'
+            --platform "${{ inputs.platform }}" --limit 8 --non-interactive --json 2>/dev/null \
+            | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  profile: \(.buildProfile // "—")   channel: \(.channel // "—")   runtime: \(.runtimeVersion // "—")\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)\n"'
+
+      # And which updates each channel can actually see.
+      - name: What each channel is pointed at
+        if: inputs.what == 'status'
+        run: |
+          echo "── channels → branches ──"
+          npx --yes eas-cli@latest channel:list --non-interactive --json 2>/dev/null \
+            | jq -r '.[] | "\(.name) → \(.updateBranches[]?.name // "—")"' || echo "(channel:list unavailable)"
+          echo
+          echo "── the newest update on each branch ──"
+          for b in preview development; do
+            echo "  $b:"
+            npx --yes eas-cli@latest update:list --branch "$b" --limit 1 --non-interactive --json 2>/dev/null \
+              | jq -r '.currentPage[]? | "    runtime \(.runtimeVersion)  \(.createdAt)  \(.message)"' || echo "    (none)"
+          done
 
       - name: Build
         if: inputs.what == 'build'
