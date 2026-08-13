@@ -1,0 +1,99 @@
+# Put a WORKING update back on the phone, now.
+#
+# WHY THIS EXISTS: an update was published whose JavaScript imports native code
+# the installed binary does not contain. `expo-share-intent` pulls in
+# `expo-linking`, whose module does `requireNativeModule('ExpoLinking')` at the
+# top level — no optional variant, no guard — so the bundle THROWS while it is
+# being evaluated, before a single component renders.
+#
+# When that happens `expo-updates` does the sensible thing and falls back to the
+# EMBEDDED bundle: the JavaScript baked into the binary at build time. On this
+# phone that is the build of 2026-08-11 13:12Z, which is four hours older than
+# the local-first rewrite — so the app quietly reverted to the version that
+# fetched shelves from a server, and said "Couldn't reach your shelves", because
+# the server it is asking has had no shelves since that rewrite.
+#
+# From outside it looks like the app lost everything. Nothing was lost: the
+# shelf file is still on the phone, untouched, because the code that reads it
+# never got to run.
+#
+# `eas update:rollback` is not enough on its own — it needs to know WHICH group
+# was the last good one, and that is a question about the phone's binary, not
+# about git. So this lists first and republishes second, deliberately in two
+# steps with a human choosing between them.
+name: Put a working update back
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list = show recent updates per branch. republish = push a chosen group back to the top."
+        required: true
+        default: list
+        type: choice
+        options: [list, republish]
+      group:
+        description: "Update group ID to republish (from the list). Required for republish."
+        required: false
+        type: string
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Newest first. The one to go back to is the last one published BEFORE
+      # the first update that imported the missing native module — read the
+      # messages, they are commit subjects.
+      - name: What has been published
+        if: inputs.action == 'list'
+        run: |
+          for BRANCH in preview development; do
+            echo "══ $BRANCH ══"
+            eas update:list --branch "$BRANCH" --limit 12 --non-interactive --json 2>/dev/null \
+              | jq -r '.currentPage[]? | "  group \(.group)\n    runtime \(.runtimeVersion)   \(.message)"' \
+              || echo "  (no updates on this branch)"
+            echo
+          done
+
+      # Republishing puts an OLD bundle at the TOP of the branch, so the next
+      # launch takes it. It does not delete anything — the broken update stays
+      # in the history where it can be read.
+      - name: Republish that group to every channel
+        if: inputs.action == 'republish'
+        run: |
+          if [ -z "${{ inputs.group }}" ]; then
+            echo "::error::republish needs a group ID. Run this with action=list first."
+            exit 1
+          fi
+          FAILED=""
+          for BRANCH in preview development; do
+            echo "── republishing ${{ inputs.group }} to $BRANCH"
+            eas update:republish \
+              --group "${{ inputs.group }}" \
+              --branch "$BRANCH" \
+              --message "Back to a bundle this binary can actually run" \
+              --non-interactive || FAILED="$FAILED $BRANCH"
+          done
+          if [ -n "$FAILED" ]; then
+            echo "::error::failed to republish to:$FAILED"
+            exit 1
+          fi
+          echo "Done. Force-quit the app and open it twice — expo-updates applies on the NEXT launch after it downloads."
