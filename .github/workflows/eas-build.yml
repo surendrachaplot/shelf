@@ -121,6 +121,29 @@ jobs:
             --non-interactive \
             --json 2>&1 | tee /tmp/build.json
 
+      # WHEN A BUILD FAILS, PRINT WHY — HERE, NOW.
+      #
+      # `eas build` reports `EAS_BUILD_UNKNOWN_GRADLE_ERROR` and tells you to
+      # "see the logs for the Run gradlew phase". Those logs are on Expo's
+      # storage behind a SIGNED URL THAT EXPIRES IN 15 MINUTES, and the URL is
+      # only ever printed inside the failing run's JSON. So by the time anyone
+      # reads the failure, the only thing that explains it is gone, and the
+      # answer is another 25-minute build.
+      #
+      # The URLs are still valid at this instant. Fetch them now.
+      - name: Why the build failed
+        if: failure() && inputs.what == 'build'
+        run: |
+          if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
+          jq -r '.[] | select(.status != "FINISHED") | "\(.platform): \(.error.errorCode // "?") — \(.error.message // "no message")"' /tmp/build.json || true
+          echo
+          for URL in $(jq -r '.[].logFiles[]?' /tmp/build.json); do
+            echo "════ $(echo "$URL" | sed 's/?.*//' | awk -F/ '{print $NF}') ════"
+            # -f so a 403 on an expired link is loud rather than 40 lines of XML.
+            curl -sfL "$URL" | tail -60 || echo "(could not fetch this log — the signed URL may have expired)"
+            echo
+          done
+
       # The whole point of the run: a link somebody can open on a phone. Pulled
       # out of the JSON so it is the last thing in the log rather than the
       # thing you scroll a build transcript to find.
