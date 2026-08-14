@@ -135,9 +135,21 @@ jobs:
         if: failure() && inputs.what == 'build'
         run: |
           if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
-          jq -r '.[] | select(.status != "FINISHED") | "\(.platform): \(.error.errorCode // "?") — \(.error.message // "no message")"' /tmp/build.json || true
+          # `eas build --json` still prints human progress lines to the same
+          # stream, so the file is NOT valid JSON — it is prose, then a JSON
+          # array. Feeding the whole thing to jq fails with "Invalid numeric
+          # literal at line 1", which is what happened the first time this ran
+          # and is why the gradle log went uncaptured. Slice from the first
+          # line that is a bare `[` to the end.
+          sed -n '/^\[/,$p' /tmp/build.json > /tmp/build.array.json
+          if ! jq -e . /tmp/build.array.json >/dev/null 2>&1; then
+            echo "could not find a JSON array in the build output — last 40 lines:"
+            tail -40 /tmp/build.json
+            exit 0
+          fi
+          jq -r '.[] | select(.status != "FINISHED") | "\(.platform): \(.error.errorCode // "?") — \(.error.message // "no message")"' /tmp/build.array.json || true
           echo
-          for URL in $(jq -r '.[].logFiles[]?' /tmp/build.json); do
+          for URL in $(jq -r '.[].logFiles[]?' /tmp/build.array.json); do
             echo "════ $(echo "$URL" | sed 's/?.*//' | awk -F/ '{print $NF}') ════"
             # -f so a 403 on an expired link is loud rather than 40 lines of XML.
             curl -sfL "$URL" | tail -60 || echo "(could not fetch this log — the signed URL may have expired)"
@@ -153,8 +165,9 @@ jobs:
           if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
           # --json prints an array of builds (one per platform). Anything that
           # is not JSON — an error, a prompt — falls through to the raw tail.
-          if jq -e . /tmp/build.json >/dev/null 2>&1; then
-            jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)"' /tmp/build.json
+          sed -n '/^\[/,$p' /tmp/build.json > /tmp/build.array.json
+          if jq -e . /tmp/build.array.json >/dev/null 2>&1; then
+            jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)"' /tmp/build.array.json
           else
             echo "--- not JSON, last 40 lines ---"
             tail -40 /tmp/build.json
