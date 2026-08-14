@@ -20,7 +20,8 @@
 import { isMain } from "./ismain.js";
 import { json, normList } from "./http.js";
 import { resolveShare, handlesIn } from "./resolve.js";
-import { classifyCaption, classifyImage } from "./classify.js";
+import { classifyShare, classifyImage, verifyItems, needsCheck } from "./classify.js";
+import { imageBlock } from "./frames.js";
 import { enrich } from "./enrich/index.js";
 import { canonicalUrl } from "./url.js";
 
@@ -41,6 +42,8 @@ function shape(it, envelope, sourceUrl) {
     enriched: !!it.enriched,
     source_url: sourceUrl || null,
     resolver: envelope.via || "none",
+    // "confirmed" | "corrected" | "unfound" | null — see verifyItems.
+    checked: it.checked || null,
     // The caption is returned so the DEVICE can decide whether to keep it.
     // Storing it here would be storing what you read, which is the thing this
     // service no longer does.
@@ -70,11 +73,27 @@ export async function resolveRoute(req, res, body) {
   // it without another request.
   const handles = handlesIn(envelope.caption).filter((h) => h !== envelope.authorHandle);
 
-  const read = envelope.caption ? await classifyCaption(envelope, list) : [];
+  // THE PICTURE, NOT JUST THE WORDS. The scrape has always returned a
+  // thumbnail URL and this endpoint has always filed it away unopened. Half
+  // the shares that used to land nameless carry the name in print — on a
+  // cover, a poster, a shopfront, a menu — and a caption of "📚✨ ugh this
+  // one" over a photograph of PIRANESI is a resolvable share.
+  //
+  // Fetched in parallel with nothing, because the scrape has already finished
+  // by here; ~200 kB and a fraction of a second, and null on any failure.
+  const cover = await imageBlock(envelope.imageUrl);
+
+  const read = (envelope.caption || cover) ? await classifyShare(envelope, list, cover) : [];
+
+  // AND THEN CHECK THE UNSURE ONES. See classify.js — the failure this exists
+  // for is a confidently wrong name, which is indistinguishable from a right
+  // one everywhere downstream. Only items below the confidence bar are looked
+  // up, and a failure here returns them untouched.
+  const checked = await verifyItems(read, envelope);
 
   const homeCity = String(body?.home_city || "").slice(0, 80) || null;
   const items = [];
-  for (const it of read) {
+  for (const it of checked) {
     items.push(shape(await enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url));
   }
 
@@ -85,7 +104,14 @@ export async function resolveRoute(req, res, body) {
     ok: true,
     url,
     resolver: envelope.via || "none",
+    // "confirmed" | "corrected" | "unfound" | null — see verifyItems.
+    checked: it.checked || null,
     caption_chars: (envelope.caption || "").length,
+    // Read the picture? Checked anything? Without these, "why did this come
+    // back thin" needs a second request to answer — and the diagnose workflow
+    // prints this JSON verbatim.
+    saw_image: !!cover,
+    checked_items: needsCheck(read).length,
     tagged_handles: handles.length,
     items,
   });
