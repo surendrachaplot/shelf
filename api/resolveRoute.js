@@ -51,6 +51,35 @@ function shape(it, envelope, sourceUrl) {
   };
 }
 
+/**
+ * The response body, as a pure function.
+ *
+ * PULLED OUT BECAUSE IT SHIPPED BROKEN. A find-and-replace meant to add one
+ * field to `shape()` matched twice — `resolver: envelope.via || "none"` also
+ * appears here — and put `it.checked` into this object, where `it` is a
+ * parameter of a different function. Every share came back
+ * `{"ok":false,"error":"it is not defined"}`, and nothing caught it, because
+ * the only test of this file exercised `shape()` and never built a response.
+ *
+ * Now it is a function with a test, so the same slip fails in milliseconds
+ * instead of on somebody's phone.
+ */
+export function summary({ url, envelope = {}, items = [], cover = null, read = [], handles = [] }) {
+  return {
+    ok: true,
+    url,
+    resolver: envelope.via || "none",
+    caption_chars: (envelope.caption || "").length,
+    // Read the picture? Checked anything? Without these, "why did this come
+    // back thin" needs a second request to answer — and the diagnose workflow
+    // prints this JSON verbatim.
+    saw_image: !!cover,
+    checked_items: needsCheck(read).length,
+    tagged_handles: handles.length,
+    items,
+  };
+}
+
 export async function resolveRoute(req, res, body) {
   const url = canonicalUrl(body?.url);
   if (!url) return json(res, 400, { ok: false, error: "a http(s) url is required" });
@@ -100,21 +129,7 @@ export async function resolveRoute(req, res, body) {
   // An empty array is a legitimate, honest answer: the link is real, nothing
   // nameable came out of it. The device keeps the row unresolved and can ask
   // again later — which is a decision for the phone, not for this endpoint.
-  return json(res, 200, {
-    ok: true,
-    url,
-    resolver: envelope.via || "none",
-    // "confirmed" | "corrected" | "unfound" | null — see verifyItems.
-    checked: it.checked || null,
-    caption_chars: (envelope.caption || "").length,
-    // Read the picture? Checked anything? Without these, "why did this come
-    // back thin" needs a second request to answer — and the diagnose workflow
-    // prints this JSON verbatim.
-    saw_image: !!cover,
-    checked_items: needsCheck(read).length,
-    tagged_handles: handles.length,
-    items,
-  });
+  return json(res, 200, summary({ url, envelope, items, cover, read, handles }));
 }
 
 /** The path that never touches Meta: share a screenshot, read it with vision. */
@@ -146,6 +161,23 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(!("id" in s) && !("user_id" in s) && !("status" in s),
      "NO id, NO user, NO status — those are the device's to decide now");
   ok(shape({ list: "nonsense", title: "T" }, env).list === "unsorted", "list normalised");
+
+  // THE RESPONSE BODY. Every share returned `{"ok":false,"error":"it is not
+  // defined"}` because a field referencing `shape()`'s parameter was pasted
+  // into this object too. Building it here is the whole guard.
+  {
+    let threw = null, out = null;
+    try {
+      out = summary({ url: "https://insta/p/x/", envelope: env, items: [s],
+                      cover: { type: "image" }, read: [{ confidence: 0.5 }], handles: ["a"] });
+    } catch (e) { threw = e.message; }
+    ok(threw === null, "building the response body does not throw", threw);
+    ok(out?.ok === true && out?.items?.length === 1, "and it carries the items", out);
+    ok(out?.saw_image === true, "it reports whether the picture was read");
+    ok(out?.checked_items === 1, "and how many items were looked up", out?.checked_items);
+    ok(summary({ url: "u" }).saw_image === false, "no cover, no claim to have read one");
+    ok(!("checked" in summary({ url: "u" })), "the per-item verdict belongs on the item, not the envelope");
+  }
 
   console.log(fail ? `resolveRoute selftest FAILED (${fail})` : "resolveRoute selftest ok");
   process.exit(fail ? 1 : 0);
