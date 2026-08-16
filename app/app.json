@@ -18,6 +18,9 @@
         "keychain-access-groups": [
           "$(AppIdentifierPrefix)com.surendrachaplot.shelf"
         ]
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "shelf reads screenshots you pick so it can turn them into shelf entries. Pictures are read once and never stored on a server."
       }
     },
     "android": {
@@ -27,7 +30,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "permissions": [
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       [
@@ -72,6 +78,12 @@
             "text/*",
             "image/*"
           ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "shelf reads screenshots you pick so it can turn them into shelf entries."
         }
       ]
     ],

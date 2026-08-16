@@ -20,7 +20,7 @@
 // one thing this screen must never report as a save.
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { queueShare, type ListName, LISTS } from "./api";
+import { queueShare, queueImage, type ListName, LISTS } from "./api";
 import { Press } from "./Press";
 import {
   BAND_BOARD, lists, listOn, sp, t, TOUCH_MIN, useTheme, type Palette,
@@ -56,7 +56,11 @@ export function ShareBoards({ url, text, images, onDone, hosted }: ShareBoardsPr
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
 
   const sharedUrl = url ?? text?.match(/https?:\/\/\S+/)?.[0] ?? null;
-  const sharedImage = images?.[0] ?? null;   // reserved: the screenshot path
+  // THE SCREENSHOT PATH, and it is no longer "reserved". This variable was
+  // read, used to label the sheet "Screenshot", and then ignored by save() —
+  // which bailed with "Nothing to save — share a link" on the one input it had
+  // just finished naming. Sharing a screenshot did nothing, every time.
+  const sharedImage = images?.[0] ?? null;
 
   // A shortcode means nothing to a human. Say what the thing IS.
   const source = sharedImage ? "Screenshot"
@@ -77,11 +81,20 @@ export function ShareBoards({ url, text, images, onDone, hosted }: ShareBoardsPr
     // the sheet's speed depended on a server waking up, and a share in a lift
     // was a share you had to be told about. The slow part — scrape, Claude,
     // catalogue — now happens in the app, where there is room to show it.
-    if (!sharedUrl) {
-      setPhase({ kind: "error", message: "Nothing to save — share a link" });
+    // A LINK OR A PICTURE. The screenshot route is the one that does not
+    // depend on Instagram's cooperation at all — the caption is read off the
+    // pixels — so it matters most exactly when the scrape is blocked.
+    //
+    // Only the PATH is queued. See QueuedShare in api.ts: the bytes stay in
+    // the App Group container, which both processes can read, and the app
+    // picks them up when it resolves.
+    if (!sharedUrl && !sharedImage) {
+      setPhase({ kind: "error", message: "Nothing to save — share a link or a screenshot" });
       return;
     }
-    const kept = await queueShare(sharedUrl, list);
+    const kept = sharedUrl
+      ? await queueShare(sharedUrl, list)
+      : await queueImage(sharedImage as string, list);
     if (!kept) {
       // The one honest failure left: this phone's Keychain group is not
       // shared, so the app will never see what was written. Saying "Saved"

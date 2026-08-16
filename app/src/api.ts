@@ -81,7 +81,7 @@ export const resolveLink = (url: string, list: ListName, homeCity?: string) =>
   );
 
 export const resolveImage = (imageB64: string, mediaType: string, list: ListName) =>
-  req<{ items: Resolved[] }>(
+  req<{ items: Resolved[]; resolver: string }>(
     "/api/resolve/image",
     { method: "POST", body: JSON.stringify({ image_b64: imageB64, media_type: mediaType, list }) },
     60000
@@ -152,7 +152,32 @@ const queueOpts = {
   keychainService: "shelf",
 } as unknown as SecureStore.SecureStoreOptions;
 
-export type QueuedShare = { url: string; list: ListName; at: number };
+/**
+ * A share the extension left behind.
+ *
+ * TWO KINDS, and the second one is why this is a union rather than a string.
+ * A link is a link. A SCREENSHOT is a file — and the file must not travel
+ * through here. Keychain items are for secrets, not payloads: a 1 MB base64
+ * PNG in a Keychain value is somewhere between "slow" and "refused", and the
+ * sheet would say "Saved" for something that was never written.
+ *
+ * So the queue carries the PATH. On iOS expo-share-extension has already
+ * copied the image into the App Group container, which is the one directory
+ * both the extension and the app can read; on Android the app received the
+ * intent itself, so its own cache path is fine. Either way the bytes stay on
+ * disk and the app reads them when it resolves.
+ */
+export type QueuedShare =
+  | { kind?: "url"; url: string; list: ListName; at: number }
+  | { kind: "image"; uri: string; list: ListName; at: number };
+
+/** Older queues have no `kind` — a share written before screenshots existed. */
+export const isImageShare = (q: QueuedShare): q is Extract<QueuedShare, { kind: "image" }> =>
+  (q as { kind?: string }).kind === "image";
+
+/** What this share is OF, for a receipt and for de-duplication. */
+export const shareRef = (q: QueuedShare): string =>
+  isImageShare(q) ? q.uri : (q as { url: string }).url;
 
 async function readQueue(): Promise<QueuedShare[]> {
   try {
@@ -177,11 +202,24 @@ async function writeQueue(q: QueuedShare[]): Promise<void> {
  * worst thing this app can produce — so the write is read back, not assumed.
  */
 export async function queueShare(url: string, list: ListName): Promise<boolean> {
+  return queueEntry({ kind: "url", url, list, at: Date.now() });
+}
+
+/**
+ * A screenshot, by path. Same receipt discipline as a link: written, then read
+ * back, and the sheet only says "Saved" if it is really there.
+ */
+export async function queueImage(uri: string, list: ListName): Promise<boolean> {
+  return queueEntry({ kind: "image", uri, list, at: Date.now() });
+}
+
+async function queueEntry(entry: QueuedShare): Promise<boolean> {
   try {
     const q = await readQueue();
-    q.push({ url, list, at: Date.now() });
+    q.push(entry);
     await writeQueue(q);
-    return (await readQueue()).some((x) => x.url === url && x.list === list);
+    const ref = shareRef(entry);
+    return (await readQueue()).some((x) => shareRef(x) === ref && x.list === entry.list);
   } catch {
     return false;
   }

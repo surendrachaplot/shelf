@@ -41,6 +41,11 @@ const SOURCES = [
   // one component, two hosts. It paints, so the gate reads it; leaving it out
   // would have quietly dropped the busiest screen in the app out of coverage.
   "src/ShareBoards.tsx",
+  // The camera-roll import. Same reason as ShareBoards: it paints a screen
+  // with touch targets and list colours on it, so it is covered or it is not
+  // checked — and a design gate that silently skips the newest screen is the
+  // "named step that does not do what it is named after" trap, indoors.
+  "src/Import.tsx",
 ];
 
 // ─── static rules ────────────────────────────────────────────────────────────

@@ -28,14 +28,17 @@ import {
 } from "react-native";
 import { useShareIntent } from "expo-share-intent";
 import {
-  legacyExport, resolveLink, takeQueue, type ListName, LISTS,
+  legacyExport, resolveLink, takeQueue, isImageShare, shareRef,
+  type ListName, LISTS,
 } from "./src/api";
+import { resolveScreenshot, forgetSharedImages } from "./src/screenshots";
 import {
   load as loadShelf, save as saveShelf, upsert, patch, remove as removeItem,
   rescue as rescueShelf, rescuable,
   shelfOf, pileOf, idFor, emptyShelf, type Item, type Shelf, type ShelfState,
 } from "./src/store";
 import { Add } from "./src/Add";
+import { Import } from "./src/Import";
 import { ExLibris } from "./src/ExLibris";
 import { Profile } from "./src/Profile";
 import { ShareSheet } from "./src/ShareSheet";
@@ -62,7 +65,7 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "profile";
+type Route = "case" | "add" | "profile" | "import";
 
 /**
  * Which items keep the caption they came from.
@@ -136,20 +139,41 @@ export default function App() {
     if (!queued.length) return base;
 
     let cur = base;
-    const fresh: Item[] = queued.map((q) => ({
-      id: idFor(q.url),
-      list: q.list,
-      status: "pending" as const,
-      title: null, subtitle: "", note: "", image_url: null, canonical: {},
-      confidence: null, enriched: false, source_url: q.url, resolver: null,
-      created_at: new Date(q.at || Date.now()).toISOString(),
-    }));
-    for (const it of fresh) cur = upsert(cur, it);
+    // A queued share is a link OR a screenshot. Both become a pending row
+    // immediately — the row is the receipt, and it appears before any network
+    // happens so that a share is visibly on the shelf even if resolving then
+    // fails, or the app is killed mid-way.
+    //
+    // The id is derived from what was shared, so re-sharing the same reel
+    // updates the row instead of growing a second one. A screenshot's path is
+    // unique per share, which is right: two screenshots are two deliberate
+    // saves, even of the same thing.
+    const fresh: Array<Item & { _image?: string }> = queued.map((q) => {
+      const ref = shareRef(q);
+      const image = isImageShare(q);
+      return {
+        id: idFor(ref),
+        list: q.list,
+        status: "pending" as const,
+        title: null, subtitle: "", note: "", image_url: null, canonical: {},
+        confidence: null, enriched: false,
+        // A screenshot has no source URL — there is no link to go back to, and
+        // pretending a file path is one would put a dead "Open reel" button on
+        // the card.
+        source_url: image ? null : ref,
+        resolver: null,
+        created_at: new Date(q.at || Date.now()).toISOString(),
+        _image: image ? ref : undefined,
+      };
+    });
+    for (const it of fresh) cur = upsert(cur, { ...it, _image: undefined } as Item);
     await commit(cur);
 
     for (const it of fresh) {
       try {
-        const got = await resolveLink(it.source_url!, it.list as ListName, cur.profile.home_city);
+        const got = it._image
+          ? await resolveScreenshot(it._image, it.list as ListName)
+          : await resolveLink(it.source_url!, it.list as ListName, cur.profile.home_city);
         const first = got.items[0];
         cur = first
           ? patch(cur, it.id, {
@@ -168,7 +192,7 @@ export default function App() {
         for (const extra of got.items.slice(1)) {
           cur = upsert(cur, {
             ...extra,
-            id: idFor(`${it.source_url}#${extra.title}`),
+            id: idFor(`${it.source_url ?? it._image}#${extra.title}`),
             status: "filed",
             caption: keepCaption(extra),
             created_at: it.created_at,
@@ -180,6 +204,10 @@ export default function App() {
       }
       await commit(cur);
     }
+    // Every screenshot in this batch has been read (or has failed for a reason
+    // now recorded on its row), so the copies the extension left in the App
+    // Group container are dead weight. Nothing else deletes them.
+    if (fresh.some((f) => f._image)) await forgetSharedImages();
     return cur;
   }, [commit]);
 
@@ -220,14 +248,22 @@ export default function App() {
     // app is backgrounded would lose a share somebody was mid-decision on.
     resetOnBackground: false,
   });
-  const [incoming, setIncoming] = useState<{ url: string | null; text: string | null } | null>(null);
+  const [incoming, setIncoming] = useState<{ url: string | null; text: string | null; images: string[] | null } | null>(null);
 
   useEffect(() => {
     if (!hasShareIntent) return;
     // webUrl is the link Android pulled out of the shared text — Instagram
     // sends "Check this out: <url>" rather than a bare URL, so taking `text`
     // as the link would file the sentence.
-    setIncoming({ url: shareIntent?.webUrl ?? null, text: shareIntent?.text ?? null });
+    // FILES TOO, not just links. Android's `ACTION_SEND` for `image/*` is how
+    // a screenshot arrives, and dropping `files` here meant Android could not
+    // take a screenshot at all — the picker would open with nothing to save.
+    const files = (shareIntent?.files ?? []).map((f) => f?.path).filter(Boolean) as string[];
+    setIncoming({
+      url: shareIntent?.webUrl ?? null,
+      text: shareIntent?.text ?? null,
+      images: files.length ? files : null,
+    });
     resetShareIntent();
   }, [hasShareIntent, shareIntent, resetShareIntent]);
 
@@ -304,6 +340,58 @@ export default function App() {
     }
   }
 
+  /**
+   * Screenshots chosen from the camera roll.
+   *
+   * Deliberately the same shape as `drainShares`: a pending row per picture
+   * FIRST, saved, and only then the reading. Twenty screenshots is twenty
+   * slow calls, and a person who backgrounds the app halfway through should
+   * come back to twenty rows in progress, not to nothing.
+   */
+  async function importScreenshots(uris: string[], list: ListName) {
+    if (!shelf) return;
+    let cur = shelf;
+    const fresh: Item[] = uris.map((uri) => ({
+      id: idFor(uri),
+      list,
+      status: "pending" as const,
+      title: null, subtitle: "", note: "", image_url: null, canonical: {},
+      confidence: null, enriched: false, source_url: null, resolver: null,
+      created_at: new Date().toISOString(),
+    }));
+    for (const it of fresh) cur = upsert(cur, it);
+    await commit(cur);
+    setTab(list as TabName);
+
+    for (let i = 0; i < fresh.length; i++) {
+      const it = fresh[i];
+      try {
+        const got = await resolveScreenshot(uris[i], list);
+        const first = got.items[0];
+        cur = first
+          ? patch(cur, it.id, { ...first, status: "filed", caption: keepCaption(first),
+                                resolved_at: new Date().toISOString(), error: null })
+          : patch(cur, it.id, { status: "unread", resolver: got.resolver,
+                                resolved_at: new Date().toISOString() });
+        // A screenshot of a list — "5 films to watch" — is several things,
+        // exactly like a reel. Same rule, same siblings.
+        for (const extra of got.items.slice(1)) {
+          cur = upsert(cur, {
+            ...extra,
+            id: idFor(`${uris[i]}#${extra.title}`),
+            status: "filed",
+            caption: keepCaption(extra),
+            created_at: it.created_at,
+            resolved_at: new Date().toISOString(),
+          } as Item);
+        }
+      } catch (e) {
+        cur = patch(cur, it.id, { status: "unread", error: (e as Error).message });
+      }
+      await commit(cur);
+    }
+  }
+
   async function retry(item: Item) {
     if (!shelf || !item.source_url) return;
     let cur = await commit(patch(shelf, item.id, { status: "pending", error: null }));
@@ -369,6 +457,11 @@ export default function App() {
         <View style={s.headTools}>
           <Press onPress={() => setScreen("add")} style={s.tool} size={TOUCH_MIN} label="Add something by name">
             <Text style={s.toolLabel}>Add</Text>
+          </Press>
+          {/* The camera roll is where things people meant to keep actually
+              pile up. A share sheet cannot reach any of them after the fact. */}
+          <Press onPress={() => setScreen("import")} style={s.tool} size={TOUCH_MIN} label="Import screenshots">
+            <Text style={s.toolLabel}>Import</Text>
           </Press>
           {/* "Sent you" is gone with the accounts that made it possible.
               Receiving something from a person needed a users table to address
@@ -514,6 +607,11 @@ export default function App() {
           />
         </View>
       ) : null}
+      {screen === "import" && shelf ? (
+        <View style={s.over}>
+          <Import onClose={() => setScreen("case")} onImport={importScreenshots} />
+        </View>
+      ) : null}
       {screen === "profile" && shelf ? (
         <View style={s.over}>
           <Profile
@@ -533,6 +631,7 @@ export default function App() {
           <ShareBoards
             url={incoming.url}
             text={incoming.text}
+            images={incoming.images}
             hosted
             onDone={async () => {
               setIncoming(null);
