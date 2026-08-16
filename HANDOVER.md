@@ -20,7 +20,7 @@ resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
 
-## Where it stands (2026-08-13)
+## Where it stands (2026-08-16)
 
 **On a phone, resolving real reels, updating itself over the air.** The
 local-first rewrite shipped and was published OTA; quotes and places shipped
@@ -313,15 +313,69 @@ stays as the instrument — `?url=` a profile on the `reel` diagnosis.
 no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
 `places_osm: true`, `places_google: false`.
 
+### Screenshots, camera roll, and Find (2026-08-16)
+
+Three things were asked for and three shipped: a screenshot ingestor that
+works, importing screenshots from the camera roll, and a search across every
+shelf. Commits `1e76e22` and `3e1e0bb` on `main`.
+
+**Sharing a screenshot did nothing, and had never worked.** `ShareBoards` read
+the shared image, labelled the sheet "Screenshot", and then `save()` bailed
+with "Nothing to save — share a link" — the one route into the app that does
+not depend on Meta's cooperation was the one route that never ran. Android
+dropped `shareIntent.files` entirely. The queue now carries the PATH, not the
+bytes (a 1 MB base64 PNG in a Keychain value is between "slow" and "refused"),
+`src/screenshots.ts` reads it out of the App Group container, shrinks anything
+over the send ceiling or in HEIC, and `forgetSharedImages()` empties a
+container nothing had ever cleaned.
+
+**`src/Import.tsx`** picks up to 20 from the camera roll. Permission is asked
+at the tap, never at launch; iOS "limited" is a success, not a refusal.
+
+**`src/Find.tsx` + `src/find.js`** — one box across all six shelves. Titles,
+authors, cities, cuisines, years, and the notes you typed. Accents and case
+fold, one wrong letter in a long word still lands, every typed word must match
+something (two words narrow, never widen), and a row whose TITLE does not hold
+the query says which field did, with the words around it. The catalogue search
+follows underneath, debounced, with anything already shelved removed.
+
+Ranking lives in a pure module because **order is invisible to every other
+check here**: "the right book is fourth" and "the right book is first" look
+identical in a screenshot. `node app/find-selftest.mjs` asserts each claim and
+probing it (AND→OR, no phrase bonus, no word-boundary snapping, shelf names
+matching on prefix) fails it every time. Two probes passed silently at first —
+both fixtures were staging the wrong scenario — and fixing the second exposed
+a real leak: `canonical.key` was being indexed, so one catalogue id matched
+every book on the shelf.
+
+**Also shipped: `api/search.js` gained a keyless places provider.** Restaurants
+fall back to OpenStreetMap when `GOOGLE_PLACES_KEY` is absent, `places` became
+a searchable shelf for the first time, and neither ever reports "switched off"
+now. `search selftest ok — 34 assertions`.
+
+### THE HARNESS HAD STOPPED LOOKING (2026-08-16) — the expensive half
+
+Everything below was green, and none of it was true.
+
+| What was silently not happening | Why | Fix |
+|---|---|---|
+| `verify-design.mjs` never read `Find.tsx`. It printed "design gate clean" having never opened the file. | `SOURCES` was a hand-written list of files. The newest screen is the one nobody remembers to add. | The list is now the **directory**: `readdir(src/)` + `App.tsx` + `ShareExtension.tsx`. 15 files instead of 11. Probed: a raw `fontSize` in `Find.tsx` is now caught. |
+| **No screenshots were being taken at all**, of any screen, since the screenshot commit. | `preview/stubs.js` was missing three exports `api.ts` had gained (`queueImage`, `isImageShare`, `shareRef`), so the esbuild bundle failed. That is why `Import.tsx` shipped unrendered. | Stubs added. Anything `api.ts` exports and a screen imports must exist there. |
+| Every screen died on `process is not defined` once the bundle built. | `expo-image-picker` and `expo-image-manipulator` were not in `build.mjs`'s native-module swap, so the real packages went into a web bundle. | Both added to the swap; stubs in `nativeStubs.js`. |
+| `Import.tsx`'s Close button shipped at **15pt painted / 31pt effective**, under the 44pt floor. | `measure.mjs` never opened the Import screen. `size={TOUCH_MIN}` sets hit slop, it does not make the box 44pt. | `closeBtn: { minHeight: TOUCH_MIN }`. Find and Import are both in the audit now — **Find with a query typed in**, because its chips and rows do not exist until there is one. |
+
+347 controls clear the floor. A screen that is only reachable by a tap is a
+screen the audit never saw unless somebody adds the tap.
+
 ## Shipped and verified
 
 | Thing | The check that proves it |
 |---|---|
 | Every parser, prompt, clamp, cache key, renderer | `cd api && npm run selftest` — 9 files, all green |
-| The design gate | `cd app && node verify-design.mjs` — 25 rules, all probe-tested; full `npm run verify` renders every screen |
-| Build config, facts, and the shelf file | `cd app && npm run preflight` — preflight + facts selftest + **store selftest** |
+| The design gate | `cd app && node verify-design.mjs` — every painting file, read off the disk, not a hand-written list; full `npm run verify` renders every screen |
+| Build config, facts, the shelf file, the native rules, the ranking | `cd app && npm run preflight` — preflight + facts + store + native-rules + **find** selftests |
 | The file that holds everything you saved | `node app/store-selftest.mjs` — real `store.ts` over an in-memory FS, six probes |
-| Tap targets | `node app/preview/measure.mjs` → 225 controls, smallest effective 52pt |
+| Tap targets | `node app/preview/measure.mjs` → **347** controls, smallest effective 52pt, Find and Import included |
 | Every screen, looked at | `node app/preview/shoot.mjs` → 320 + 375 + Android 412/360, both schemes, including the unreadable-shelf state |
 | A deploy | `node api/smoke.mjs <url>` — commit, providers, routing, public pages |
 | The real round trip | Actions → Diagnose → `resolve` (above) |
@@ -329,9 +383,20 @@ no shelves"`, `app_key_required: false`, `claude: true`, `tmdb: true`,
 
 ## Open, with the check that would close it
 
-- **Did the reporter's shelf come back?** The only way to know is to open the
-  app on that phone after the update. Three outcomes, all distinguishable on
-  screen — see the section above. Until somebody looks, this is open.
+- **Nothing from 2026-08-16 is on a phone yet.** Screenshots, the camera-roll
+  import and Find all need a BUILD — `expo-image-picker` and
+  `expo-image-manipulator` are native. An iOS preview build was triggered from
+  Actions → "Build the app" (ios / preview) at the end of that session; it has
+  to finish, be installed, and then the three features have to be tried on the
+  device. Until somebody installs it, none of this exists outside CI.
+- **The Android build still fails**, `EAS_BUILD_UNKNOWN_GRADLE_ERROR`. Run
+  `31816033650` errored again on 2026-08-14. The log-capture step now works,
+  but the build page it prints comes out as
+  `expo.dev/accounts/null/projects/null/builds/<id>` — the jq reads
+  `.project.ownerAccount.name` and `.project.slug`, and both are null in that
+  response, so the one link that would show the Gradle reason is dead. Fix the
+  jq (or print `.id` and construct the URL another way) before the next
+  Android attempt, or the reason stays unread for a fourth time.
 - **The repo is still public.** Actions logs are world-readable and have
   carried item titles and captions. Closes with: Settings → General → Change
   visibility. This is the one item on the list that leaks something.
