@@ -45,6 +45,14 @@ jobs:
     timeout-minutes: 90
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # The link to the build page is the ONLY way to read why a build failed
+      # before the log expires, and it was coming out as
+      # accounts/null/projects/null — `eas build --json` does not always carry
+      # `.project.ownerAccount.name` or `.project.slug`. These are the values
+      # from app/app.json, used as the fallback. Three Android failures went
+      # undiagnosed behind that dead link.
+      EAS_OWNER: surendrachaplot
+      EAS_SLUG: shelf
     defaults:
       run:
         working-directory: app
@@ -93,7 +101,7 @@ jobs:
         run: |
           npx --yes eas-cli@latest build:list \
             --platform "${{ inputs.platform }}" --limit 8 --non-interactive --json 2>/dev/null \
-            | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  profile: \(.buildProfile // "—")   channel: \(.channel // "—")   runtime: \(.runtimeVersion // "—")\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)\n"'
+            | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  profile: \(.buildProfile // "—")   channel: \(.channel // "—")   runtime: \(.runtimeVersion // "—")\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name // env.EAS_OWNER)/projects/\(.project.slug // env.EAS_SLUG)/builds/\(.id)\n"'
 
       # And which updates each channel can actually see.
       - name: What each channel is pointed at
@@ -167,7 +175,7 @@ jobs:
           # is not JSON — an error, a prompt — falls through to the raw tail.
           sed -n '/^\[/,$p' /tmp/build.json > /tmp/build.array.json
           if jq -e . /tmp/build.array.json >/dev/null 2>&1; then
-            jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name)/projects/\(.project.slug)/builds/\(.id)"' /tmp/build.array.json
+            jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name // env.EAS_OWNER)/projects/\(.project.slug // env.EAS_SLUG)/builds/\(.id)"' /tmp/build.array.json
           else
             echo "--- not JSON, last 40 lines ---"
             tail -40 /tmp/build.json

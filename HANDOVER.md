@@ -383,6 +383,14 @@ screen the audit never saw unless somebody adds the tap.
 
 ## Open, with the check that would close it
 
+- **THE iOS BUILD QUOTA IS SPENT.** The build triggered on 2026-08-16 failed
+  in 25 seconds, and not on code: *"This account has used its iOS builds from
+  the Free plan this month, which will reset in 15 days (on Tue Sep 01 2026)."*
+  Credentials were fine, the project uploaded, EAS refused the build. Three
+  ways forward and they are the user's call: pay for an Expo plan, wait until
+  1 September, or build locally on the Mac (`cd app && npx expo run:ios
+  --configuration Release`, or `eas build --local`), which does not touch the
+  quota.
 - **Nothing from 2026-08-16 is on a phone yet.** Screenshots, the camera-roll
   import and Find all need a BUILD — `expo-image-picker` and
   `expo-image-manipulator` are native. An iOS preview build was triggered from
@@ -391,12 +399,11 @@ screen the audit never saw unless somebody adds the tap.
   device. Until somebody installs it, none of this exists outside CI.
 - **The Android build still fails**, `EAS_BUILD_UNKNOWN_GRADLE_ERROR`. Run
   `31816033650` errored again on 2026-08-14. The log-capture step now works,
-  but the build page it prints comes out as
-  `expo.dev/accounts/null/projects/null/builds/<id>` — the jq reads
-  `.project.ownerAccount.name` and `.project.slug`, and both are null in that
-  response, so the one link that would show the Gradle reason is dead. Fix the
-  jq (or print `.id` and construct the URL another way) before the next
-  Android attempt, or the reason stays unread for a fourth time.
+  and the dead build link is fixed: the jq now falls back to `EAS_OWNER` /
+  `EAS_SLUG` (job-level env, from app.json) when `.project.ownerAccount.name`
+  and `.project.slug` come back null, which is what made the page URL
+  `accounts/null/projects/null` and left the Gradle reason unread three times.
+  The next Android run prints a link that opens.
 - **The repo is still public.** Actions logs are world-readable and have
   carried item titles and captions. Closes with: Settings → General → Change
   visibility. This is the one item on the list that leaks something.
