@@ -9,7 +9,7 @@ const swap = {
   name: "swap",
   setup(b) {
     b.onResolve({ filter: /^react-native$/ }, () => ({ path: here("../node_modules/react-native-web/dist/index.js") }));
-    b.onResolve({ filter: /^expo-linear-gradient$|^expo-share-extension$|^expo-share-intent$|^expo-file-system$|^expo-secure-store$/ }, () => ({ path: here("./nativeStubs.js") }));
+    b.onResolve({ filter: /^expo-linear-gradient$|^expo-share-extension$|^expo-share-intent$|^expo-file-system$|^expo-secure-store$|^expo-image-picker$|^expo-image-manipulator$/ }, () => ({ path: here("./nativeStubs.js") }));
     // Both spellings: App.tsx imports "./src/api", every component inside
     // src/ imports "./api". Matching only the first one is how a new screen
     // silently reaches the real network in a harness that has none.

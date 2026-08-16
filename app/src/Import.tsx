@@ -111,7 +111,11 @@ export function Import({ onImport, onClose }: {
     <View style={s.wrap}>
       <View style={s.head}>
         <Text style={s.title}>Import screenshots</Text>
-        <Press onPress={onClose} size={TOUCH_MIN} label="Close">
+        {/* `size` sets the hit slop; it does not make the BOX 44pt. Painted
+            15pt tall, this measured 31pt effective in preview/measure.mjs —
+            under the floor, and it shipped that way because the Import screen
+            was not in the audit's screen list. Both are fixed. */}
+        <Press onPress={onClose} size={TOUCH_MIN} label="Close" style={s.closeBtn}>
           <Text style={s.close}>Close</Text>
         </Press>
       </View>
@@ -169,6 +173,7 @@ const styles = (c: Palette) => StyleSheet.create({
   wrap: { flex: 1, backgroundColor: c.bg, paddingHorizontal: sp.lg, paddingTop: sp.xl },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: sp.lg },
   title: { ...t.section, color: c.ink },
+  closeBtn: { minHeight: TOUCH_MIN, justifyContent: "center" },
   close: { ...t.micro, color: c.inkSoft },
   body: { gap: sp.md, alignItems: "flex-start" },
   lead: { ...t.section, color: c.ink, marginTop: sp.md },

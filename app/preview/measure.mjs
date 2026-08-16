@@ -27,6 +27,15 @@ const SCREENS = [
   { name: "share panel 375", q: "", w: 375, h: 812, open: "Share the Books shelf" },
   { name: "share panel 320", q: "", w: 320, h: 700, open: "Share the Books shelf" },
   { name: "detail 375", q: "", w: 375, h: 812, open: "Piranesi, Susanna Clarke" },
+  // FIND, TYPED IN. Opening it and measuring an empty field would check the
+  // header and nothing else — every control that matters (the shelf chips, the
+  // result rows, Shelve) only exists once there is a query, so the audit types
+  // one. A screen measured in the state nobody uses it in is not measured.
+  { name: "find 375", q: "", w: 375, h: 812, open: "Search everything you have saved", type: "a" },
+  { name: "find 320", q: "", w: 320, h: 700, open: "Search everything you have saved", type: "a" },
+  // The camera-roll import, which shipped without ever appearing here.
+  { name: "import 375", q: "", w: 375, h: 812, open: "Import screenshots" },
+  { name: "import 320", q: "", w: 320, h: 700, open: "Import screenshots" },
   { name: "pair 375", q: "?paired=0", w: 375, h: 812 },
   { name: "share 375", q: "?screen=share", w: 375, h: 320 },
   { name: "share 320", q: "?screen=share", w: 320, h: 320 },
@@ -47,6 +56,13 @@ for (const s of SCREENS) {
   if (s.open) {
     await page.getByLabel(s.open, { exact: false }).first().click();
     await page.waitForTimeout(600);
+  }
+  if (s.type) {
+    await page.locator("input, textarea").first().fill(s.type);
+    // Long enough for the debounced catalogue call to have been made and to
+    // have failed — there is no server here — so what is measured is the
+    // offline state, which is the honest one for a harness with no network.
+    await page.waitForTimeout(900);
   }
   const rects = await page.$$eval('[role="button"]', (els, slop) =>
     els.map((el) => {

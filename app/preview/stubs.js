@@ -21,6 +21,14 @@ export const resolveLink = async () => {
 export const resolveImage = async () => ({ items: [] });
 export const takeQueue = async () => [];
 export const queueShare = async () => true;
+// The screenshot half of the queue. These were added to api.ts and NOT added
+// here, which broke the whole render harness — so the camera-roll import
+// shipped without ever being rendered or measured, and the failure was a build
+// error nobody was looking at. Anything api.ts exports and a screen imports
+// has to exist here or there are no screenshots at all.
+export const queueImage = async () => true;
+export const isImageShare = (q) => q?.kind === "image";
+export const shareRef = (q) => (q?.kind === "image" ? q.uri : q?.url);
 export const pendingShareCount = async () => 0;
 // ?keychain=0 renders the diagnosis in its FAILING state — the one that says
 // the share sheet cannot reach the app. It is the state worth looking at and

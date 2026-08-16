@@ -38,6 +38,7 @@ import {
   shelfOf, pileOf, idFor, emptyShelf, type Item, type Shelf, type ShelfState,
 } from "./src/store";
 import { Add } from "./src/Add";
+import { Find } from "./src/Find";
 import { Import } from "./src/Import";
 import { ExLibris } from "./src/ExLibris";
 import { Profile } from "./src/Profile";
@@ -65,7 +66,7 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "profile" | "import";
+type Route = "case" | "add" | "find" | "profile" | "import";
 
 /**
  * Which items keep the caption they came from.
@@ -455,6 +456,14 @@ export default function App() {
       <View style={[s.head, s.inset]}>
         <Text style={s.wordmark}>shelf</Text>
         <View style={s.headTools}>
+          {/* FIRST of the tools, and the widest word in the row, because six
+              shelves make finding a harder problem than adding. Tabs tell you
+              where a thing lives; this is the only thing here that answers
+              "which shelf did I put it on", which is the question people
+              actually have. */}
+          <Press onPress={() => setScreen("find")} style={s.tool} size={TOUCH_MIN} label="Search everything you have saved">
+            <Text style={s.toolLabel}>Find</Text>
+          </Press>
           <Press onPress={() => setScreen("add")} style={s.tool} size={TOUCH_MIN} label="Add something by name">
             <Text style={s.toolLabel}>Add</Text>
           </Press>
@@ -600,6 +609,27 @@ export default function App() {
           <Add
             onClose={() => setScreen("case")}
             city={shelf.profile.home_city}
+            onAdded={async (it) => {
+              await commit(upsert(shelf, it));
+              setTab(it.list as TabName);
+            }}
+          />
+        </View>
+      ) : null}
+      {screen === "find" && shelf ? (
+        <View style={s.over}>
+          <Find
+            items={shelf.items}
+            city={shelf.profile.home_city}
+            onClose={() => setScreen("case")}
+            onOpen={(it) => {
+              // Close Find before opening the item. The overlays are painted in
+              // source order and this one is painted AFTER the detail sheet, so
+              // leaving it open would show the search results on top of the
+              // thing the search just found.
+              setScreen("case");
+              setOpen(it);
+            }}
             onAdded={async (it) => {
               await commit(upsert(shelf, it));
               setTab(it.list as TabName);

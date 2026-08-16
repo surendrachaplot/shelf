@@ -59,6 +59,23 @@ const SHOTS = [
   { name: "app-add-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Add something by name", type: ["piranesi"] },
   { name: "app-add-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Add something by name", type: ["piranesi"] },
   { name: "app-add-empty-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Add something by name" },
+
+  // FIND. "dosa" is the shot that matters: it is a word that appears in NO
+  // title on the shelf, only in a note somebody typed, so the row it returns
+  // has to explain itself or it reads as a bug. If that explanatory line is
+  // ever dropped, this screenshot is where it shows.
+  { name: "app-find-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Search everything you have saved", type: ["dosa"] },
+  { name: "app-find-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Search everything you have saved", type: ["dosa"] },
+  // A query that hits several shelves at once — the chips, and the ordering
+  // between shelves, which is the whole claim of a cross-shelf search.
+  { name: "app-find-many-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Search everything you have saved", type: ["st"] },
+  { name: "app-find-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Search everything you have saved", type: ["st"] },
+  // Before anything is typed: the state the screen opens in, which is the one
+  // most people see most often and the easiest to leave undesigned.
+  { name: "app-find-empty-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Search everything you have saved" },
+  // The camera-roll import, which had never been photographed.
+  { name: "app-import-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Import screenshots" },
+  { name: "app-import-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Import screenshots" },
   { name: "app-profile-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
   { name: "app-profile-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card" },
   { name: "app-profile-new-375-light", q: "?blankProfile=1", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },

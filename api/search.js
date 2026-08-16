@@ -415,7 +415,11 @@ if (isMain(import.meta.url)) {
         display_name: "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF",
         namedetails: { name: "Ganapati" },
         address: { suburb: "Peckham", city: "London" },
-        extratags: { cuisine: "indian" },
+        // A photo the mapper attached — free, already in the response, and
+        // exactly what osmPhoto()/pickOsmPlace() would surface for
+        // enrichment. Here it must be discarded: see the "no photo" assertion
+        // below.
+        extratags: { cuisine: "indian", image: "https://example.org/ganapati.jpg" },
         class: "amenity", type: "restaurant",
       },
       {

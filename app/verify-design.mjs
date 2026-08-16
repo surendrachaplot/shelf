@@ -25,28 +25,35 @@
 // as a Linux box can take it — it caught a collapsed 2x2 grid, a tab strip
 // eating 200pt of vertical space, and skeletons that read as holes in dark
 // mode, none of which any static rule here could see. It is still not iOS.
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { isMain } from "../api/ismain.js";
 import * as D from "./src/design.js";
 import * as E from "./src/exlibris.js";
 
-// Every file that paints. A component outside this list is a component the
-// gate has never read — which is exactly how a 40pt tap target or a raw font
-// size gets in, in the one file nobody thought to add.
-const SOURCES = [
+// Every file that paints, READ OFF THE DISK rather than typed here.
+//
+// This used to be a hand-written list, and a hand-written list of files to
+// check is the same shape as a named step that does not do what it is named
+// after: the newest screen — the one most likely to be wrong — is the one
+// nobody remembers to add. `src/Find.tsx` was written, the gate said "design
+// gate clean", and it had never opened the file.
+//
+// So the list is now the directory. A component that paints is a component
+// with a StyleSheet in it; anything else is logic and has nothing here to
+// break. Nothing to remember, nothing to forget.
+const candidates = [
   "App.tsx", "ShareExtension.tsx",
-  "src/Add.tsx", "src/Profile.tsx", "src/ShareSheet.tsx", "src/ExLibris.tsx",
-  "src/KeyboardSafe.tsx", "src/Screen.tsx",
-  // The share picker moved out of ShareExtension.tsx when Android arrived —
-  // one component, two hosts. It paints, so the gate reads it; leaving it out
-  // would have quietly dropped the busiest screen in the app out of coverage.
-  "src/ShareBoards.tsx",
-  // The camera-roll import. Same reason as ShareBoards: it paints a screen
-  // with touch targets and list colours on it, so it is covered or it is not
-  // checked — and a design gate that silently skips the newest screen is the
-  // "named step that does not do what it is named after" trap, indoors.
-  "src/Import.tsx",
+  ...(await readdir(new URL("./src/", import.meta.url)))
+    .filter((f) => f.endsWith(".tsx"))
+    .sort()
+    .map((f) => `src/${f}`),
 ];
+// EVERYTHING, with no "does it paint" filter. Filtering on `StyleSheet.create`
+// was tried and quietly dropped four files the hand-written list had covered —
+// Screen.tsx and KeyboardSafe.tsx hold no stylesheet and are precisely where
+// the safe-area and keyboard rules live. A file with nothing to check costs a
+// read; a file skipped costs a shipped defect.
+const SOURCES = candidates;
 
 // ─── static rules ────────────────────────────────────────────────────────────
 
