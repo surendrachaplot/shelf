@@ -76,6 +76,25 @@ jobs:
           URL: ${{ inputs.url }}
         run: |
           set -o pipefail
+          # THE BROWSER'S DOOR, checked from outside. The web app cannot call
+          # this service without these headers, and a browser refuses BEFORE
+          # sending, so the failure never reaches a server log — it exists only
+          # in somebody's console as "blocked by CORS policy". Ten lines here
+          # is the difference between knowing and guessing.
+          if [ "$WHAT" = "health" ]; then
+            echo "--- CORS preflight ---"
+            head=$(curl -sS -i -m 30 -X OPTIONS \
+              -H "Origin: https://surendrachaplot.github.io" \
+              -H "Access-Control-Request-Method: POST" \
+              -H "Access-Control-Request-Headers: content-type, x-shelf-key" \
+              "$SHELF_API/api/resolve" | tr -d '\r')
+            echo "$head" | grep -i "^HTTP/\|^access-control" || true
+            echo "$head" | grep -qi "access-control-allow-origin" \
+              || echo "::warning::no CORS headers — the web app cannot call this build. Is the deploy older than the commit that added them?"
+            echo "$head" | grep -qi "access-control-allow-headers:.*x-shelf-key" \
+              || echo "::warning::x-shelf-key is not in the allowed headers — the web app will break the moment SHELF_APP_KEY is set"
+          fi
+
           case "$WHAT" in
             health) path="/api/health" ;;
             reel)
