@@ -367,6 +367,28 @@ Everything below was green, and none of it was true.
 347 controls clear the floor. A screen that is only reachable by a tap is a
 screen the audit never saw unless somebody adds the tap.
 
+### shelf runs in a browser now (2026-08-17)
+
+**`https://surendrachaplot.github.io/shelf/`** — free, live, no quota, no
+signing. The same `App.tsx`, six native modules swapped in `app/web/`. Full
+detail in OPERATIONS §4b2.
+
+Verified by `cd app && npm run web:check`, which is not "did it build": it
+serves the real output, loads it in Chromium, seeds a shelf, reloads, **edits a
+note through the app** and reloads again — the real `save()`, temp file and
+rename, over localStorage. Probed: make `writeAsStringAsync` drop its bytes and
+the check fails. Stated limit: reversing the two lines of the fake rename still
+passes, because only a crash between them would show it.
+
+`api/http.js` gained CORS for this. Verified against a running server: OPTIONS
+returns 204 with the headers, and they survive a normal JSON response. Without
+it a browser blocks every call BEFORE sending it, so nothing appears in any log
+and the API looks broken rather than closed.
+
+**The web shelf is a SEPARATE shelf from the phone's.** No server, no sync —
+that is the design, and it is the first thing to say to anybody who asks why
+their books are not there.
+
 ## Shipped and verified
 
 | Thing | The check that proves it |

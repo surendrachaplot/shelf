@@ -54,8 +54,14 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
 
-      # `enablement: true` turns Pages on for the repository the first time
-      # this runs, so nobody has to find the setting.
+      # `enablement: true` asks GitHub to turn Pages on. IT DOES NOT ALWAYS
+      # WORK: the first run failed with "Create Pages site failed. Resource not
+      # accessible by integration" — the workflow's own token may not create a
+      # Pages site, and no permission block here can grant it. When that
+      # happens it is one manual switch, once, and then this line is a no-op
+      # forever after:
+      #
+      #   Settings → Pages → Build and deployment → Source: GitHub Actions
       - uses: actions/configure-pages@v5
         id: pages
         with:
