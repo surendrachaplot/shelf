@@ -53,3 +53,43 @@ export const normList = (l) => {
   const named = RENAMED[l] ?? l;
   return ALL_LISTS.includes(named) ? named : "unsorted";
 };
+
+// ── THE BROWSER'S DOOR ───────────────────────────────────────────────────────
+//
+// A phone app can call this service from anywhere. A WEB app cannot: the
+// browser refuses any cross-origin request the server has not explicitly
+// allowed, and it refuses it BEFORE the request is sent, so the server never
+// sees it and nothing appears in any log. The failure reads, in the console
+// only, as "blocked by CORS policy" — which is why a web front end that has
+// never been given these headers looks like a broken API rather than a
+// missing header.
+//
+// `*` is correct here rather than lax. There are no cookies and no session:
+// every request either carries the app key or is refused, and the key
+// identifies a BUILD, not a person. An origin allowlist would be security
+// theatre — anything that can read the key can also send any Origin it likes.
+export const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  // `x-shelf-key` is the one that matters. Leave it out and the browser's
+  // preflight fails the moment SHELF_APP_KEY is set on the server — which
+  // would break the web app at exactly the moment the service is locked down,
+  // long after this was written and nowhere near it.
+  "Access-Control-Allow-Headers": "content-type, x-shelf-key",
+  "Access-Control-Max-Age": "86400",
+};
+
+/**
+ * Put the headers on, and answer a preflight outright.
+ *
+ * Returns true when the request has been fully handled (an OPTIONS preflight),
+ * so the caller stops. Headers set here survive `writeHead(status, {...})`:
+ * Node merges them, with writeHead's own object winning any collision.
+ */
+export function cors(req, res) {
+  for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v);
+  if (req.method !== "OPTIONS") return false;
+  res.writeHead(204);
+  res.end();
+  return true;
+}

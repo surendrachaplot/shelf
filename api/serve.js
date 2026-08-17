@@ -19,7 +19,7 @@
 //   What is left needs no login, because there is nothing here to log in to.
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
-import { json, appKeyOk } from "./http.js";
+import { json, appKeyOk , cors } from "./http.js";
 import { secretMatches } from "./legacy.js";
 import { resolveRoute, resolveImageRoute } from "./resolveRoute.js";
 import { createPublish, revokePublish, publishStats, readPublished } from "./publish.js";
@@ -168,6 +168,11 @@ async function handle(req, res, url) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  // Before anything else, including the public pages: a preflight is answered
+  // and every response carries the headers. Without them the web app cannot
+  // call this service at all, and the browser blocks it so early that nothing
+  // reaches these logs to say so.
+  if (cors(req, res)) return;
   try {
     await handle(req, res, url);
   } catch (e) {

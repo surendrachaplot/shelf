@@ -7,3 +7,4 @@ android/
 *.log
 dist/
 app/preview/bundle.js
+app/web-dist/
