@@ -380,10 +380,20 @@ rename, over localStorage. Probed: make `writeAsStringAsync` drop its bytes and
 the check fails. Stated limit: reversing the two lines of the fake rename still
 passes, because only a crash between them would show it.
 
-`api/http.js` gained CORS for this. Verified against a running server: OPTIONS
-returns 204 with the headers, and they survive a normal JSON response. Without
-it a browser blocks every call BEFORE sending it, so nothing appears in any log
-and the API looks broken rather than closed.
+`api/http.js` gained CORS for this, and it is **live and verified from
+outside**: Actions → Diagnose → `health` on 2026-08-17 against deployed commit
+`7c3b916` printed `HTTP/2 204`, `access-control-allow-origin: *` and
+`access-control-allow-headers: content-type, x-shelf-key`. That check is part
+of `what=health` now, because a browser blocks a call BEFORE sending it — the
+failure never reaches a server log, and without the check the only symptom is
+somebody's console saying "blocked by CORS policy".
+
+**ONE SWITCH IS OUTSTANDING AND ONLY THE OWNER CAN FLIP IT.** The first Pages
+deploy failed on `actions/configure-pages` with *"Create Pages site failed.
+Resource not accessible by integration"* — the workflow token cannot create the
+site and no `permissions:` block can grant it. Fix, once:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**, then
+re-run the "Web app" workflow. The build itself is green up to that step.
 
 **The web shelf is a SEPARATE shelf from the phone's.** No server, no sync —
 that is the design, and it is the first thing to say to anybody who asks why
