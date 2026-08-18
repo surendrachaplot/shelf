@@ -204,6 +204,64 @@ sheet they cannot dismiss is worse than any latency you can measure.
 - `metro.config.js` must wrap `withShareExtension`, or metro only ever builds
   the app bundle and the extension ships stale JS.
 
+## 4b1. Building on the Mac, with no EAS at all
+
+**When you need this:** the free plan's iOS builds run out (they did on
+2026-08-16, resetting 1 September), or you want a build in fifteen minutes
+instead of forty in a queue. A local build spends **no EAS quota** — Xcode does
+the work.
+
+**What must already be true.** Xcode installed and opened once (it asks to
+install its components). Node 20. `git pull` done. And a **paid Apple Developer
+account** — not optional here: this app declares an **App Group**
+(`group.com.surendrachaplot.shelf`) and a keychain access group, which is how
+the share extension hands a shared reel to the app, and a free Apple ID cannot
+create either. Without it the app builds and the share sheet does nothing.
+
+```bash
+cd ~/where/you/keep/shelf/app     # wherever the repo is
+git pull
+npm ci
+npm run preflight                 # 2 seconds; fails here beats failing in Xcode
+npx expo prebuild -p ios --clean  # writes ios/ from app.json — gitignored, disposable
+```
+
+Then, with the iPhone plugged in and **unlocked**:
+
+```bash
+npx expo run:ios --device --configuration Release
+```
+
+It lists the connected devices, builds, installs, and launches.
+
+**Release, not Debug, and it matters.** A Debug build loads its JavaScript from
+Metro on the laptop: unplug and the app is a white screen with a red error.
+`--configuration Release` embeds the bundle, so the app is standalone the way an
+EAS build is.
+
+### The four things that go wrong
+
+1. **Signing, on TWO targets.** If Xcode complains about provisioning, open
+   `ios/shelf.xcworkspace`, and in **Signing & Capabilities** set your Team on
+   **both** `shelf` **and** `shelfShareExtension`. The extension is a separate
+   target with its own signing, and it is the one people forget — the app
+   installs fine and the share sheet is empty.
+2. **Developer Mode.** iOS 16+: Settings → Privacy & Security → Developer Mode
+   → on, then the phone reboots. Nothing installs until this is done.
+3. **`ios/` is generated, never edited.** It is gitignored. If a build gets
+   strange, delete it and prebuild again — nothing is lost. Anything that needs
+   to survive belongs in `app.json` or a config plugin.
+4. **A local build is not on any EAS channel**, so `eas update` will not reach
+   it and `update-safety.mjs` knows nothing about it. Treat it as the binary of
+   record for the commit you built it from: to change what is on the phone,
+   build again.
+
+### Afterwards
+
+`npx expo run:ios --device --configuration Release` again for the next build —
+prebuild only needs re-running when `app.json`, a plugin, or a dependency
+changes (`npm run native-changed` says which).
+
 ## 4a2. Android
 
 Android has **no share extension**. `ACTION_SEND` opens the app, so the same
