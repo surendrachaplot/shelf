@@ -211,33 +211,41 @@ sheet they cannot dismiss is worse than any latency you can measure.
 instead of forty in a queue. A local build spends **no EAS quota** — Xcode does
 the work.
 
-**What must already be true.** Xcode installed and opened once (it asks to
-install its components). Node 20. `git pull` done. And a **paid Apple Developer
-account** — not optional here: this app declares an **App Group**
-(`group.com.surendrachaplot.shelf`) and a keychain access group, which is how
-the share extension hands a shared reel to the app, and a free Apple ID cannot
-create either. Without it the app builds and the share sheet does nothing.
+**One command, and it needs no path.** `app/mac-build.sh` finds the checkout by
+walking up from wherever it is run, then by searching `$HOME`, and clones the
+repo if there is none. It checks every tool BEFORE the slow part, checks the
+phone is connected and unlocked, and prints a sentence saying what to do for
+every failure it can foresee.
 
 ```bash
-cd ~/where/you/keep/shelf/app     # wherever the repo is
-git pull
-npm ci
-npm run preflight                 # 2 seconds; fails here beats failing in Xcode
-npx expo prebuild -p ios --clean  # writes ios/ from app.json — gitignored, disposable
+curl -fsSL https://raw.githubusercontent.com/surendrachaplot/shelf/main/app/mac-build.sh -o /tmp/shelf-build.sh
+bash /tmp/shelf-build.sh
 ```
 
-Then, with the iPhone plugged in and **unlocked**:
+From an existing checkout, `bash app/mac-build.sh` does the same thing.
+`SHELF_DRY_RUN=1` walks every check and changes nothing — which is how the flow
+is tested off a Mac, since this sandbox is Linux. `FRESH=1` forces a clean
+prebuild.
 
-```bash
-npx expo run:ios --device --configuration Release
-```
+**The one prerequisite it cannot install for you: a paid Apple Developer
+account.** This app declares an **App Group**
+(`group.com.surendrachaplot.shelf`) and a keychain access group — that is how
+the share extension hands a shared reel to the app — and a free Apple ID cannot
+create either. Without one the app builds and the share sheet does nothing.
 
-It lists the connected devices, builds, installs, and launches.
+What the script does, in order: macOS → find or clone the repo → Xcode, Node 18+,
+git, CocoaPods → `git pull` (skipped, loudly, if the tree is dirty — it never
+throws away your work) → `npm ci` → `npm run preflight` → find the connected
+iPhone → `expo prebuild -p ios` → `expo run:ios --device <udid> --configuration
+Release`.
 
 **Release, not Debug, and it matters.** A Debug build loads its JavaScript from
 Metro on the laptop: unplug and the app is a white screen with a red error.
-`--configuration Release` embeds the bundle, so the app is standalone the way an
-EAS build is.
+Release embeds the bundle, so the app is standalone the way an EAS build is.
+
+**Prebuild is NOT `--clean` when `ios/` already exists.** A clean prebuild
+throws that folder away including the signing Team set in Xcode, so the next
+build fails for the reason you just fixed.
 
 ### The four things that go wrong
 
