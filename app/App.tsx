@@ -32,6 +32,7 @@ import {
   type ListName, LISTS,
 } from "./src/api";
 import { resolveScreenshot, forgetSharedImages } from "./src/screenshots";
+import { resumePlan, whyStopped } from "./src/resume.js";
 import {
   load as loadShelf, save as saveShelf, upsert, patch, remove as removeItem,
   rescue as rescueShelf, rescuable,
@@ -212,6 +213,59 @@ export default function App() {
     return cur;
   }, [commit]);
 
+  /**
+   * Read one shared LINK into the row that is already on the shelf.
+   *
+   * One copy, three callers: the button on an unread row, the launch resume
+   * below, and the foreground resume. They were the same fifteen lines written
+   * out twice, which is how two of them drift apart and only one gets a fix.
+   */
+  const readLink = useCallback(async (cur: Shelf, item: Item): Promise<Shelf> => {
+    try {
+      const got = await resolveLink(item.source_url as string, item.list as ListName, cur.profile.home_city);
+      const first = got.items[0];
+      return first
+        ? patch(cur, item.id, { ...first, status: "filed", caption: keepCaption(first),
+                                resolved_at: new Date().toISOString(), error: null })
+        : patch(cur, item.id, { status: "unread", resolver: got.resolver, resolved_at: new Date().toISOString() });
+    } catch (e) {
+      return patch(cur, item.id, { status: "unread", error: (e as Error).message });
+    }
+  }, []);
+
+  /**
+   * NOTHING MAY STILL BE "WORKING IT OUT" AT LAUNCH.
+   *
+   * Reported as "why is everything stuck on working it out", and it was: iOS
+   * suspends the app the moment you switch away, so a drain that is mid-flight
+   * simply stops. No error is thrown, so nothing is written, and the row keeps
+   * saying it is working on it — forever, with no button on it, because the
+   * pending branch of the row is text rather than a control.
+   *
+   * A process that has just started cannot be in the middle of anything, so
+   * every pending row seen here was interrupted. src/resume.js decides which
+   * can be read again and which can only be explained; neither outcome leaves
+   * a row claiming to be busy. Runs at launch AND on returning to the app,
+   * which is the moment the interruption actually happened.
+   */
+  const resumePending = useCallback(async (base: Shelf): Promise<Shelf> => {
+    const { retry: again, giveUp } = resumePlan(base.items);
+    if (!again.length && !giveUp.length) return base;
+
+    let cur = base;
+    // The explanations are written FIRST and committed together: they need no
+    // network, so a row that can never finish should stop lying immediately
+    // rather than after six slow requests.
+    for (const it of giveUp) cur = patch(cur, it.id, { status: "unread", error: whyStopped(it) });
+    if (giveUp.length) await commit(cur);
+
+    for (const it of again) {
+      cur = await readLink(cur, it as Item);
+      await commit(cur);
+    }
+    return cur;
+  }, [commit, readLink]);
+
   // FIRST LAUNCH. Read the file, then take anything the extension left.
   //
   // Draining still happens on a shelf that would not open: a share arriving
@@ -227,7 +281,8 @@ export default function App() {
         const back = await rescuable().catch(() => null);
         setCanRestore(back?.items.length ?? 0);
       }
-      await drainShares(loaded);
+      const drained = await drainShares(loaded);
+      await resumePending(drained);
     })();
     // drainShares is stable; re-running this on every render would re-drain.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -276,10 +331,15 @@ export default function App() {
     const sub = AppState.addEventListener("change", (next) => {
       if (next !== "active" || !shelf) return;
       setBusy(true);
-      drainShares(shelf).finally(() => setBusy(false));
+      // Drain first, then resume: a share made while away is new work, and a
+      // row left mid-flight by THIS suspension is exactly what resumePending
+      // exists for. Coming back to the app is the moment that happens.
+      drainShares(shelf)
+        .then((next) => resumePending(next))
+        .finally(() => setBusy(false));
     });
     return () => sub.remove();
-  }, [shelf, drainShares]);
+  }, [shelf, drainShares, resumePending]);
 
   useEffect(() => {
     if (!flash) return;
@@ -395,18 +455,8 @@ export default function App() {
 
   async function retry(item: Item) {
     if (!shelf || !item.source_url) return;
-    let cur = await commit(patch(shelf, item.id, { status: "pending", error: null }));
-    try {
-      const got = await resolveLink(item.source_url, item.list as ListName, cur.profile.home_city);
-      const first = got.items[0];
-      cur = first
-        ? patch(cur, item.id, { ...first, status: "filed", caption: undefined, error: null,
-                                resolved_at: new Date().toISOString() })
-        : patch(cur, item.id, { status: "unread", resolver: got.resolver });
-    } catch (e) {
-      cur = patch(cur, item.id, { status: "unread", error: (e as Error).message });
-    }
-    await commit(cur);
+    const cur = await commit(patch(shelf, item.id, { status: "pending", error: null }));
+    await commit(await readLink(cur, item));
   }
 
   /** Move it, rename it, note it, bin it. All local, all instant. */
@@ -911,12 +961,19 @@ function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
         <View style={[s.pileSwatch, { backgroundColor: fill, borderColor: pending ? c.inkFaint : fill }]} />
       </View>
       {pending ? (
-        // flex:1 lives HERE, not on pileTitle: the title is now a heading with
-        // a paragraph under it, and a flexed Text inside that column stops the
-        // row from pushing the action to the right-hand edge.
-        <View style={s.pileMain}>
+        // OPENABLE, even while it says it is working. It used to be plain text
+        // with no control anywhere on the row, so a share that got stuck could
+        // not be opened, retried or binned — a dead end you could only escape
+        // by deleting the app. resumePending should mean no row stays here,
+        // and this is the belt to that pair of braces.
+        //
+        // flex:1 lives on the container, not on pileTitle: the title is a
+        // heading with a paragraph under it, and a flexed Text inside that
+        // column stops the row from pushing the action to the right-hand edge.
+        <Press onPress={() => onOpen(item)} containerStyle={s.pileMain} size={TOUCH_MIN}
+               label="Open the one still being read">
           <Text style={s.pileTitle} numberOfLines={1}>Working it out…</Text>
-        </View>
+        </Press>
       ) : (
         <Press onPress={() => onOpen(item)} containerStyle={s.pileMain} size={TOUCH_MIN} label={`Open ${item.title ?? "the one we couldn't read"}`}>
           <Text style={s.pileTitle} numberOfLines={1}>{item.title ?? "Couldn't read this one"}</Text>

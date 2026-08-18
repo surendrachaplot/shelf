@@ -399,6 +399,42 @@ re-run the "Web app" workflow. The build itself is green up to that step.
 that is the design, and it is the first thing to say to anybody who asks why
 their books are not there.
 
+### "Why is everything stuck on working it out" (2026-08-17)
+
+Reported from the phone. **Not the server** — health that day was green on
+`7c3b916` with Claude, TMDB and OSM all up. It was the app, and the state was a
+dead end by construction:
+
+- A share becomes a row with `status: "pending"` BEFORE any network. Right, and
+  deliberate: the row is the receipt.
+- `drainShares` resolves each one. On failure it writes `status: "unread"` with
+  the reason, which is the state that carries a **Read again** button.
+- **A resolve that neither succeeds nor fails writes nothing at all.** iOS
+  suspends the app the moment you switch away, so a drain that is mid-flight
+  just stops. No error, no write, row unchanged.
+- The next launch reads the QUEUE, which is empty — those shares were taken off
+  it. **Nothing anywhere looked at pending rows.**
+- And the pending branch of `PileRow` rendered TEXT, not a control: the row
+  could not be opened, retried or binned. The only escape was deleting the app.
+
+**Fixed** by `app/src/resume.js` + `resumePending()` in App.tsx, on the rule
+that a process which has just started cannot be in the middle of anything —
+every pending row seen at launch was interrupted. Links are read again (bounded
+to 6 a launch); a screenshot is explained instead, because the picture it came
+from was in the App Group container and that is emptied after every drain.
+Neither outcome leaves a row claiming to be busy. It runs at launch AND on
+returning to the foreground, which is when the interruption actually happens.
+The pending row is also openable now, as a belt to those braces.
+
+`node app/resume-selftest.mjs`, in `npm run preflight` and `npm run selftest`.
+Probed three ways — drop the overflow, offer a retry for a screenshot, touch
+filed rows — each fails the suite.
+
+**The workaround on a build that does not have this yet:** re-share the same
+reel from Instagram. `idFor(source_url)` is deterministic and `upsert` merges
+by id (keeping your note), so it lands on the SAME row and resolves it. Then
+leave the app open until the rows finish.
+
 ## Shipped and verified
 
 | Thing | The check that proves it |
