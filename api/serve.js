@@ -20,6 +20,7 @@
 import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
 import { json, appKeyOk , cors } from "./http.js";
+import { serveApp } from "./site.js";
 import { secretMatches } from "./legacy.js";
 import { resolveRoute, resolveImageRoute } from "./resolveRoute.js";
 import { createPublish, revokePublish, publishStats, readPublished } from "./publish.js";
@@ -142,6 +143,11 @@ async function handle(req, res, url) {
   if (req.method === "GET" || req.method === "HEAD") {
     const served = await publicPage(req, res, url);
     if (served !== null) return served;
+    // THE APP ITSELF, at /app. Same reasoning as the pages above: no key, no
+    // account. This service already had a domain and a deploy, which is why
+    // the web build lives here rather than waiting on somebody to switch on a
+    // hosting product.
+    if (await serveApp(req, res, url)) return;
   }
 
   // Guarded, uniformly. `/api/legacy/wipe` takes the admin secret instead,
@@ -177,7 +183,13 @@ const server = createServer(async (req, res) => {
     await handle(req, res, url);
   } catch (e) {
     console.error(`[shelf] ${req.method} ${url.pathname}:`, e);
-    json(res, 500, { ok: false, error: e.message });
+    // A SECOND WRITE MUST NOT KILL THE PROCESS. When a handler has already
+    // answered, writing a 500 on top throws ERR_HTTP_HEADERS_SENT from inside
+    // this catch — uncaught, so the whole server exits and every other request
+    // in flight dies with it. That is precisely how the /app route took the
+    // service down the first time it served a page.
+    if (res.headersSent) res.end();
+    else json(res, 500, { ok: false, error: e.message });
   }
 });
 

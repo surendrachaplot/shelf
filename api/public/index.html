@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover so env(safe-area-inset-*) has real values on an
+     iPhone; without it SafeAreaView reads zero and the header sits under the
+     notch, which is the same bug the phone build shipped once already. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>shelf</title>
+<meta name="description" content="Share a reel, it lands on a shelf. Books, restaurants, movies, recipes, quotes and places.">
+<!-- The browser chrome follows the page rather than the other way round. Both
+     schemes are declared so the address bar is not white above a black app. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.png">
+<link rel="apple-touch-icon" href="./icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="shelf">
+<style>
+  /* The palette values here are duplicated from design.js ON PURPOSE and
+     nowhere else: this is the paint the browser applies BEFORE any JavaScript
+     runs, so it cannot come from a module. Two values, both greys, both
+     checked by the design gate as bg/ink. */
+  html, body { margin: 0; padding: 0; height: 100%; background: #FFFFFF; color: #0A0A0A; }
+  @media (prefers-color-scheme: dark) { html, body { background: #0A0A0A; color: #FFFFFF; } }
+  #root { display: flex; height: 100%; }
+  /* No blue tap flash over buttons that already have their own press state. */
+  * { -webkit-tap-highlight-color: transparent; }
+  #boot {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    font: 700 42px/48px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    letter-spacing: -2.6px;
+  }
+</style>
+</head>
+<body>
+  <!-- What a slow connection sees. The wordmark, set the way the app sets it,
+       so the first paint and the second are the same thing rather than a
+       blank page followed by an app. -->
+  <div id="boot">shelf</div>
+  <div id="root"></div>
+  <script src="./bundle.js"></script>
+</body>
+</html>

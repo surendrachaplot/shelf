@@ -60,3 +60,23 @@ jobs:
       - name: Design rules
         working-directory: app
         run: node verify-design.mjs && node verify-design.mjs --selftest
+
+      # THE COMMITTED WEB BUILD MUST MATCH ITS SOURCE.
+      #
+      # `api/public/` is a build artifact in the repository, which is only
+      # acceptable because of this step. Render installs `api/` alone, so
+      # esbuild cannot run on the deploy and the bundle has to be committed;
+      # the usual price of that is a served site quietly older than the code
+      # that claims to produce it. Rebuild, diff, fail — so the artifact cannot
+      # drift without the build going red.
+      - name: The served web app is not stale
+        working-directory: app
+        run: |
+          node web/build.mjs
+          cd ..
+          if ! git diff --quiet -- api/public; then
+            echo "::error::api/public is stale. Run 'cd app && npm run web' and commit the result."
+            git diff --stat -- api/public
+            exit 1
+          fi
+          echo "api/public matches what web/build.mjs produces"

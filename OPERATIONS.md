@@ -365,13 +365,20 @@ quietly sends people somewhere else.
 
 ## 4b2. The web app
 
-**`https://surendrachaplot.github.io/shelf/`** — the same `App.tsx` the phone
-runs, as a static site. Built by `app/web/build.mjs`, published by
-`.github/workflows/web.yml` on every push that touches `app/`.
+**`https://shelf-api-u8xy.onrender.com/app`** — the same `App.tsx` the phone
+runs, as a static site, **served by this service**. Built by
+`app/web/build.mjs` into `api/public/`, which `api/site.js` serves at `/app`.
 
 **It exists because a build quota does not apply to a browser.** iOS builds ran
-out on 2026-08-16 and reset on 1 September; the web version needs no signing,
-no store and no quota, and it went live the same day.
+out on 2026-08-16 and reset on 1 September.
+
+**It is served from here rather than GitHub Pages** because Pages could not be
+switched on: `actions/configure-pages` fails with "Create Pages site failed.
+Resource not accessible by integration", a repository setting no workflow token
+can set. This service was already deployed, already had a domain, already
+served the public `/s/<code>` pages, and already redeploys on every push. That
+workflow is deleted — a permanently-red pipeline next to the one that matters
+is worse than no pipeline.
 
 **Six native modules are swapped, and only six** (`app/web/`):
 
@@ -384,26 +391,30 @@ no store and no quota, and it went live the same day.
 | `expo-image-picker` | a file input. No permission to ask for. |
 | `expo-image-manipulator` | a canvas resize. |
 
-**Commands.** `cd app && npm run web` builds to `app/web-dist/`.
+**Commands.** `cd app && npm run web` rebuilds `api/public/`.
 `npm run web:check` builds and then DRIVES it in a real browser — loads, seeds a
 shelf, reloads, edits a note through the app, reloads again, and fails if what
 was typed is gone. Run it before believing a web change.
 
-**Two things about it that are true and easy to forget:**
+**`api/public/` IS COMMITTED, and that is deliberate.** `render.yaml` builds
+with `cd api && npm ci`, so `app/node_modules` does not exist on the deploy and
+esbuild cannot run there. The usual objection to a committed artifact is silent
+staleness, so `checks.yml` rebuilds it on every push and fails if it differs
+from what the source produces.
+
+**Three things about it that are true and easy to forget:**
 
 - **The web shelf and the phone shelf are DIFFERENT SHELVES.** Local-first
-  means there is no server to sync through. This is a property of the design,
-  not a gap in it.
-- **The API had to grow CORS for this to work at all** (`api/http.js`). A
-  browser blocks a cross-origin request before sending it, so no server log
-  ever shows the failure. `x-shelf-key` is in the allowed headers so that
-  setting `SHELF_APP_KEY` later does not break the web app.
+  means there is no server to sync through. A property of the design, not a gap.
+- **The API needed CORS** (`api/http.js`) and it is verified live by
+  Actions → Diagnose → `health`. Same-origin would not need it, but the page is
+  built to work from any host.
+- **`/app` redirects to `/app/`.** Without the trailing slash every relative
+  asset resolves one level too high and the page paints nothing.
 
-**A bought domain** is a `cname:` on `actions/configure-pages` plus a DNS
-record. Nothing in the app hardcodes the address; `SHELF_WEB_URL`,
+**A bought domain** points at this service and both halves — the app and the
+`/s/<code>` pages — arrive with it. Nothing in the app hardcodes the address;
 `SHELF_API_URL` and `SHELF_SHARE_URL` are build-time env in `web/build.mjs`.
-The published `/s/<code>` pages are served by the **API**, not by Pages, so a
-domain that should serve both needs the API host behind it.
 
 ## 4c. Search providers
 

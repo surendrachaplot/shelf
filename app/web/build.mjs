@@ -16,7 +16,14 @@ import { fileURLToPath } from "node:url";
 import { cp, mkdir, writeFile } from "node:fs/promises";
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
-const OUT = here("../web-dist/");
+// SERVED BY THE API, so it is built into the API's own folder and committed.
+//
+// Render installs `api/` only — `app/node_modules` does not exist on the
+// deploy, so esbuild cannot run there and the bundle cannot be built at deploy
+// time. A committed build artifact is the honest trade: `checks.yml` rebuilds
+// it on every push and fails if what is committed is stale, so it cannot drift
+// silently, which is the only real objection to committing one.
+const OUT = here("../../api/public/");
 
 // Where the built site will be served from, so a published link points
 // somewhere real. Set by the workflow; a local build gets localhost.

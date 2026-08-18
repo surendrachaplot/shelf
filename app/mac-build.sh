@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 #
-# mac-build.sh — build shelf onto the iPhone plugged into this Mac.
+# mac-build.sh — run the EAS build on this Mac instead of on Expo's servers.
 #
-# ONE COMMAND, NO PATHS TO REMEMBER. It finds the repo (or clones it), checks
-# every tool it needs BEFORE doing anything slow, checks the phone is actually
-# connected and unlocked, and then builds. Every failure it can foresee is
-# printed as a sentence saying what to do, not as an Xcode stack trace.
+# THE SAME BUILD, NOT A DIFFERENT ONE. `eas build --local` reads the same
+# eas.json profile the cloud reads: the same channel, the same env baked in, the
+# same credentials — the distribution certificate and provisioning profiles
+# already on your Expo account, including the share extension's. Nothing about
+# the resulting app differs from a cloud build except which machine compiled it.
 #
-# It spends NO EAS BUILD QUOTA. Xcode does the work on this machine, which is
-# the whole point: the free plan's iOS builds ran out on 2026-08-16 and reset
-# on 1 September.
+# That last part is the point: a --local build spends NO EAS BUILD QUOTA. The
+# free plan's iOS builds ran out on 2026-08-16 and reset on 1 September, and
+# this is the way through that fortnight.
+#
+# WHY NOT `expo run:ios`. It also builds on this Mac, but it is a different
+# thing: Xcode signing you have to set by hand on TWO targets, no channel, no
+# baked env. Same app, different recipe, and a second recipe is a second set of
+# things that can be subtly wrong.
+#
+# ONE COMMAND, NO PATHS TO REMEMBER:
 #
 #   curl -fsSL https://raw.githubusercontent.com/surendrachaplot/shelf/main/app/mac-build.sh -o /tmp/shelf-build.sh
 #   bash /tmp/shelf-build.sh
@@ -18,6 +26,8 @@
 #
 # SHELF_DRY_RUN=1 walks every check and prints what it would run, changing
 # nothing. That is how the flow below is tested off a Mac.
+#
+# PROFILE=development builds the dev client instead of the preview build.
 set -uo pipefail
 
 DRY="${SHELF_DRY_RUN:-}"
@@ -101,15 +111,29 @@ ok "Node $(node -v)"
 command -v git >/dev/null 2>&1 || die "git is not installed." "Run: xcode-select --install"
 ok "git $(git --version | awk '{print $3}')"
 
-# CocoaPods is installed by prebuild if missing, so this is a note, not a stop.
-if command -v pod >/dev/null 2>&1; then ok "CocoaPods $(pod --version 2>/dev/null)"; else warn "CocoaPods not found — Expo will install it when it needs it"; fi
+# CocoaPods and fastlane are what an iOS EAS build shells out to. Missing
+# CocoaPods is fine — the build installs it. Missing fastlane is NOT: a local
+# iOS build fails on it minutes in, with a Ruby error that names neither.
+if command -v pod >/dev/null 2>&1; then ok "CocoaPods $(pod --version 2>/dev/null)"; else warn "CocoaPods not found — the build installs it when it needs it"; fi
+if [ "$(uname -s)" = "Darwin" ]; then
+  if command -v fastlane >/dev/null 2>&1; then
+    ok "fastlane $(fastlane --version 2>/dev/null | awk '/fastlane [0-9]/{print $2; exit}')"
+  else
+    die "fastlane is missing, and a local iOS build needs it." \
+      "Install it with:  brew install fastlane" \
+      "(Homebrew itself: https://brew.sh — one paste in this terminal.)"
+  fi
+fi
 
 # ── 4. latest code ───────────────────────────────────────────────────────────
 say "4/8  Latest code"
 cd "$APP" 2>/dev/null || { [ -n "$DRY" ] || die "cannot enter $APP"; }
 if [ -z "$DRY" ] && [ -n "$(git -C "$REPO" status --porcelain 2>/dev/null)" ]; then
   # Never throw away somebody's work to save a step.
-  warn "there are uncommitted changes in the repo — NOT pulling, building what is on disk"
+  # EAS builds from what git has, not from what is on disk, so an uncommitted
+  # change is a change that will NOT be in the app you install. Said plainly,
+  # because the alternative is building the wrong code and not knowing.
+  warn "uncommitted changes in the repo — NOT pulling. EAS builds from COMMITTED state, so anything below will be missing from the build:"
   git -C "$REPO" status --short | head -10
 else
   run git -C "$REPO" pull --ff-only
@@ -143,63 +167,88 @@ else
   warn "not macOS — skipping the device check"
 fi
 
-# ── 7. the native project ────────────────────────────────────────────────────
-# NOT --clean when ios/ already exists: a clean prebuild throws the folder away,
-# INCLUDING the signing Team you set in Xcode, and then the next build fails
-# for the reason you just fixed. Set FRESH=1 to force it.
-say "7/8  The native project"
-if [ ! -d "$APP/ios" ] || [ -n "${FRESH:-}" ]; then
-  run npx expo prebuild -p ios --clean || die "prebuild failed — see the error above."
-  ok "ios/ generated from app.json"
+# ── 7. logged in to Expo ─────────────────────────────────────────────────────
+# The build needs the account that holds the certificates. Without this it
+# stops half way through and asks, which is a bad place to discover it.
+say "7/8  Expo account"
+EAS="npx --yes eas-cli@latest"
+if [ -n "$DRY" ]; then
+  warn "would check: $EAS whoami"
 else
-  run npx expo prebuild -p ios || die "prebuild failed — see the error above."
-  ok "ios/ updated (kept your Xcode signing — FRESH=1 to regenerate from scratch)"
+  WHO="$($EAS whoami 2>/dev/null | tr -d '\r' | tail -1)"
+  if [ -z "$WHO" ] || printf '%s' "$WHO" | grep -qi 'not logged in'; then
+    warn "not logged in — opening the Expo login now"
+    $EAS login || die "could not log in to Expo." "Run \`npx eas-cli@latest login\` yourself, then run this again."
+    WHO="$($EAS whoami 2>/dev/null | tail -1)"
+  fi
+  ok "logged in as ${WHO:-?}"
 fi
 
-# ── 8. build and install ─────────────────────────────────────────────────────
-# RELEASE, always. A Debug build reads its JavaScript from this laptop over the
-# network: unplug, and the app is a white screen with a red box on it.
-say "8/8  Building — 10-20 minutes the first time"
-if [ -n "$UDID" ]; then
-  run npx expo run:ios --device "$UDID" --configuration Release
+# ── 8. the build, here rather than on their servers ──────────────────────────
+# --local is the whole point: same eas.json profile, same channel, same
+# credentials off the Expo account, compiled on this machine, no quota spent.
+PROFILE="${PROFILE:-preview}"
+say "8/8  Building profile '$PROFILE' — 15-30 minutes the first time"
+OUTDIR="$HOME/Downloads"
+run mkdir -p "$OUTDIR"
+if [ -n "$DRY" ]; then
+  printf '  would run: EAS_LOCAL_BUILD_ARTIFACTS_DIR=%s %s build -p ios --profile %s --local\n' "$OUTDIR" "$EAS" "$PROFILE"
+  STATUS=0
 else
-  run npx expo run:ios --device --configuration Release
+  # Interactive on purpose: the first local build may ask about credentials,
+  # and a --non-interactive run would simply fail instead of asking.
+  EAS_LOCAL_BUILD_ARTIFACTS_DIR="$OUTDIR" $EAS build -p ios --profile "$PROFILE" --local
+  STATUS=$?
 fi
-STATUS=$?
 
 if [ "$STATUS" -ne 0 ]; then
   cat <<'HELP'
 
-That failed. The overwhelmingly likely reason is SIGNING, and it needs Xcode
-once — after which this script works on its own forever.
+The build failed. The three things that cause it, in the order they happen:
 
-  1. open ios/shelf.xcworkspace          (from the app folder)
-  2. click the "shelf" project, then the "shelf" TARGET
-     → Signing & Capabilities → Team → your Apple Developer team
-  3. NOW DO THE SAME FOR THE "shelfShareExtension" TARGET.
-     This is the one everybody forgets. Miss it and the app installs
-     perfectly and the Instagram share sheet does nothing at all.
-  4. run this script again.
+  · NOT LOGGED IN / no credentials — run `npx eas-cli@latest login`, then this
+    script again. The certificates live on the Expo account, not on this Mac.
+  · fastlane or CocoaPods missing — `brew install fastlane cocoapods`.
+  · Xcode too old for Expo SDK 52 — open the App Store and update it.
 
-A paid Apple Developer account is required and there is no way around it: this
-app uses an App Group, which is how the share extension hands a reel to the
-app, and a free Apple ID cannot create one.
-
-If the error mentions a device instead: unlock the phone, tap Trust, and check
-Settings → Privacy & Security → Developer Mode is on.
+Paste the last 30 lines of the output and I will fix it rather than guess.
 HELP
   exit "$STATUS"
 fi
 
+# ── install it on the phone ──────────────────────────────────────────────────
+say "Installing on the phone"
+IPA="$(ls -t "$OUTDIR"/*.ipa 2>/dev/null | head -1)"
+if [ -z "$IPA" ] && [ -z "$DRY" ]; then
+  warn "the build finished but no .ipa turned up in $OUTDIR — look at the output above for where it was written"
+else
+  ok "${IPA:-<the .ipa>}"
+  if [ -n "$UDID" ] || [ -n "$DRY" ]; then
+    run xcrun devicectl device install app --device "${UDID:-<udid>}" "${IPA:-<ipa>}" || {
+      cat <<'HELP'
+
+Installing over the cable did not work. Two other ways, both fine:
+
+  · Open Finder, click the iPhone in the sidebar, and drag the .ipa onto it.
+  · Or run the build again with `eas build ... ` in the cloud once the quota
+    resets on 1 September, and install from the link as usual.
+HELP
+    }
+  else
+    warn "no phone connected — the .ipa is in $OUTDIR, install it when you plug in"
+  fi
+fi
+
 say "Done"
 cat <<'DONE'
-shelf is on your phone, built from the latest code:
+shelf is on your phone, built from the latest code, on this machine, with no
+EAS quota spent:
 
   · sharing a screenshot works
   · Import brings screenshots in from the camera roll
   · Find searches every shelf at once
   · rows stuck on "Working it out…" heal themselves on this first launch
 
-This build takes no over-the-air updates. To change what is on the phone,
-run this script again.
+It is on the same channel as a cloud build of this profile, so `eas update`
+reaches it exactly as before.
 DONE
