@@ -95,6 +95,21 @@ jobs:
               || echo "::warning::x-shelf-key is not in the allowed headers — the web app will break the moment SHELF_APP_KEY is set"
           fi
 
+          # THE APP ITSELF. This service serves the web build at /app, so a
+          # deploy that boots and answers /api/health can still be serving a
+          # 503 to every person trying to use the thing. One curl.
+          if [ "$WHAT" = "health" ]; then
+            echo "--- the web app at /app ---"
+            code=$(curl -sS -o /tmp/app.html -w '%{http_code}' -m 30 "$SHELF_API/app/")
+            size=$(wc -c < /tmp/app.html | tr -d ' ')
+            echo "GET /app/ -> $code, $size bytes"
+            [ "$code" = "200" ] || echo "::warning::/app/ answered $code — the web build may not be in this deploy"
+            grep -qi '<div id="root">' /tmp/app.html || echo "::warning::/app/ did not return the app's HTML"
+            bcode=$(curl -sS -o /dev/null -w '%{http_code}' -m 60 "$SHELF_API/app/bundle.js")
+            echo "GET /app/bundle.js -> $bcode"
+            [ "$bcode" = "200" ] || echo "::warning::the bundle is missing — the page will paint nothing"
+          fi
+
           case "$WHAT" in
             health) path="/api/health" ;;
             reel)
