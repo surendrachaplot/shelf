@@ -37,7 +37,7 @@ set -uo pipefail
 # the output itself says which copy ran — "still the same" and "still running
 # the copy in /tmp from twenty minutes ago" look identical without it, and one
 # round of that is one round too many.
-SCRIPT_VERSION="2026-08-22-f"
+SCRIPT_VERSION="2026-08-22-g"
 
 DRY="${SHELF_DRY_RUN:-}"
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
@@ -220,12 +220,21 @@ fi
 if [ "$STATUS" -ne 0 ]; then
   cat <<'HELP'
 
-The build failed. The three things that cause it, in the order they happen:
+The build failed. What it says at the very bottom matters more than the rest:
 
-  · NOT LOGGED IN / no credentials — run `npx eas-cli@latest login`, then this
-    script again. The certificates live on the Expo account, not on this Mac.
+  · "Distribution certificate ... hasn't been imported successfully"
+    The build got everything right and then macOS refused to put the
+    certificate into the temporary keychain eas-cli makes. This is a
+    known eas-cli local-build problem on recent macOS, NOT your setup —
+    Xcode, fastlane, CocoaPods and your Apple credentials are all fine if
+    you reached this message. There is no reliable local workaround.
+    Install the last finished cloud build instead, or wait for the quota:
+
+      https://expo.dev/accounts/surendrachaplot/projects/shelf/builds
+
+  · "expo doctor failed" alone does not stop a build — ignore it.
+  · NOT LOGGED IN — run `npx eas-cli@latest login`, then this again.
   · fastlane or CocoaPods missing — `brew install fastlane cocoapods`.
-  · Xcode too old for Expo SDK 52 — open the App Store and update it.
 
 Paste the last 30 lines of the output and I will fix it rather than guess.
 HELP

@@ -20,7 +20,12 @@ import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 
-const DIST = fileURLToPath(new URL("../web-dist/", import.meta.url));
+// The SAME folder the build writes and the server serves. It used to be
+// ../web-dist/, the build moved to api/public/, and this was not updated — so
+// the check served 404s and reported the app as completely broken. A checker
+// pointed at the wrong directory is worse than no checker: it cried wolf about
+// a live, working site.
+const DIST = fileURLToPath(new URL("../../api/public/", import.meta.url));
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".png": "image/png",
                 ".webmanifest": "application/manifest+json" };
 
