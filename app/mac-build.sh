@@ -22,7 +22,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/surendrachaplot/shelf/main/app/mac-build.sh -o /tmp/shelf-build.sh
 #   bash /tmp/shelf-build.sh
 #
-# Or, from anywhere inside a checkout: bash app/mac-build.sh
+# It clones the repo itself into ~/shelf-build (or pulls, if it is already
+# there). SHELF_DIR=/path/to/shelf builds from a checkout you already have.
 #
 # SHELF_DRY_RUN=1 walks every check and prints what it would run, changing
 # nothing. That is how the flow below is tested off a Mac.
@@ -32,6 +33,12 @@
 # PROFILE=development builds the dev client instead of the preview build.
 set -uo pipefail
 
+# BUMP THIS whenever the script changes. It is printed on the first line, so
+# the output itself says which copy ran — "still the same" and "still running
+# the copy in /tmp from twenty minutes ago" look identical without it, and one
+# round of that is one round too many.
+SCRIPT_VERSION="2026-08-22-e"
+
 DRY="${SHELF_DRY_RUN:-}"
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '  ok    %s\n' "$*"; }
@@ -40,6 +47,7 @@ die()  { printf '\n\033[1mSTOPPED: %s\033[0m\n' "$1"; shift; [ $# -gt 0 ] && pri
 run()  { if [ -n "$DRY" ]; then printf '  would run: %s\n' "$*"; else "$@"; fi; }
 
 # ── 1. is this even a Mac ────────────────────────────────────────────────────
+printf '\n\033[2mshelf mac-build.sh  %s\033[0m\n' "$SCRIPT_VERSION"
 say "1/8  This machine"
 if [ "$(uname -s)" != "Darwin" ]; then
   [ -n "$DRY" ] || die "this only builds on a Mac — an iPhone app needs Xcode, which is macOS only." \
@@ -51,75 +59,49 @@ fi
 
 # ── 2. find the repo, or clone it ────────────────────────────────────────────
 # Nobody should have to remember where they cloned something a month ago.
-say "2/8  Where shelf is"
-REPO=""
+say "2/8  The code"
+# NO SEARCHING. The repo is public and its address is known, so where a copy
+# might happen to sit on this Mac is not a question worth asking — and asking
+# it is what made this step hang: an unpruned walk of a home folder goes
+# through iCloud Drive and never comes back.
+#
+# One known path, cloned if absent, pulled if present. SHELF_DIR overrides it
+# for anybody who wants the build to come out of a checkout they are working
+# in — but nothing needs that to be true.
+# Where to put it. If you keep repositories somewhere in particular, it goes
+# there — a build script should not scatter a folder across somebody's home
+# directory when they clearly have a place for this kind of thing.
+if [ -n "${SHELF_DIR:-}" ]; then REPO="$SHELF_DIR"
+else
+  REPO="$HOME/shelf-build"
+  for home_for_repos in "$HOME/gitrepo" "$HOME/gitrepos" "$HOME/repos" "$HOME/Developer" "$HOME/code" "$HOME/Code" "$HOME/projects" "$HOME/Projects"; do
+    [ -d "$home_for_repos" ] && { REPO="$home_for_repos/shelf"; break; }
+  done
+fi
 looks_right() { [ -f "$1/app/app.json" ] && [ -d "$1/api" ]; }
 
-# a. Told outright.
-if [ -n "${SHELF_DIR:-}" ]; then
-  looks_right "$SHELF_DIR" && REPO="$SHELF_DIR" || die "SHELF_DIR=$SHELF_DIR is not a shelf checkout." "It needs app/app.json and api/ inside it."
+if looks_right "$REPO"; then
+  ok "$REPO"
+  printf '  · fetching the latest\n'
+  if [ -z "$DRY" ] && [ -n "$(git -C "$REPO" status --porcelain 2>/dev/null)" ]; then
+    # EAS builds from COMMITTED state, so an uncommitted change is a change
+    # that will NOT be in the app you install. Never silently thrown away.
+    warn "uncommitted changes here — NOT pulling. The build uses committed state, so these will be missing from it:"
+    git -C "$REPO" status --short | head -10
+  else
+    run git -C "$REPO" fetch origin main --quiet
+    run git -C "$REPO" reset --hard origin/main --quiet
+  fi
+elif [ -e "$REPO" ] && [ -n "${SHELF_DIR:-}" ]; then
+  die "SHELF_DIR=$REPO is not a shelf checkout." "It needs app/app.json and api/ inside it."
+else
+  printf '  · cloning github.com/surendrachaplot/shelf into %s\n' "$REPO"
+  run rm -rf "$REPO"
+  run git clone --depth 50 https://github.com/surendrachaplot/shelf.git "$REPO" \
+    || die "could not clone the repo." "Check the network and run this again."
+  ok "$REPO"
 fi
 
-# b. Running from inside a checkout? Walk up from this script and from $PWD.
-if [ -z "$REPO" ]; then
-  for start in "$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" "$PWD"; do
-    d="$start"
-    while [ -n "$d" ] && [ "$d" != "/" ]; do
-      if looks_right "$d"; then REPO="$d"; break 2; fi
-      d="$(dirname "$d")"
-    done
-  done
-fi
-
-# c. The places people actually put repos. Ten stat calls, instantly.
-if [ -z "$REPO" ]; then
-  for base in "$HOME" "$HOME/Developer" "$HOME/Documents" "$HOME/Desktop" "$HOME/code" \
-              "$HOME/Code" "$HOME/projects" "$HOME/Projects" "$HOME/src" "$HOME/git" \
-              "$HOME/repos" "$HOME/dev" "$HOME/work"; do
-    if looks_right "$base/shelf"; then REPO="$base/shelf"; break; fi
-  done
-fi
-
-# d. A BOUNDED search, and only now.
-#
-# The first version of this hung, on a real Mac, at this exact step. Two
-# reasons, both mine. The prune expression was written after `-name shelf`, so
-# it never pruned anything — and an unpruned walk of a Mac's home folder goes
-# through ~/Library/Mobile Documents, which is iCloud Drive: network-backed,
-# and it will sit there downloading directory listings for as long as you let
-# it. There was also no output, so a script that was working looked dead.
-#
-# Now: prune FIRST, shallow, with a watchdog, and it says what it is doing.
-if [ -z "$REPO" ]; then
-  printf '  looking for the checkout (up to 20 seconds)…\n'
-  FOUND="$(mktemp)"
-  find "$HOME" -maxdepth 4 \
-    \( -name node_modules -o -name .git -o -name Library -o -name Pictures \
-       -o -name .Trash -o -name "*.photoslibrary" -o -name "*.sparsebundle" \) -prune -o \
-    -type d -name shelf -print 2>/dev/null > "$FOUND" &
-  FINDPID=$!
-  # macOS has no `timeout`, so this is the watchdog. A search that has not
-  # found it in twenty seconds is a search that is not going to.
-  for _ in $(seq 1 40); do kill -0 "$FINDPID" 2>/dev/null || break; sleep 0.5; done
-  kill "$FINDPID" 2>/dev/null
-  wait "$FINDPID" 2>/dev/null
-  while IFS= read -r cand; do
-    [ -n "$cand" ] || continue
-    if looks_right "$cand"; then REPO="$cand"; break; fi
-  done < "$FOUND"
-  rm -f "$FOUND"
-fi
-
-# e. Still nothing: clone it. The repo is public, so this needs no credentials.
-if [ -z "$REPO" ]; then
-  REPO="$HOME/Developer/shelf"
-  warn "no checkout found — cloning into $REPO"
-  warn "(if you have one somewhere unusual, stop and re-run with: SHELF_DIR=/path/to/shelf bash $0)"
-  run mkdir -p "$HOME/Developer"
-  run git clone https://github.com/surendrachaplot/shelf.git "$REPO" \
-    || die "could not clone the repo." "Check the network, then run this again."
-fi
-ok "$REPO"
 APP="$REPO/app"
 [ -n "$DRY" ] || [ -d "$APP" ] || die "found $REPO but it has no app/ folder — that is not the shelf repo."
 
@@ -162,21 +144,11 @@ if [ "$(uname -s)" = "Darwin" ]; then
   fi
 fi
 
-# ── 4. latest code ───────────────────────────────────────────────────────────
-say "4/8  Latest code"
+# ── 4. dependencies ──────────────────────────────────────────────────────────
+say "4/8  Dependencies"
 cd "$APP" 2>/dev/null || { [ -n "$DRY" ] || die "cannot enter $APP"; }
-if [ -z "$DRY" ] && [ -n "$(git -C "$REPO" status --porcelain 2>/dev/null)" ]; then
-  # Never throw away somebody's work to save a step.
-  # EAS builds from what git has, not from what is on disk, so an uncommitted
-  # change is a change that will NOT be in the app you install. Said plainly,
-  # because the alternative is building the wrong code and not knowing.
-  warn "uncommitted changes in the repo — NOT pulling. EAS builds from COMMITTED state, so anything below will be missing from the build:"
-  git -C "$REPO" status --short | head -10
-else
-  run git -C "$REPO" pull --ff-only
-fi
 run npm ci
-ok "dependencies installed"
+ok "installed"
 
 # ── 5. the two-second checks ─────────────────────────────────────────────────
 # preflight has caught version mismatches that otherwise fail ten minutes into
