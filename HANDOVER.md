@@ -369,8 +369,15 @@ screen the audit never saw unless somebody adds the tap.
 
 ### shelf runs in a browser now (2026-08-17)
 
-**`https://surendrachaplot.github.io/shelf/`** — free, live, no quota, no
-signing. The same `App.tsx`, six native modules swapped in `app/web/`. Full
+**`https://shelf-api-u8xy.onrender.com/app`** — free, live, no quota, no
+signing. **Served by the API itself**, not GitHub Pages: Pages could not be
+switched on (`actions/configure-pages` → "Create Pages site failed. Resource
+not accessible by integration", a repository setting no workflow token can
+set), while this service was already deployed, already had a domain and
+already redeployed on every push. That workflow is deleted. `api/site.js`
+serves `api/public/`, which is committed because Render installs `api/` alone
+and esbuild cannot run there; `checks.yml` rebuilds and diffs it so it cannot
+go stale. The same `App.tsx`, six native modules swapped in `app/web/`. Full
 detail in OPERATIONS §4b2.
 
 Verified by `cd app && npm run web:check`, which is not "did it build": it
@@ -451,8 +458,26 @@ leave the app open until the rows finish.
 
 ## Open, with the check that would close it
 
-- **THE iOS BUILD QUOTA IS SPENT.** The build triggered on 2026-08-16 failed
-  in 25 seconds, and not on code: *"This account has used its iOS builds from
+- **THE iOS BUILD QUOTA IS SPENT — RE-MEASURED 2026-08-22**, run
+  `32570286056`: preflight passed, credentials resolved, the 12.5 MB archive
+  uploaded, and only then *"used its iOS builds from the Free plan this month,
+  which will reset in 9 days (on Tue Sep 01 2026)"*. Retrying does not help; it
+  fails after the upload every time.
+
+  That log settled something else worth keeping: **the Apple credentials are
+  fine and complete.** Team `CBFCJ37VBT` (Surendra Singh Chaplot, Individual),
+  certificate and profile active until 2027-08-04, **four iPhones provisioned**,
+  and profiles for BOTH `com.surendrachaplot.shelf` and
+  `com.surendrachaplot.shelf.ShareExtension`. So `eas build --local` on the Mac
+  pulls those same credentials off the account — the earlier worry about a paid
+  account and hand-set Xcode signing does not apply.
+
+  **The way onto a phone this week is `app/mac-build.sh`** (OPERATIONS §4b1),
+  which runs `eas build -p ios --profile preview --local`: the same profile,
+  the same channel, the same credentials, compiled on the laptop, no quota.
+
+- The earlier build on 2026-08-16 failed the same way, in 25 seconds, and not
+  on code: *"This account has used its iOS builds from
   the Free plan this month, which will reset in 15 days (on Tue Sep 01 2026)."*
   Credentials were fine, the project uploaded, EAS refused the build. Three
   ways forward and they are the user's call: pay for an Expo plan, wait until
