@@ -27,6 +27,8 @@
 # SHELF_DRY_RUN=1 walks every check and prints what it would run, changing
 # nothing. That is how the flow below is tested off a Mac.
 #
+# SHELF_DIR=/path/to/shelf skips the search entirely.
+#
 # PROFILE=development builds the dev client instead of the preview build.
 set -uo pipefail
 
@@ -53,31 +55,66 @@ say "2/8  Where shelf is"
 REPO=""
 looks_right() { [ -f "$1/app/app.json" ] && [ -d "$1/api" ]; }
 
-# a. Running from inside a checkout? Walk up from this script and from $PWD.
-for start in "$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" "$PWD"; do
-  d="$start"
-  while [ -n "$d" ] && [ "$d" != "/" ]; do
-    if looks_right "$d"; then REPO="$d"; break 2; fi
-    d="$(dirname "$d")"
-  done
-done
+# a. Told outright.
+if [ -n "${SHELF_DIR:-}" ]; then
+  looks_right "$SHELF_DIR" && REPO="$SHELF_DIR" || die "SHELF_DIR=$SHELF_DIR is not a shelf checkout." "It needs app/app.json and api/ inside it."
+fi
 
-# b. Otherwise look for it. Depth 6 covers ~/Developer/shelf, ~/code/x/shelf and
-#    the like without walking the whole disk; Library and node_modules are
-#    pruned because that is where a search like this otherwise spends a minute.
+# b. Running from inside a checkout? Walk up from this script and from $PWD.
 if [ -z "$REPO" ]; then
+  for start in "$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" "$PWD"; do
+    d="$start"
+    while [ -n "$d" ] && [ "$d" != "/" ]; do
+      if looks_right "$d"; then REPO="$d"; break 2; fi
+      d="$(dirname "$d")"
+    done
+  done
+fi
+
+# c. The places people actually put repos. Ten stat calls, instantly.
+if [ -z "$REPO" ]; then
+  for base in "$HOME" "$HOME/Developer" "$HOME/Documents" "$HOME/Desktop" "$HOME/code" \
+              "$HOME/Code" "$HOME/projects" "$HOME/Projects" "$HOME/src" "$HOME/git" \
+              "$HOME/repos" "$HOME/dev" "$HOME/work"; do
+    if looks_right "$base/shelf"; then REPO="$base/shelf"; break; fi
+  done
+fi
+
+# d. A BOUNDED search, and only now.
+#
+# The first version of this hung, on a real Mac, at this exact step. Two
+# reasons, both mine. The prune expression was written after `-name shelf`, so
+# it never pruned anything — and an unpruned walk of a Mac's home folder goes
+# through ~/Library/Mobile Documents, which is iCloud Drive: network-backed,
+# and it will sit there downloading directory listings for as long as you let
+# it. There was also no output, so a script that was working looked dead.
+#
+# Now: prune FIRST, shallow, with a watchdog, and it says what it is doing.
+if [ -z "$REPO" ]; then
+  printf '  looking for the checkout (up to 20 seconds)…\n'
+  FOUND="$(mktemp)"
+  find "$HOME" -maxdepth 4 \
+    \( -name node_modules -o -name .git -o -name Library -o -name Pictures \
+       -o -name .Trash -o -name "*.photoslibrary" -o -name "*.sparsebundle" \) -prune -o \
+    -type d -name shelf -print 2>/dev/null > "$FOUND" &
+  FINDPID=$!
+  # macOS has no `timeout`, so this is the watchdog. A search that has not
+  # found it in twenty seconds is a search that is not going to.
+  for _ in $(seq 1 40); do kill -0 "$FINDPID" 2>/dev/null || break; sleep 0.5; done
+  kill "$FINDPID" 2>/dev/null
+  wait "$FINDPID" 2>/dev/null
   while IFS= read -r cand; do
     [ -n "$cand" ] || continue
     if looks_right "$cand"; then REPO="$cand"; break; fi
-  done < <(find "$HOME" -maxdepth 6 -type d -name shelf \
-             \( -path '*/node_modules/*' -o -path "$HOME/Library/*" \) -prune -o \
-             -type d -name shelf -print 2>/dev/null)
+  done < "$FOUND"
+  rm -f "$FOUND"
 fi
 
-# c. Still nothing: clone it. The repo is public, so this needs no credentials.
+# e. Still nothing: clone it. The repo is public, so this needs no credentials.
 if [ -z "$REPO" ]; then
   REPO="$HOME/Developer/shelf"
   warn "no checkout found — cloning into $REPO"
+  warn "(if you have one somewhere unusual, stop and re-run with: SHELF_DIR=/path/to/shelf bash $0)"
   run mkdir -p "$HOME/Developer"
   run git clone https://github.com/surendrachaplot/shelf.git "$REPO" \
     || die "could not clone the repo." "Check the network, then run this again."
