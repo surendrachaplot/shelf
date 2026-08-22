@@ -88,12 +88,28 @@ jobs:
 
       # A PUSH never publishes a native change silently. That is the whole
       # point of this job and it does not get an override.
-      - name: Refuse to publish a native change as an update
+      # A PUSH NEVER PUBLISHES A NATIVE CHANGE SILENTLY — but refusing on
+      # purpose is a DECISION, not a failure, and it must not be red.
+      #
+      # It was. Every push touching app/ since the picker landed has emailed a
+      # failure for a workflow doing exactly its job, and a pipeline that is
+      # permanently red next to the ones that matter teaches you to ignore red
+      # — which is the same reasoning that deleted .eas/workflows/update.yml.
+      # A notice on the summary says it clearly and the run stays green.
+      - name: Not publishing — this needs a build
         if: steps.native.outputs.code == '1' && !(github.event_name == 'workflow_dispatch' && inputs.anyway)
         run: |
-          echo "::error::This range changes native code. Run \`npm run build:preview\` and install the new build — an over-the-air update cannot carry it."
-          echo "::error::If the JS is worth shipping NOW and you accept the native part being absent, re-run this manually with 'anyway' ticked."
-          exit 1
+          echo "::notice::No update published: this range changes native code, which an over-the-air update cannot carry. Build and install instead."
+          {
+            echo "### No update published"
+            echo
+            echo "This range changes **native code**, so an over-the-air update cannot carry it."
+            echo "That is this job working, not failing."
+            echo
+            echo "- to ship the app: build it and install the build"
+            echo "- to ship the JavaScript now and accept the native part being absent:"
+            echo "  re-run this workflow manually with **anyway** ticked"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # The informed override. It exists because "refuse everything" is the
       # wrong answer when a range is 40 JavaScript files plus one build-time
