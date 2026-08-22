@@ -104,6 +104,24 @@ jobs:
             | jq -r '.[] | "\(.status)  \(.platform)  \(.createdAt)\n  profile: \(.buildProfile // "—")   channel: \(.channel // "—")   runtime: \(.runtimeVersion // "—")\n  install: \(.artifacts.buildUrl // "—")\n  page:    https://expo.dev/accounts/\(.project.ownerAccount.name // env.EAS_OWNER)/projects/\(.project.slug // env.EAS_SLUG)/builds/\(.id)\n"'
 
       # And which updates each channel can actually see.
+      # THE RUNTIME OF A SPECIFIC BUILD. `build:list --json` does not carry
+      # runtimeVersion, so the status listing prints "—" for every build and
+      # the one number that decides whether an update can reach a phone is
+      # missing. `build:view` has it. Without this, "will this update land on
+      # that build" is a guess — and guessing it is what caused the outage.
+      - name: What runtime the installable builds are on
+        if: inputs.what == 'status'
+        run: |
+          ids=$(npx --yes eas-cli@latest build:list --platform ios --limit 8 \
+                  --non-interactive --json 2>/dev/null \
+                | sed -n '/^\[/,$p' | jq -r '.[] | select(.status=="FINISHED") | .id')
+          for id in $ids; do
+            npx --yes eas-cli@latest build:view "$id" --json --non-interactive 2>/dev/null \
+              | sed -n '/^{/,$p' \
+              | jq -r '"\(.id[0:8])  \(.buildProfile // "—")  runtime \(.runtimeVersion // "?")  channel \(.channel // "—")  \(.createdAt)"' \
+              || echo "$id  (build:view failed)"
+          done
+
       - name: What each channel is pointed at
         if: inputs.what == 'status'
         run: |
