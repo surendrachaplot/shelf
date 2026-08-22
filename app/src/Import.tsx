@@ -18,7 +18,7 @@
 // mistake "limited" for "denied".
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View, StyleSheet } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { imagePicker, canPickPhotos } from "./native";
 import { Press } from "./Press";
 import { lists, listOn, sp, t, TOUCH_MIN, RULE, useTheme, type Palette } from "./theme";
 import { LISTS, type ListName } from "./api";
@@ -50,6 +50,11 @@ function Thumb({ uri, s, c }: { uri: string; s: ReturnType<typeof styles>; c: Pa
 type Phase =
   | { kind: "idle" }
   | { kind: "denied" }
+  // THE BINARY DOES NOT HAVE THE PICKER. Not a refusal and not a failure —
+  // this build simply predates it, and an update can carry this screen but
+  // not the native half of it. §8: a named, visible absence, with the route
+  // that still works, rather than a button that does nothing.
+  | { kind: "unbuilt" }
   | { kind: "chosen"; picked: Picked[] }
   | { kind: "reading"; done: number; total: number };
 
@@ -71,8 +76,11 @@ export function Import({ onImport, onClose }: {
     // (iOS) means the person chose specific photos and the picker will show
     // exactly those — a perfectly good outcome, and treating it as a refusal
     // is the bug this branch exists to avoid.
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted && perm.status !== ImagePicker.PermissionStatus.GRANTED) {
+    const Picker = imagePicker();
+    if (!Picker) { setPhase({ kind: "unbuilt" }); return; }
+
+    const perm = await Picker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted && perm.status !== Picker.PermissionStatus.GRANTED) {
       // `canAskAgain: false` means the OS will no longer show the dialog, so
       // "try again" is a lie — Settings is the only route left, and saying so
       // is the difference between a dead end and an instruction.
@@ -80,8 +88,8 @@ export function Import({ onImport, onClose }: {
       return;
     }
 
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const res = await Picker.launchImageLibraryAsync({
+      mediaTypes: Picker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       selectionLimit: 20,
       // No base64 here. The file is read — and shrunk if it is large — in
@@ -120,7 +128,16 @@ export function Import({ onImport, onClose }: {
         </Press>
       </View>
 
-      {phase.kind === "denied" ? (
+      {phase.kind === "unbuilt" ? (
+        <View style={s.body}>
+          <Text style={s.lead}>this build can't open your photos yet</Text>
+          <Text style={s.note}>
+            Importing from the camera roll needs a newer build of shelf than the one on this
+            phone. Everything else here works. In the meantime: open Photos, pick a screenshot,
+            tap Share and choose shelf — that route reads exactly the same pictures.
+          </Text>
+        </View>
+      ) : phase.kind === "denied" ? (
         <View style={s.body}>
           <Text style={s.lead}>shelf can't see your photos</Text>
           <Text style={s.note}>
@@ -161,7 +178,7 @@ export function Import({ onImport, onClose }: {
             them and files what it finds.
           </Text>
           <Press onPress={pick} size={TOUCH_MIN} label="Choose screenshots" style={s.cta}>
-            <Text style={s.ctaLabel}>Choose screenshots →</Text>
+            <Text style={s.ctaLabel}>{canPickPhotos() ? "Choose screenshots →" : "Choose screenshots"}</Text>
           </Press>
         </View>
       )}

@@ -25,9 +25,9 @@
 // copied the file into the App Group container, and this module reads it there
 // when the app gets round to resolving.
 import * as FileSystem from "expo-file-system";
-import * as ImageManipulator from "expo-image-manipulator";
 import { clearAppGroupContainer } from "expo-share-extension";
 import { resolveImage, type ListName } from "./api";
+import { imageManipulator } from "./native";
 
 /**
  * THE SIZE PROBLEM, and why this file does arithmetic.
@@ -95,8 +95,12 @@ export async function resolveScreenshot(uri: string, list: ListName) {
       b64 = smaller;
       mediaType = "image/jpeg";
     } else if (mediaType === "image/heic") {
-      // Nothing to be gained by posting bytes the API will refuse.
-      throw new Error("this phone stores photos in a format the reader can't open (HEIC)");
+      // Nothing to be gained by posting bytes the API will refuse. The message
+      // names the two different reasons this can happen, because "HEIC" alone
+      // is not something anybody can act on.
+      throw new Error(imageManipulator()
+        ? "this phone stores photos in a format the reader can't open (HEIC)"
+        : "this build can't convert HEIC photos — a newer build can. A screenshot works in the meantime.");
     }
   }
 
@@ -107,9 +111,14 @@ export async function resolveScreenshot(uri: string, list: ListName) {
 }
 
 async function shrink(uri: string): Promise<string | null> {
-  const out = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: LONG_EDGE } }], {
+  // OPTIONAL, because a binary built before 2026-08-16 does not contain it —
+  // and reaching for it at import time is what turns "this picture is a bit
+  // big" into a bundle that will not evaluate. See native.ts.
+  const M = imageManipulator();
+  if (!M) return null;
+  const out = await M.manipulateAsync(uri, [{ resize: { width: LONG_EDGE } }], {
     compress: QUALITY,
-    format: ImageManipulator.SaveFormat.JPEG,
+    format: M.SaveFormat.JPEG,
     base64: true,
   });
   return out.base64 ?? null;
