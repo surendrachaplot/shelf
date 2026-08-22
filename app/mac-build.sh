@@ -37,7 +37,7 @@ set -uo pipefail
 # the output itself says which copy ran — "still the same" and "still running
 # the copy in /tmp from twenty minutes ago" look identical without it, and one
 # round of that is one round too many.
-SCRIPT_VERSION="2026-08-22-e"
+SCRIPT_VERSION="2026-08-22-f"
 
 DRY="${SHELF_DRY_RUN:-}"
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
@@ -158,20 +158,27 @@ run npm run preflight || die "preflight failed — fix what it names above befor
   "This is the same check that runs before every EAS build."
 
 # ── 6. the phone ─────────────────────────────────────────────────────────────
-say "6/8  The iPhone"
+say "6/8  The iPhone (not needed to build)"
+# A WARNING, NOT A STOP. `eas build --local` produces an .ipa with no device
+# involved; the phone is only needed to install the thing afterwards. Refusing
+# to start a twenty-minute build because a cable is not plugged in yet is a
+# script wasting somebody's afternoon to enforce a requirement it does not
+# have — and the phone can be plugged in WHILE it builds, which is why this is
+# checked again at the end rather than only here.
 UDID=""
-if [ "$(uname -s)" = "Darwin" ]; then
+find_iphone() {
   # xctrace lists simulators too; a real device has a UDID and no "Simulator".
-  DEVLINE="$(xcrun xctrace list devices 2>/dev/null | grep -iv simulator | grep -iE 'iphone|ipad' | head -1)"
-  if [ -z "$DEVLINE" ]; then
-    die "no iPhone is connected." \
-      "  1. Plug it in with a cable." \
-      "  2. Unlock it, and tap Trust if it asks." \
-      "  3. Settings → Privacy & Security → Developer Mode → on (the phone reboots)." \
-      "Then run this again."
+  xcrun xctrace list devices 2>/dev/null | grep -iv simulator | grep -iE 'iphone|ipad' | head -1
+}
+if [ "$(uname -s)" = "Darwin" ]; then
+  DEVLINE="$(find_iphone)"
+  if [ -n "$DEVLINE" ]; then
+    UDID="$(printf '%s' "$DEVLINE" | sed -n 's/.*(\([0-9A-Fa-f-]\{8,\}\)).*/\1/p' | tail -1)"
+    ok "$(printf '%s' "$DEVLINE" | sed 's/ *(.*//')${UDID:+  ($UDID)}"
+  else
+    warn "no iPhone connected — building anyway, and installing at the end if you plug one in"
+    warn "when you do: cable, unlock, tap Trust, and Settings → Privacy & Security → Developer Mode → on"
   fi
-  UDID="$(printf '%s' "$DEVLINE" | sed -n 's/.*(\([0-9A-Fa-f-]\{8,\}\)).*/\1/p' | tail -1)"
-  ok "$(printf '%s' "$DEVLINE" | sed 's/ *(.*//')${UDID:+  ($UDID)}"
 else
   warn "not macOS — skipping the device check"
 fi
@@ -227,31 +234,51 @@ fi
 
 # ── install it on the phone ──────────────────────────────────────────────────
 say "Installing on the phone"
+# CHECKED AGAIN, on purpose. Twenty minutes have passed since the first look,
+# which is plenty of time to have found a cable.
+if [ "$(uname -s)" = "Darwin" ] && [ -z "$UDID" ]; then
+  DEVLINE="$(find_iphone)"
+  [ -n "$DEVLINE" ] && UDID="$(printf '%s' "$DEVLINE" | sed -n 's/.*(\([0-9A-Fa-f-]\{8,\}\)).*/\1/p' | tail -1)"
+fi
+
 IPA="$(ls -t "$OUTDIR"/*.ipa 2>/dev/null | head -1)"
 if [ -z "$IPA" ] && [ -z "$DRY" ]; then
   warn "the build finished but no .ipa turned up in $OUTDIR — look at the output above for where it was written"
-else
+elif [ -n "$UDID" ] || [ -n "$DRY" ]; then
   ok "${IPA:-<the .ipa>}"
-  if [ -n "$UDID" ] || [ -n "$DRY" ]; then
-    run xcrun devicectl device install app --device "${UDID:-<udid>}" "${IPA:-<ipa>}" || {
-      cat <<'HELP'
+  run xcrun devicectl device install app --device "${UDID:-<udid>}" "${IPA:-<ipa>}" || {
+    cat <<'HELP'
 
 Installing over the cable did not work. Two other ways, both fine:
 
   · Open Finder, click the iPhone in the sidebar, and drag the .ipa onto it.
-  · Or run the build again with `eas build ... ` in the cloud once the quota
-    resets on 1 September, and install from the link as usual.
+  · Xcode → Window → Devices and Simulators → your iPhone → the + under
+    "Installed Apps" → pick the .ipa.
 HELP
-    }
-  else
-    warn "no phone connected — the .ipa is in $OUTDIR, install it when you plug in"
-  fi
+  }
+else
+  cat <<HELP
+
+  The app is built. It is here:
+
+    $IPA
+
+  No iPhone is plugged in, so nothing was installed. When you have a cable:
+
+    1. plug the phone in, unlock it, tap Trust
+    2. Settings → Privacy & Security → Developer Mode → on (it reboots)
+    3. run this script again — it will skip straight past the build if nothing
+       has changed, or just drag the .ipa onto the phone in Finder.
+HELP
 fi
 
 say "Done"
-cat <<'DONE'
-shelf is on your phone, built from the latest code, on this machine, with no
-EAS quota spent:
+# WHAT ACTUALLY HAPPENED, not what usually happens. The first version of this
+# said "shelf is on your phone" unconditionally — including when no phone was
+# plugged in and nothing had been installed.
+if [ -n "$UDID" ] || [ -n "$DRY" ]; then
+  cat <<'DONE'
+shelf is on your phone, built on this machine, with no EAS quota spent:
 
   · sharing a screenshot works
   · Import brings screenshots in from the camera roll
@@ -261,3 +288,6 @@ EAS quota spent:
 It is on the same channel as a cloud build of this profile, so `eas update`
 reaches it exactly as before.
 DONE
+else
+  printf 'The app is built and waiting at:\n\n  %s\n\nPlug the phone in and run this again to install it.\n' "${IPA:-$OUTDIR}"
+fi
