@@ -20,7 +20,7 @@ on:
         required: true
         default: health
         type: choice
-        options: [health, reel, resolve]
+        options: [health, reel, resolve, recover]
       url:
         description: "The reel URL (what=reel or resolve)."
         required: false
@@ -108,6 +108,25 @@ jobs:
             bcode=$(curl -sS -o /dev/null -w '%{http_code}' -m 60 "$SHELF_API/app/bundle.js")
             echo "GET /app/bundle.js -> $bcode"
             [ "$bcode" = "200" ] || echo "::warning::the bundle is missing — the page will paint nothing"
+          fi
+
+          # WHAT COULD BE PUT BACK. Somebody deleted the app, which on a
+          # local-first design takes the shelf file with it. Two places may
+          # still hold rows: the legacy server table from the account era
+          # (never wiped), and any snapshot deliberately published.
+          #
+          # COUNTS ONLY, NEVER TITLES. This repository is public and its
+          # Actions logs are world-readable — printing what somebody reads
+          # would publish it. The numbers say whether a rescue is worth
+          # building; the rescue itself moves the data device-to-device.
+          if [ "$WHAT" = "recover" ]; then
+            echo "── legacy rows still on the server ──"
+            curl -sS -m 60 "$SHELF_API/api/legacy/export" \
+              | jq '{ok, count, note, by_list: (.items // [] | group_by(.list) | map({list: .[0].list, n: length}))}'
+            echo
+            echo "── published snapshots ──"
+            curl -sS -m 30 "$SHELF_API/api/health" | jq '.published'
+            exit 0
           fi
 
           case "$WHAT" in
