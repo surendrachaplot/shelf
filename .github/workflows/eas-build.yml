@@ -114,7 +114,7 @@ jobs:
         run: |
           ids=$(npx --yes eas-cli@latest build:list --platform ios --limit 8 \
                   --non-interactive --json 2>/dev/null \
-                | sed -n '/^\[/,$p' | jq -r '.[] | select(.status=="FINISHED") | .id')
+                | sed -n '/^\[$/,$p' | jq -r '.[] | select(.status=="FINISHED") | .id')
           for id in $ids; do
             npx --yes eas-cli@latest build:view "$id" --json --non-interactive 2>/dev/null \
               | sed -n '/^{/,$p' \
@@ -167,7 +167,7 @@ jobs:
           # literal at line 1", which is what happened the first time this ran
           # and is why the gradle log went uncaptured. Slice from the first
           # line that is a bare `[` to the end.
-          sed -n '/^\[/,$p' /tmp/build.json > /tmp/build.array.json
+          sed -n '/^\[$/,$p' /tmp/build.json > /tmp/build.array.json
           if ! jq -e . /tmp/build.array.json >/dev/null 2>&1; then
             echo "could not find a JSON array in the build output — last 40 lines:"
             tail -40 /tmp/build.json
@@ -191,7 +191,7 @@ jobs:
           if [ ! -s /tmp/build.json ]; then echo "no build output"; exit 0; fi
           # --json prints an array of builds (one per platform). Anything that
           # is not JSON — an error, a prompt — falls through to the raw tail.
-          sed -n '/^\[/,$p' /tmp/build.json > /tmp/build.array.json
+          sed -n '/^\[$/,$p' /tmp/build.json > /tmp/build.array.json
           if jq -e . /tmp/build.array.json >/dev/null 2>&1; then
             jq -r '.[] | "platform: \(.platform)\nstatus:   \(.status)\ninstall:  \(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "—")\npage:     https://expo.dev/accounts/\(.project.ownerAccount.name // env.EAS_OWNER)/projects/\(.project.slug // env.EAS_SLUG)/builds/\(.id)"' /tmp/build.array.json
           else
