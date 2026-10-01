@@ -8,7 +8,9 @@ summary. Replace it wholesale at the end of the next substantial session.
 ## What shelf is
 
 Share an Instagram reel → it lands on one of six shelves: **books ·
-restaurants · movies · recipes · quotes · places**. (`travel` was renamed to
+restaurants · movies · recipes · quotes · places**. (Two more, **wishlist**
+and **notes**, are built on the branch `v1-build` and are not on `main` — see
+"THE v1-build BRANCH" below.) (`travel` was renamed to
 `places` on 2026-08-12; `store.ts` migrates old items on read and the server
 aliases the old name for good. Log excerpts below that say `[travel]` predate
 it and are otherwise accurate.) One repo, two folders:
@@ -19,6 +21,59 @@ accounts, no login, no pairing, no server-side rows. The API is a stateless
 resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
+
+## THE v1-build BRANCH (2026-10-02) — one build's worth of work, waiting
+
+**`main` does not have this. A phone does not have this.** Everything that
+needs `design.js`, `theme.ts`, `api.ts` or `ShareBoards.tsx` to change is on
+the branch `v1-build`, because those files are baked into the installed build
+and changing them on `main` stops over-the-air updates reaching the phone.
+Merge it once, build once.
+
+| Thing | Where | Check |
+|---|---|---|
+| Two shelves: Wishlist (07, `#D4107A`) and Notes (08, paper) | `design.js` `LIST_KEYS`; everything else derives | `node verify-design.mjs` (28 rules) |
+| A label colour is asked of `onFor(list, palette)`; Notes is paper so its label is ink | `design.js` | gate rules `list-label-contrast`, `paper-has-an-edge` |
+| Things to buy and notes move out of the pile on read | `store.ts` `migrate` | `node store-selftest.mjs` (section 9) |
+| Wishlist: price tag on the jacket, total on the band, price block on the item page | `App.tsx`; one formatter, `priceOn` in `lists.js` | `preview/phase2.mjs` |
+| Notes: paper jackets, WRITE on the band, a full-screen writer | `App.tsx`, `src/NoteWriter.tsx` | `preview/phase2.mjs` |
+| The share picker is eight tiles, two across | `ShareBoards.tsx`, `capsType` | shots `share-*`, `android-share-*`; gate `tile-caps-fit` |
+| The app tells the server which shelves it has | `api.ts` (`shelves: LISTS`) → `http.js` `shelvesOf` | `node resolveRoute.js --selftest` |
+| The classifier knows the wishlist, never invents a price, and is not offered Notes | `classify.js` | `node classify.js --selftest` |
+| `type.read` (17/25) and `t.title` | `design.js`, `theme.ts`, `Reader.tsx`, `Profile.tsx` | shot `app-reader-375-light` |
+
+**Decisions made on the branch, each one easy to reverse:**
+- **A shared card does NOT carry Notes** (`ShareSheet.tsx`), and the Notes band
+  has WRITE where the other bands have Share. A note is what you wrote to
+  yourself. One note can still be shared from its own page.
+- **A plate's ground is the first six shelves, for good** (`exlibris.js`
+  `GROUNDS`). The ground is `seed % length`; adding two shelves to that list
+  would have changed the colour of every plate already handed out.
+- **`JACKET_GLYPH` went from 0.6 to 0.64.** "Rosewood" set as "Rosewoo / d" on
+  the first Wishlist screenshot. Every jacket with a long word is a little
+  smaller for it.
+- **A brand is a tag** (`tags.js`), so the tag index has a Brands group. It is
+  NOT a link kind: `LINK_KINDS` is unchanged, and that is the owner's call.
+- **An old build is safe against the new server.** A build that sends no
+  `shelves` is treated as having the first six, so a wishlist item from the
+  classifier or from a shop page goes to its pile, where it can be seen.
+- **The landing page has eight cells** with a use for each new shelf. Both
+  sentences are true only of a build that has the shelves, and the web app at
+  `/app` gets them the moment the branch is merged.
+
+**To turn the branch into a build:**
+1. Merge `v1-build` into `main` and push. Render deploys the API. The "EAS
+   Update" workflow runs and publishes NOTHING (it prints "No update published:
+   this range changes native code"). That is correct.
+2. Build: Actions → **Build the app** → `what=build`, `platform=ios`,
+   `profile=preview`. Or on the Mac with no quota: `bash app/mac-build.sh`.
+3. Install it. From then on updates go over the air again, to the new runtime.
+   Check: `cd app && npx expo-updates fingerprint:generate --platform ios`
+   prints the new build's runtime, not `f60ddf7b…`.
+
+**Known wrong, not fixed (it is the same on `main`):** at 320pt wide the home
+header is wider than the screen — Find, Add, Import and the plate do not fit
+beside the wordmark, and the plate is cut at the right edge.
 
 ## START HERE — after the laptop build session, 2026-10-01
 
@@ -95,8 +150,8 @@ one evening, live on the server, the web app and over the air:
   list and Pin on every item page. Notes and camera-roll pictures are items
   (`kind: "note"` / `"picture"`, list `unsorted`). Entry: Find → Your lists.
 - **The 7th and 8th shelves (Wishlist pink `#D4107A`, Notes paper-white) are
-  on Paper and NOT in code**: `design.js`, `theme.ts` and `api.ts` cannot
-  change over the air. They go in with the next build.
+  built on the branch `v1-build`**, not on `main`: `design.js`, `theme.ts` and
+  `api.ts` cannot change over the air. They go in with the next build.
 - **Known wrong, not fixed**: the catalogue lookup still swaps names on books
   and films ("Fight" → "Fight Club"); `nameFound` guards places only.
 - `Lists.tsx` is named `ListsScreen.tsx` for the same reason `TagIndex.tsx`
@@ -181,12 +236,11 @@ Tags, Tag open (with the links fragment), Boards, Serendipity A (strip on
 home), Serendipity B (own screen), Export. Read back with `get_tree_summary`.
 **Boards is designed and NOT built** — it is Phase 3. Serendipity **A** is
 what shipped; B is the alternative, still his call.
-**`type.read` (17/25) is on Paper and NOT in the code.** `design.js` and
-`theme.ts` cannot change over the air — the share extension renders both from
-a bundle only a BUILD replaces, and `update-safety.mjs` refuses the publish.
-So the reader sets its text in `body` (15/22) for now. With the next build:
-add `read: mkType("read", step(0.75), "400")` to `design.js`, `t.read` and
-`t.title` to `theme.ts`, and use them in `Reader.tsx` and `Profile.tsx`.
+**`type.read` (17/25) is on the branch `v1-build`, not on `main`.**
+`design.js` and `theme.ts` cannot change over the air — the share extension
+renders both from a bundle only a BUILD replaces, and `update-safety.mjs`
+refuses the publish. On `main` the reader still sets its text in `body`
+(15/22).
 
 ### Open — the blockers, in order
 

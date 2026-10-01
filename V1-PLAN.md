@@ -24,11 +24,11 @@ mymind's feature list was read off mymind.com on 2026-10-01.
 | Text recognition in pictures | `canonical.ocr_text` | BUILT, not proven live | share a screenshot, search a word in it |
 | Export | JSON + HTML | DONE | `preview/phase2.mjs` |
 | Browser extension | `extension/` (Chrome, Edge, Brave, Arc; a Firefox build never loaded) | BUILT, loads unpacked, not in any store | `node extension/selftest.mjs`, `node extension/e2e.mjs` |
-| **Products with prices (wishlist)** | price on the item, in rows, in a list's total. Lands in "Not shelved" until the build | DONE (the pink Wishlist SHELF needs the build) | `preview/phase2.mjs` |
+| **Products with prices (wishlist)** | the Wishlist shelf (07, pink): a price tag on the jacket, a total on the band, a price block on the item page. Also in rows and in a list's total | BUILT on branch `v1-build`, **not on a phone until that branch is built** | `preview/phase2.mjs` |
 | **Save pictures** | Add pictures on any list (`pictures.ts`), kept as files | DONE on web; **not yet tried on a phone** | `preview/phase2.mjs` (web) |
 | **Collections / Spaces ("lists")** | `lists.js`, `ListsScreen.tsx`; Find → Your lists | DONE (a saved search can be stored but there is no screen to set one yet) | `lists-selftest.mjs`, `preview/phase2.mjs` |
 | **Moodboards** | a List in "pictures" view | DONE | `preview/phase2.mjs` |
-| **Notes** (quick notes, focus mode) | Write a note on any list; it is an item | DONE (no focus mode; the Notes SHELF needs the build) | `preview/phase2.mjs` |
+| **Notes** (quick notes, focus mode) | the Notes shelf (08, paper) with a full-screen writer; also Write a note on any list. A note is an item | BUILT on branch `v1-build` (no focus mode), **not on a phone until that branch is built** | `preview/phase2.mjs` |
 | **Top of Mind** (pinned items) | Pin on the item page, a row on home | DONE | `preview/phase2.mjs` |
 | **Highlights** (save a selected passage) | extension sends selected text | PARTLY (lands as a quote) | — |
 | **Everything view** (one visual board of all items) | the first list, "Everything" | DONE | `preview/phase2.mjs` |
@@ -67,6 +67,13 @@ Also there: Notes shelf (08, paper white) with the note writer, and the pinned r
 7. **Same Vibe, colour search, PDFs.**
 
 ## What needs a NEW BUILD on the phone (cannot go over the air)
+
+**Collected on branch `v1-build` (2026-10-02), waiting for ONE build:** the
+Wishlist and Notes shelves, the reading type step (`type.read`, 17/25), and
+the share picker as a grid of eight tiles. See HANDOVER "THE v1-build BRANCH"
+for what is in it and how to build it. Not in it: location ("near you") and
+sharing files on Android. Both need a new native module, so they need a
+change to `package.json`, and that is a decision for the same build.
 
 `design.js`, `theme.ts`, `ShareBoards.tsx` and `package.json` are baked into
 the build (see `native-rules.mjs` and the fingerprint trap in HANDOVER). So the

@@ -95,6 +95,16 @@ That bar is only meaningful if it is falsifiable, so it is:
   series number floated with no left or right edge. Ink is the one colour that
   contrasts the paper in both schemes, and it gives yellow the boundary its
   1.43:1 field cannot.
+- **One shelf is PAPER, and it is told apart by its edge.** Notes has no colour:
+  its field is the page (`light.notes` is white, `dark.notes` is near-black) and
+  its label is ink, which inverts. So a label colour is asked of `onFor(list,
+  palette)` and never read from the `listOn` table, and everything that draws a
+  shelf as a block (the rail, a band, a picker tile, a cell on the card) gives a
+  paper shelf a 2pt ink keyline. The gate holds both: `list-label-contrast` and
+  `paper-has-an-edge`.
+- **A person's plate never changes colour.** The ground is `seed % length` over
+  a list of shelves, so a new shelf added to that list would repaint every
+  plate already handed out. `exlibris.js` `GROUNDS` is the first six, for good.
 - **Each list names its own label colour.** Yellow cannot carry white.
   Assuming one label colour for all four would have shipped a 1.4:1 label on
   Movies; `listOn` exists so the system cannot make that assumption.
@@ -208,8 +218,14 @@ flat orange that should have been a gradient looked entirely plausible in one.
   full screen inside it. `src/ShareBoards.tsx` is the component; the only
   things that differ are what "done" does and one line of copy. Two copies
   would disagree about what a saved reel looks like within a week.
-- **The same layout, two very different heights.** Six bands over a 420pt
-  sheet and six over 800+pt of Android screen are not the same composition
+- **The picker is a grid of TILES, two across.** It was one full-width band per
+  shelf, and six of those filled the 420pt sheet. Eight do not: 35pt each,
+  under the 44pt floor. Four rows of two keep every tile at 76pt. The shelf
+  names are one size, solved from the longest (`capsType`, gate rule
+  `tile-caps-fit`), because "RESTAURANTS" at the band's 31pt is 218pt in a
+  128pt tile.
+- **The same layout, two very different heights.** Four rows over a 420pt
+  sheet and four over 800+pt of Android screen are not the same composition
   problem. Both are rendered and measured (`?screen=share` and
   `?screen=android-share`), at 412×915 and at 360×800 — the small cheap
   Android is the tight case, not the Pixel.
