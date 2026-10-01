@@ -35,7 +35,7 @@ import { parseLd, extractWebPage } from "../resolve.js";
  *   v5 — a match whose name is not ours is refused, not adopted
  *   v6 — a photo for places: OSM tags, Wikidata P18, Foursquare
  */
-export const SHAPE = "v6";
+export const SHAPE = "v7";
 
 export const cacheKey = (parts) =>
   [SHAPE, ...parts].map((p) => String(p ?? "").trim().toLowerCase()).filter(Boolean).join("|").slice(0, 400);
@@ -119,7 +119,8 @@ export async function enrichBook({ title, search_hints }) {
       fields: "key,title,author_name,cover_i,isbn,first_publish_year,number_of_pages_median,subject,ratings_average,first_sentence",
     });
     const j = await jsonGet(`https://openlibrary.org/search.json?${q}`);
-    return pickBook(j?.docs?.[0]);
+    // The FIRST RESULT THAT IS THIS TITLE, not the first result. See titleSame.
+    return pickBook((j?.docs || []).find((d) => titleSame(title, d.title)));
   });
 }
 
@@ -209,8 +210,10 @@ export async function enrichMovie({ title, search_hints }) {
     const q = new URLSearchParams({ api_key: key, query: title, include_adult: "false" });
     const j = await jsonGet(`https://api.themoviedb.org/3/search/multi?${q}`);
     const hits = (j?.results || []).filter((h) => h.media_type === "movie" || h.media_type === "tv");
-    const byYear = year ? hits.find((h) => (h.release_date || h.first_air_date || "").startsWith(year)) : null;
-    const base = pickMovie(byYear || hits[0]);
+    // Only hits that ARE this title (see titleSame); among those, the year wins.
+    const same = hits.filter((h) => titleSame(title, h.title || h.name) || titleSame(title, h.original_title || h.original_name));
+    const byYear = year ? same.find((h) => (h.release_date || h.first_air_date || "").startsWith(year)) : null;
+    const base = pickMovie(byYear || same[0]);
     if (!base?.canonical?.tmdb_id) return base;
 
     // The details call is allowed to fail on its own. A poster and a year is
@@ -481,6 +484,32 @@ const normName = (x) => String(x || "").toLowerCase()
   .split(/\s+/).filter(Boolean).join(" ");
 
 /**
+ * IS THIS CATALOGUE ENTRY THE TITLE THAT WAS ASKED FOR?
+ *
+ * Measured on the live service, 2026-10-01, on a YouTube video listing books:
+ * "Fight" came back as *Fight Club* and "Protect" as *Passionate Protection*.
+ * A search engine answers the question it can — the most popular thing
+ * containing the word — and taking `docs[0]` on trust turned a correct name
+ * into a confident wrong book with a cover and an ISBN.
+ *
+ * `nameFound` (below) is too kind for titles: it accepts a result that
+ * EXTENDS the name, which is right for a shop ("Funny Weather" → "Funny
+ * Weather books + coffee") and exactly wrong for a book. A title is the same
+ * title or it is a different work. So: equal once punctuation, case and
+ * articles are gone, where a SUBTITLE on either side does not count —
+ * "Piranesi" is "Piranesi: A Novel".
+ *
+ * No match → the item keeps the name it was given and gets no catalogue
+ * entry, which is the honest result. That includes a translated title whose
+ * catalogue entry is in another script: unmatched, not mismatched.
+ */
+const mainTitle = (x) => String(x || "").split(/\s*[:(\u2013\u2014]\s*|\s+-\s+/)[0];
+export function titleSame(asked, got) {
+  const a = normName(mainTitle(asked)), g = normName(mainTitle(got));
+  return !!a && a === g;
+}
+
+/**
  * Are these the same name, allowing for the punctuation and articles a map and
  * a caption disagree about? "The Book Elephant" and "Book Elephant" are.
  */
@@ -728,6 +757,12 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
 
   // THE GUARD, and the row that earned it. Every one of these shares its
   // tokens with the query; only the adjacency tells them apart.
+  ok(titleSame("Piranesi", "Piranesi: A Novel") && titleSame("The Dispossessed", "Dispossessed (Hainish Cycle)")
+     && titleSame("fight club", "Fight Club"), "a subtitle, an article or a case difference is the same title");
+  ok(!titleSame("Fight", "Fight Club") && !titleSame("Protect", "Passionate Protection") && !titleSame("Ramiro", "Rua Ramiro Esteves"),
+     "a result that merely CONTAINS the word is a different work — the three wrong matches seen live");
+  ok(!titleSame("", "Anything") && !titleSame("Crime and Punishment", "Преступление и наказание") && !titleSame("X", undefined),
+     "nothing to compare, or another script: unmatched, never mismatched");
   ok(nameFound("Funny Weather Books", "Funny Weather books + coffee"),
      "a map that EXTENDS the name found the place");
   ok(nameFound("Ganapati", "Ganapati Restaurant") && nameFound("The Book Elephant", "Book Elephant"),
@@ -736,7 +771,7 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
      "a map that INTERLEAVES other words found a DIFFERENT place — this row shipped with the wrong pin");
   ok(!nameFound("Ganapati", "Ganesha") && !nameFound("", "Anything") && !nameFound("Something", ""),
      "no name, no match — never a coincidental one");
-  ok(SHAPE === "v6", "changing what a lookup RETURNS without bumping SHAPE serves the old answer back forever");
+  ok(SHAPE === "v7", "changing what a lookup RETURNS without bumping SHAPE serves the old answer back forever");
 
   // ── A PHOTO FOR A PLACE ─────────────────────────────────────────────────
   // Books have covers and films have posters; a restaurant sitting next to
