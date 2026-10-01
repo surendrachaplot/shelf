@@ -22,10 +22,10 @@ tapping Share, which you can revoke (a DELETE, not a flag).
 
 ## START HERE — after the laptop build session, 2026-10-01
 
-**Phase 2 of PRODUCT-PLAN.md is BUILT, for the app and the web app, and is
-COMMITTED ON THE BRANCH `phase-2` — NOT PUSHED.** A push to `main` deploys the
-API on Render and publishes an over-the-air update, and nobody has asked for
-that yet. To ship: merge `phase-2` into `main` and push.
+**Phase 2 of PRODUCT-PLAN.md is BUILT, for the app and the web app, and was
+PUSHED TO `main` on 2026-10-01** (commit `fd3604f`). That push deploys the API
+on Render, rebuilds the web app at `/app`, and publishes an over-the-air
+update to the build on the phone.
 
 ### What was built, with the check that proves each
 
@@ -76,8 +76,9 @@ One new type step came out of it: `type.read` (17/25), derived from the ratio.
 
 ### Open — the blockers, in order
 
-1. **Committed on `phase-2`, not pushed.** `app/app.json` was left out on
-   purpose — see 2.
+1. **Pushed, and not yet looked at on the phone.** Open the app, pull down,
+   and check: the reader, Tags (Find → Browse by tag), a link on an item
+   page, the home card, and Take a copy on Your card.
 2. **`app/app.json` has a stray local edit that is not from this session**:
    duplicated entitlements, `ITSAppUsesNonExemptEncryption`, and
    `android.permission.RECORD_AUDIO`. That is a NATIVE change. Committed, it
