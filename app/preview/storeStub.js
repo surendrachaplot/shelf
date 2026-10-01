@@ -43,6 +43,13 @@ const RICH = {
     phone: "+44 20 7251 0848", opening_hours: "Mo-Sa 12:00-23:00", cuisine: ["british"],
     map_url: "geo:51.52,-0.1?q=St.%20John", osm_url: "https://www.openstreetmap.org/node/42",
     source: "openstreetmap" },
+  // Two restaurants in one neighbourhood, so the item page has a connection
+  // to draw ("Also in Farringdon") — links.js needs a shared FACT, and a
+  // fixture where nothing shares anything never renders the section at all.
+  Brutto: { osm_type: "node", osm_id: 43, address: "35-37 Greenhill Rents, London EC1M 6BN",
+    area: "Farringdon", lat: 51.5205, lng: -0.1016, cuisine: ["italian"], source: "openstreetmap" },
+  Kiln: { osm_type: "node", osm_id: 44, address: "58 Brewer Street, London W1F 9TL",
+    area: "Soho", lat: 51.5113, lng: -0.1363, cuisine: ["thai"], source: "openstreetmap" },
   "Lemon dal": { recipe_url: "https://food.example/dal", ingredients: ["1 cup toor dal", "2 lemons", "curry leaves"],
     total_time: "45 min", serves: "4", steps: 6, author: "Meera Sodha", calories: "320 kcal" },
 };
@@ -108,7 +115,10 @@ const mk = (list, title, i) => {
     subtitle: richSub || generic,
     note: "", image_url: ART[title] ?? null, canonical: rich ?? {},
     confidence: 0.9, enriched: true, source_url: "https://insta/x", resolver: "crawler-embed-html",
-    created_at: "2026-08-01T00:00:00Z",
+    // RELATIVE to today, for one item: "Saved a year ago" is decided against
+    // the clock, and a fixed date would put the card on the contact sheet for
+    // one week a year and silently drop it for the other fifty-one.
+    created_at: title === "Piranesi" ? new Date(Date.now() - 365 * 86400000).toISOString() : "2026-08-01T00:00:00Z",
     ...perList,
   };
 };
@@ -126,6 +136,25 @@ const PILE = [
   { id: "p3", list: "unsorted", status: "unread", title: null, subtitle: "", note: "",
     image_url: null, canonical: {}, confidence: null, enriched: false,
     source_url: "https://www.instagram.com/reel/DAbCdEf/", resolver: "none", created_at: "" },
+  // A SAVED ARTICLE. Read, named, and on no shelf — an essay is not a book, a
+  // film or a place — carrying the text the server kept (api/article.js). Long
+  // enough to scroll, with a summary, because the reader has to be looked at
+  // with both.
+  { id: "p4", list: "unsorted", status: "filed", title: "The dosa counter that does not take bookings",
+    subtitle: "Field Notes", note: "", image_url: null, confidence: null, enriched: false,
+    source_url: "https://fieldnotes.example/dosa-counter", resolver: "web-og", created_at: "2026-09-12T09:00:00Z",
+    canonical: { article: {
+      byline: "R. Okafor", siteName: "Field Notes", readingMinutes: 6, hero: null,
+      excerpt: "There is no sign outside. You find it by the queue.",
+      summary: "A twelve-seat counter on Holly Grove serves one thing well. Go before seven. Order the ghee roast and the filter coffee.",
+      text: [
+        "There is no sign outside. You find it by the queue, which starts at half past five and is gone by seven, because by seven the batter is gone too.",
+        "Inside are twelve stools, one flat-top and a man who has made the same dosa for nineteen years. He does not hurry and he does not talk while he pours.",
+        "The ghee roast comes first. It is as long as your forearm and it breaks like glass.",
+        "Then the sambar, which is thinner than you expect and better for it. Then the coffee, poured from a height into a steel tumbler, and then somebody is standing behind you waiting for the stool.",
+        "Nobody has written the recipe down. He says the batter knows what day it is, and that is all he will say about it.",
+      ].join("\n\n"),
+    } } },
 ];
 
 const blank = new URLSearchParams(location.search).get("blankProfile") === "1";
@@ -195,7 +224,7 @@ export const remove = (shelf, id) => ({ ...shelf, items: shelf.items.filter((i) 
 export const patch = (shelf, id, fields) =>
   ({ ...shelf, items: shelf.items.map((i) => (i.id === id ? { ...i, ...fields } : i)) });
 export const shelfOf = (shelf, list) => shelf.items.filter((i) => i.status === "filed" && i.list === list);
-export const pileOf = (shelf) => shelf.items.filter((i) => i.status !== "filed");
+export const pileOf = (shelf) => shelf.items.filter((i) => i.status !== "filed" || i.list === "unsorted");
 export const countsOf = (shelf) => {
   const out = {};
   for (const i of shelf.items) if (i.status === "filed") out[i.list] = (out[i.list] ?? 0) + 1;

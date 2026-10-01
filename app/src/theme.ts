@@ -80,6 +80,8 @@ export const t = {
   // Set on a jacket: the series line at the top of a cover, the author at
   // the foot. Tighter tracking than `micro` because it sits inside 96pt.
   tag: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 0.5, textTransform: "uppercase" as const },
+  title: asText(D.type.title),
+  read: asText(D.type.read),
   body: asText(D.type.body),
   bodyMed: asText(D.type.bodyMed),
   meta: asText(D.type.meta),

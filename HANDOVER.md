@@ -20,114 +20,105 @@ resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
 
-## START HERE — the laptop session, 2026-10-01
+## START HERE — after the laptop build session, 2026-10-01
 
-**You are picking up mid-stride. Nothing is half-written in the repo: the
-working tree is clean and pushed at `772ad61`. What follows is where to begin
-and why.**
+**Phase 2 of PRODUCT-PLAN.md is BUILT, for the app and the web app, and is
+COMMITTED ON THE BRANCH `phase-2` — NOT PUSHED.** A push to `main` deploys the
+API on Render and publishes an over-the-air update, and nobody has asked for
+that yet. To ship: merge `phase-2` into `main` and push.
 
-### What happened since the last dated section
+### What was built, with the check that proves each
 
-- **2026-09-01: the iOS build SUCCEEDED** (run `33490510738`, 4m49s, profile
-  and channel `preview`, runtime `f60ddf7bcf0fec95891ebfc4adf43890a6cdbd6a`,
-  commit `f8fc9a9`). The Expo free-plan quota had reset that morning. The
-  install page is `expo.dev/accounts/surendrachaplot/projects/shelf/builds`,
-  newest at the top; the build id is
-  `c99762d9-2b36-45c1-9317-0830ac0dd4a5`.
-- **Whether it was installed is UNKNOWN.** Suren deleted the app on 2026-08-22,
-  so the phone may have nothing on it. **Check this before anything else** —
-  most of the list below is unverifiable on a device with no app.
-- **21 items are still recoverable** from the legacy server table — 14 books,
-  3 movies, 4 restaurants (Actions → Diagnose → `recover`, counts only; the
-  repo is public so titles are never printed). App.tsx pulls them
-  automatically on first launch **when the shelf is empty**, so a fresh install
-  restores them with no action.
-- **`PRODUCT-PLAN.md` was written** (2026-10-01): shelf vs mymind, what to
-  build to be worth paying for. Read it before planning anything — it holds
-  the positioning argument, the feature-by-feature map and the pricing.
+| # | Thing | Where | Check |
+|---|---|---|---|
+| 1 | Readable article text, kept at save time | `api/article.js`, fixtures in `api/fixtures/article/` | `cd api && node article.js --selftest` |
+| 2 | Summary for long articles (one model call, none under 3,000 chars) | `api/classify.js` | `node classify.js --selftest` (pure parts only — see Open) |
+| 2b | Text read off a screenshot (`canonical.ocr_text`) | `api/classify.js`, `api/resolveRoute.js` | `node resolveRoute.js --selftest` |
+| 3 | Tags from resolved facts | `app/src/tags.js` | `node app/tags-selftest.mjs` |
+| 4 | Find indexes tags, article text, screenshot text | `app/src/find.js` | `node app/find-selftest.mjs` |
+| 5 | Automatic links (same author / director / cast / area / city) | `app/src/links.js` | `node app/links-selftest.mjs` |
+| 6 | Serendipity (open now, near, a year ago, forgotten) | `app/src/serendipity.js` | `node app/serendipity-selftest.mjs` |
+| 7 | Export: JSON + one readable HTML file | `app/src/export.js`, `app/src/saveFile.ts` | `node app/export-selftest.mjs` |
+| UI | Reader, tag index, one tag, links on the item page, the home strip, Take a copy | `app/src/Reader.tsx`, `app/src/TagIndex.tsx`, `App.tsx`, `src/Profile.tsx`, `src/Find.tsx` | `cd app && npm run phase2` |
 
-### The build session that was starting when this was written
+`npm run phase2` is the one to trust: it taps the real entry points in
+Chromium, takes the real export downloads and opens the file. All four
+subagent-written modules were mutation-probed (every assertion watched to
+fail); the counts are in their selftest headers.
 
-Suren asked for an intensive build session and then moved it to the laptop.
-**Phase 2 of PRODUCT-PLAN.md was the agreed scope** — the user-visible half —
-explicitly NOT sync/accounts/billing, because those need a database URL and
-Stripe keys that a cloud session does not have and the laptop does.
+**The contract between server and phone** — three files read it, do not rename:
+`item.canonical.article = { byline, siteName, text, readingMinutes, excerpt, hero, summary }`
+and `item.canonical.ocr_text`. Empty means the KEY IS ABSENT.
 
-Nothing was written. Start at the top of this list:
+**Two rules added to the resolve route, both in `resolveRoute.js`:**
+- The article rides on the FIRST item only. A "10 best books" page is ten
+  items and one article, not ten copies of 60,000 characters.
+- An article that fits no shelf comes back as ONE `unsorted` item with the
+  text on it. It used to be zero items and the text was thrown away. On the
+  phone `pileOf` now includes filed-and-unsorted, or that item is saved and
+  visible nowhere.
 
-1. **`api/article.js` — readable text + a snapshot that survives link rot.**
-   *This is the single highest-value thing in the plan:* mymind charges
-   **$12.99/mo** for reading mode and article backup, and its own reviewers
-   call that gating its best feature. Pure functions over HTML →
-   `{title, byline, siteName, text, readingMinutes, excerpt, hero}`.
-   Readability-lite: score blocks by text density, strip nav/footer/script/
-   style. **No new runtime dependency** — this service has exactly two (`pg`,
-   the Anthropic SDK) and that is worth keeping. `resolve.js` already has
-   `parseLd`, `metaTag`, `stripTags`, `extractWebPage` to build on. Needs a
-   `--selftest` over saved HTML fixtures, same as `resolve.js`.
-2. **Summaries** — extend `classify.js` with a summary for long text. One
-   model call, same structured-output discipline as the rest of that file.
-3. **`app/src/tags.js` — real tags from resolved entities.** Pure, no imports,
-   like `facts.js`, so the app, the selftest and `api/page.js` all read one
-   definition. The reviewers' complaint about mymind is that its tags are *too
-   broad for specialists*; ours come from facts already on the item — author,
-   year, city, cuisine, director — not from a guess.
-4. **`find.js` indexes tags, article text and OCR text.** It already ranks over
-   title/subtitle/facts/note/caption; this is three more fields and the
-   selftest pattern is established.
-5. **`app/src/links.js`** — automatic connections (same author, same city,
-   same director). Pure + selftest. mymind's linking is manual; ours is free
-   because the entities are resolved.
-6. **`app/src/serendipity.js`** — "a year ago", forgotten items. Pure +
-   selftest. Make it ACTIONABLE where possible (near you, open now) — that is
-   the thing a memory app without resolution cannot do.
-7. **Export — JSON + a readable HTML archive.** Needed before anyone is
-   charged: never hold somebody's shelf hostage.
+**No native module was added.** Export uses React Native's own `Share` on iOS,
+the Storage Access Framework (already inside `expo-file-system`) on Android,
+and a Blob download on the web. So all of this can travel over the air to the
+2026-09-01 build. `TagIndex.tsx` is not called `Tags.tsx` on purpose: next to
+`tags.js` on a case-insensitive Mac the two names collide.
 
-Every one of those is local-first and needs no account, which is why they come
-before sync.
+### Paper
 
-### What the laptop can do that the cloud session could not
+File **"shelf"** in Paper (id `01M3W50N6WK7GM2P6CEH7AS0E3`), page "NEXT —
+phase 2 screens". Eight artboards, named layers: Reader light, Reader dark,
+Tags, Tag open (with the links fragment), Boards, Serendipity A (strip on
+home), Serendipity B (own screen), Export. Read back with `get_tree_summary`.
+**Boards is designed and NOT built** — it is Phase 3. Serendipity **A** is
+what shipped; B is the alternative, still his call.
+One new type step came out of it: `type.read` (17/25), derived from the ratio.
 
-- **Paper.** `mcp__paper__*` does not exist in a cloud session and
-  `127.0.0.1:29979` is unreachable from it, so NO design work happened. On the
-  Mac, Paper connects when a session STARTS — open Paper first, then start
-  Claude. Per CLAUDE.md every screen goes on Paper, as named layers, with
-  variants, before any pixels. Suren asked for a **new Paper file for shelf**.
-  The screens that need one: the article reader, a tag view, boards, the
-  Serendipity surface, and the export screen.
-- **Builds.** `eas build --local` on this Mac fails at PREPARE_CREDENTIALS
-  (*"Distribution certificate … hasn't been imported successfully"* — macOS
-  refusing the temporary keychain eas-cli makes; a known local-build problem on
-  macOS 26, nothing to do with the account). `npx expo run:ios --device
-  --configuration Release` is the path that works, after setting the Team on
-  **both** targets (`shelf` AND `shelfShareExtension`) once in
-  `ios/shelf.xcworkspace`. The cloud build also works now that the quota reset.
-- **The device.** Everything in "Open" below that says "nobody has looked at
-  this on a phone" can finally be closed.
+### Open — the blockers, in order
 
-### The repo on that Mac
+1. **Committed on `phase-2`, not pushed.** `app/app.json` was left out on
+   purpose — see 2.
+2. **`app/app.json` has a stray local edit that is not from this session**:
+   duplicated entitlements, `ITSAppUsesNonExemptEncryption`, and
+   `android.permission.RECORD_AUDIO`. That is a NATIVE change. Committed, it
+   changes the fingerprint and the installed build stops taking updates.
+   Find out where it came from before keeping or dropping it.
+3. **The 2026-09-01 build IS on the phone** (Suren confirmed, 2026-10-01). So
+   this can reach it over the air once pushed. Nothing here has been looked at
+   on the device yet.
+4. **The summary and the screenshot-text calls have never run against the real
+   model.** This Mac has no `ANTHROPIC_API_KEY` and no `api/.env`. After a
+   deploy: Actions → Diagnose → `resolve` with an article URL, and read
+   `article_chars` and the summary in the output.
+5. **"Near you / open now" is built and switched off.** `serendipity.js` does
+   it and is tested; `App.tsx` passes `here: null` because reading location
+   needs `expo-location`, a native module, so it needs a new build.
+6. **Export on a real iPhone and a real Android has not been run.** The web
+   path is proven by the download test. The other two are code that has only
+   been read.
+7. **`POST /api/publish/revoke` has no owner check** — anybody who holds a
+   public link can delete that page. Found while writing export (which is why
+   link codes are left OUT of the JSON export). Not fixed.
+8. **`CHROME_PATH`** must be set to run the preview harness on the Mac:
+   `~/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`
+9. Known thin spots in the data, not bugs: a book added from Add search has no
+   author tag (`api/search.js` sends the author only inside the subtitle
+   string); restaurants carry `area` but no `city`.
 
-`~/gitrepo/shelf` (cloned 2026-08-22). `git pull` first — this session pushed
-four commits after that clone.
+### Still true from before
 
-### Eventually, in rough priority order
-
-- Install the 2026-09-01 build and confirm: screenshot share, camera-roll
-  import, Find, and that the 21 legacy items came back.
-- **The repo is still public and its Actions logs have carried item titles.**
-  Close it before any of this is shown to anybody.
-- `SHELF_APP_KEY` unset — anybody with the URL can spend the Claude budget.
-  Order matters: build, install, THEN set it on Render.
-- The Android build still fails `EAS_BUILD_UNKNOWN_GRADLE_ERROR`, never read.
-  The log link is fixed now, so the next run prints a reason that opens.
-- A paid Expo plan. Two weeks of this project went to build quota.
-- Sync + accounts (E2E) and billing — PRODUCT-PLAN.md §1. The decision is
-  made on paper and nothing is built.
-- Sentry. A crash on a stranger's phone is currently invisible.
-- City filter, `GOOGLE_PLACES_KEY`, the legacy wipe (only after the phone is
-  confirmed to hold those 21 items), end-to-end publish/revoke against real
-  Postgres.
+- **21 items are recoverable** from the legacy server table and come back by
+  themselves on a fresh install with an empty shelf.
+- `eas build --local` fails on this Mac at PREPARE_CREDENTIALS (keychain).
+  Use `npx expo run:ios --device --configuration Release`, Team set on BOTH
+  targets in `ios/shelf.xcworkspace`.
+- The repo is still public and its Actions logs have carried item titles.
+- `SHELF_APP_KEY` unset. Order: build, install, THEN set it on Render.
+- Android build fails `EAS_BUILD_UNKNOWN_GRADLE_ERROR`, never read.
+- A paid Expo plan. Sync + accounts + billing (PRODUCT-PLAN §1): decided on
+  paper, nothing built — needs a database URL and Stripe keys.
+- Sentry, city filter, `GOOGLE_PLACES_KEY`, the legacy wipe, end-to-end
+  publish/revoke against real Postgres.
 
 ---
 

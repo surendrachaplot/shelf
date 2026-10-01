@@ -54,7 +54,12 @@ import {
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
 import * as D from "./src/design.js";
-import { factsFor } from "./src/facts.js";
+import { factsFor, mapUrl } from "./src/facts.js";
+import { Reader, articleOf } from "./src/Reader";
+import { Tags } from "./src/TagIndex";
+import { tagKey } from "./src/tags.js";
+import { linksFor } from "./src/links.js";
+import { surface, type Surfaced } from "./src/serendipity.js";
 
 // The pile is a tab like any other, not a section bolted above the shelves.
 // It is where a thing lives before it stands anywhere, which is a place — and
@@ -67,7 +72,7 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "find" | "profile" | "import";
+type Route = "case" | "add" | "find" | "profile" | "import" | "tags";
 
 /**
  * Which items keep the caption they came from.
@@ -100,6 +105,14 @@ export default function App() {
   const [viewportH, setViewportH] = useState(0);
   const [screen, setScreen] = useState<Route>("case");
   const [sharing, setSharing] = useState<Sharing | null>(null);
+  // The saved article being read, over the item it belongs to.
+  const [reading, setReading] = useState<Item | null>(null);
+  // Which tag the Tags screen opens on — null is the whole index.
+  const [tagStart, setTagStart] = useState<string | null>(null);
+  // Cards the person waved away. ponytail: kept for this launch only — the
+  // "forgotten" pick already rotates by the day, so a dismissed card is not
+  // the first thing back tomorrow. Persist it if people say it nags.
+  const [waved, setWaved] = useState<string[]>([]);
   // HOW THE READ WENT, kept because an empty shelf and a shelf that would not
   // open are the same picture and completely different news. Until this
   // existed the app had exactly one way of saying both, and said it silently.
@@ -113,6 +126,14 @@ export default function App() {
   );
   const inbox = useMemo(() => (shelf ? pileOf(shelf) : []), [shelf]);
   const seed = shelf?.profile.seed || shelf?.profile.name || "shelf";
+  // ONE thing worth a second look, picked on the device from the file in
+  // memory. `here` is null: knowing where you are needs a location module the
+  // installed binary does not carry (see native.ts), so "near you / open now"
+  // waits for the next build. "A year ago" and "forgotten" need only the clock.
+  const again = useMemo<Surfaced | null>(
+    () => (shelf ? surface(shelf.items, { now: new Date(), here: null, limit: 1, seen: waved })[0] ?? null : null),
+    [shelf, waved]
+  );
 
   /**
    * Every mutation goes through here: change it in memory, write the file.
@@ -588,6 +609,41 @@ export default function App() {
       >
         {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
 
+        {/* Paper: "Serendipity A — strip on home". One card, at the top of the
+            scroll rather than between the rail and the band: the selected rail
+            block bridges into the band and a strip there would cut the bridge. */}
+        {again && tab !== "unsorted" && health.state !== "unreadable" ? (
+          <View style={[s.again, s.insetMargin]}>
+            <View style={[s.againBlock, { backgroundColor: (c as Record<string, string>)[again.item.list] ?? c.unsorted }]}>
+              <Text style={[s.againNum, { color: (listOn as Record<string, string>)[again.item.list] ?? c.onList }]}>
+                {(lists as Record<string, { n: string }>)[again.item.list]?.n ?? "00"}
+              </Text>
+            </View>
+            <View style={s.againMain}>
+              <Text style={[s.againReason, again.action ? { color: c.good } : null]}>{again.reason}</Text>
+              <Text style={s.againTitle} numberOfLines={2}>{again.item.title}</Text>
+              {again.item.subtitle ? <Text style={s.againSub} numberOfLines={1}>{again.item.subtitle}</Text> : null}
+              <View style={s.againActions}>
+                {again.action ? (
+                  <Press
+                    onPress={() => { const u = mapUrl(again.item, Platform.OS); if (u) openLink(u, setFlash); }}
+                    style={s.againBtn} size={TOUCH_MIN} label={`Map for ${again.item.title}`}
+                  >
+                    <Text style={s.againGo}>Map →</Text>
+                  </Press>
+                ) : (
+                  <Press onPress={() => setOpen(again.item)} style={s.againBtn} size={TOUCH_MIN} label={`Open ${again.item.title}`}>
+                    <Text style={s.againGo}>Open →</Text>
+                  </Press>
+                )}
+                <Press onPress={() => setWaved((w) => [...w, again.item.id])} style={s.againBtn} size={TOUCH_MIN} label="Not now">
+                  <Text style={s.againNo}>Not now</Text>
+                </Press>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         {/* THE THING THAT WAS MISSING. A shelf that would not open used to
             render as a shelf with nothing on it — the same picture as a
             brand-new install, and the most frightening sentence this app can
@@ -650,8 +706,23 @@ export default function App() {
           })}
           onFail={setFlash}
           dark={dark}
+          items={shelf?.items ?? []}
+          onOpen={setOpen}
+          onRead={() => setReading(open)}
+          onTag={(key) => {
+            // Same order problem as Find: Tags is painted AFTER the detail
+            // sheet, so the sheet is closed before the tag opens.
+            setOpen(null);
+            setTagStart(key);
+            setScreen("tags");
+          }}
           s={s} c={c}
         />
+      ) : null}
+      {reading ? (
+        <View style={s.over}>
+          <Reader item={reading} onClose={() => setReading(null)} onOpenOriginal={(u) => openLink(u, setFlash)} />
+        </View>
       ) : null}
 
       {screen === "add" && shelf ? (
@@ -672,6 +743,7 @@ export default function App() {
             items={shelf.items}
             city={shelf.profile.home_city}
             onClose={() => setScreen("case")}
+            onTags={() => { setTagStart(null); setScreen("tags"); }}
             onOpen={(it) => {
               // Close Find before opening the item. The overlays are painted in
               // source order and this one is painted AFTER the detail sheet, so
@@ -684,6 +756,16 @@ export default function App() {
               await commit(upsert(shelf, it));
               setTab(it.list as TabName);
             }}
+          />
+        </View>
+      ) : null}
+      {screen === "tags" && shelf ? (
+        <View style={s.over}>
+          <Tags
+            items={shelf.items}
+            start={tagStart}
+            onClose={() => setScreen("case")}
+            onOpen={(it) => { setScreen("case"); setOpen(it); }}
           />
         </View>
       ) : null}
@@ -994,6 +1076,12 @@ function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
         <Press onPress={() => onRetry(item)} style={s.pileBtn} size={TOUCH_MIN} label="Try reading it again">
           <Text style={s.pileAction}>Read again</Text>
         </Press>
+      ) : item.status === "filed" ? (
+        // Read, named, and on no shelf — a saved article. "Shelve" would do
+        // nothing visible here; opening it is where it can be read or moved.
+        <Press onPress={() => onOpen(item)} style={s.pileBtn} size={TOUCH_MIN} label={`Open ${item.title ?? "it"}`}>
+          <Text style={s.pileAction}>Open →</Text>
+        </Press>
       ) : (
         <Press onPress={() => onAct(item, { action: "file" })} style={s.pileBtn} size={TOUCH_MIN} label="Shelve it">
           <Text style={s.pileAction}>Shelve →</Text>
@@ -1009,8 +1097,22 @@ function PileRow({ item, onAct, onOpen, onRetry, s, c }: {
  * top-aligned the block and left four fifths of the screen as an empty red
  * field, which is not "generous white space", it is a poster nobody finished.
  */
-function Detail({ item, onClose, onAct, onShare, onFail, dark, s, c }: {
+// How a connection is said out loud. "Also by" for a writer, "Also in" for a
+// place — the reason is the whole point of the link, so it is not "Related".
+const ALSO: Record<string, string> = {
+  author: "Also by", director: "Also directed by", cast: "Also with", area: "Also in", city: "Also in",
+};
+// Three titles under a heading; the heading's count opens the rest. A panel
+// that lists eleven restaurants in London is a second screen wearing a hat.
+const LINK_ROWS = 3;
+
+function Detail({ item, items, onClose, onAct, onShare, onFail, onOpen, onRead, onTag, dark, s, c }: {
   item: Item; onClose: () => void;
+  /** The whole shelf — what this item is connected TO. */
+  items: Item[];
+  onOpen: (i: Item) => void;
+  onRead: () => void;
+  onTag: (key: string) => void;
   onAct: (i: Item, body: Record<string, unknown>) => void;
   onShare: () => void;
   onFail: (msg: string) => void;
@@ -1040,6 +1142,10 @@ function Detail({ item, onClose, onAct, onShare, onFail, dark, s, c }: {
   // is a contrast ratio nobody computed.
   const on = listOn[list] ?? c.onList;
   const ghost = placeholderOn(list, dark ? D.dark : D.light);
+  // CONNECTIONS NOBODY HAD TO MAKE. Same author, same director, same
+  // neighbourhood — free, because the entities are resolved (links.js).
+  const links = useMemo(() => linksFor(item, items), [item, items]);
+  const hasArticle = articleOf(item) !== null;
   return (
     <Screen style={[s.detail, { backgroundColor: fill }] as never}>
       <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
@@ -1073,6 +1179,26 @@ function Detail({ item, onClose, onAct, onShare, onFail, dark, s, c }: {
             the note is why you kept it — they are different registers and the
             order says which is yours. */}
         <Facts item={item} on={on} fill={fill} s={s} onFail={onFail} />
+
+        {/* Paper: "Tag open — one tag, with links" → the fragment at its foot.
+            The heading opens the tag; a title opens that item. */}
+        {links.map((g) => (
+          <View key={`${g.reason.kind}:${g.reason.value}`} style={s.facts}>
+            <View style={[s.detailRule, { backgroundColor: on }]} />
+            <Press onPress={() => onTag(tagKey(g.reason.kind, g.reason.value))} style={s.linkHead} size={TOUCH_MIN}
+                   label={`Everything tagged ${g.reason.value}`}>
+              <Text style={[s.detailKicker, s.linkHeadLabel, { color: on }]} numberOfLines={1}>
+                {ALSO[g.reason.kind] ?? "Also"} {g.reason.value}
+              </Text>
+              <Text style={[s.detailKicker, { color: on }]}>{String(g.items.length).padStart(2, "0")} →</Text>
+            </Press>
+            {g.items.slice(0, LINK_ROWS).map((it) => (
+              <Press key={it.id} onPress={() => onOpen(it)} style={s.linkItem} size={TOUCH_MIN} label={`Open ${it.title ?? "it"}`}>
+                <Text style={[s.linkItemTitle, { color: on }]} numberOfLines={1}>{it.title}</Text>
+              </Press>
+            ))}
+          </View>
+        ))}
 
         <View>
           {/* YOUR note. The thing a catalogue cannot give you and the reason a
@@ -1128,6 +1254,11 @@ function Detail({ item, onClose, onAct, onShare, onFail, dark, s, c }: {
           </View>
 
           <View style={s.detailActions}>
+            {hasArticle ? (
+              <Press onPress={onRead} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Read the saved article">
+                <Text style={[s.detailBtnLabel, { color: fill }]}>Read →</Text>
+              </Press>
+            ) : null}
             <Press onPress={onShare} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Share this">
               <Text style={[s.detailBtnLabel, { color: fill }]}>Share →</Text>
             </Press>
@@ -1361,6 +1492,23 @@ const styles = (c: Palette) => StyleSheet.create({
   factLabel: { ...t.micro, width: 104 },
   factValue: { ...t.bodyMed, flex: 1 },
   factLinks: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.lg },
+
+  linkHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: sp.md, minHeight: TOUCH_MIN },
+  linkHeadLabel: { flex: 1, minWidth: 0 },
+  linkItem: { minHeight: TOUCH_MIN, justifyContent: "center" },
+  linkItemTitle: { ...t.bodyMed, fontWeight: "700" },
+
+  again: { flexDirection: "row", alignItems: "stretch", borderWidth: 2, borderColor: c.ink, marginTop: sp.md },
+  againBlock: { width: TOUCH_MIN + 6, alignItems: "center", justifyContent: "center" },
+  againNum: { ...t.tag },
+  againMain: { flex: 1, minWidth: 0, padding: sp.md },
+  againReason: { ...t.micro, color: c.inkSoft },
+  againTitle: { ...t.itemTitle, color: c.ink, marginTop: 2 },
+  againSub: { ...t.meta, color: c.inkSoft, marginTop: 2 },
+  againActions: { flexDirection: "row", flexWrap: "wrap", gap: sp.lg, marginTop: sp.xs },
+  againBtn: { minHeight: TOUCH_MIN, justifyContent: "center" },
+  againGo: { ...t.micro, color: c.ink },
+  againNo: { ...t.micro, color: c.inkSoft },
 
   detailActions: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.xl },
   detailBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, alignItems: "center", justifyContent: "center" },

@@ -368,8 +368,12 @@ export const shelfOf = (shelf: Shelf, list: string): Item[] =>
   shelf.items.filter((i) => i.status === "filed" && i.list === list);
 
 /** Everything still working itself out, or that we could not name. */
+// …and anything READ but belonging to no shelf: a saved article names no
+// book, film or place, so the server files it as "unsorted". Without the
+// second clause it is filed (so not in the pile) and unsorted (so on no
+// board) — saved, and visible nowhere.
 export const pileOf = (shelf: Shelf): Item[] =>
-  shelf.items.filter((i) => i.status !== "filed");
+  shelf.items.filter((i) => i.status !== "filed" || i.list === "unsorted");
 
 export const countsOf = (shelf: Shelf): Record<string, number> => {
   const out: Record<string, number> = {};

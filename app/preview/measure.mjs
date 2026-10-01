@@ -36,6 +36,13 @@ const SCREENS = [
   // The camera-roll import, which shipped without ever appearing here.
   { name: "import 375", q: "", w: 375, h: 812, open: "Import screenshots" },
   { name: "import 320", q: "", w: 320, h: 700, open: "Import screenshots" },
+  // Phase 2 — every one of these is behind a tap, so every one is opened.
+  { name: "tags 375", q: "", w: 375, h: 812, open: ["Search everything you have saved", "Browse by tag"] },
+  { name: "tags 320", q: "", w: 320, h: 700, open: ["Search everything you have saved", "Browse by tag"] },
+  { name: "tag open 320", q: "", w: 320, h: 700, open: ["Search everything you have saved", "Browse by tag", "Lisbon,"] },
+  { name: "reader 375", q: "", w: 375, h: 812, open: ["Not shelved,", "Open The dosa counter", "Read the saved article"] },
+  { name: "reader 320", q: "", w: 320, h: 700, open: ["Not shelved,", "Open The dosa counter", "Read the saved article"] },
+  { name: "links 375", q: "", w: 375, h: 812, open: ["Restaurants,", "St. John"] },
   { name: "pair 375", q: "?paired=0", w: 375, h: 812 },
   { name: "share 375", q: "?screen=share", w: 375, h: 320 },
   { name: "share 320", q: "?screen=share", w: 320, h: 320 },
@@ -46,15 +53,15 @@ const SCREENS = [
   { name: "android share 360", q: "?screen=android-share", w: 360, h: 800 },
 ];
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 let bad = 0, checked = 0;
 for (const s of SCREENS) {
   const ctx = await browser.newContext({ viewport: { width: s.w, height: s.h } });
   const page = await ctx.newPage();
   await page.goto(URLBASE + s.q);
   await page.waitForTimeout(700);
-  if (s.open) {
-    await page.getByLabel(s.open, { exact: false }).first().click();
+  for (const label of [].concat(s.open ?? [])) {
+    await page.getByLabel(label, { exact: false }).first().click();
     await page.waitForTimeout(600);
   }
   if (s.type) {

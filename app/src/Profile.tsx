@@ -17,6 +17,8 @@ import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, V
 import { publishStats, revokePublish, shareUrl, pendingShareCount, sharedKeychainOk } from "./api";
 import { countsOf, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
+import { exportHtml, exportJson, exportFilename } from "./export.js";
+import { saveFile } from "./saveFile";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { scrollKeyboardProps } from "./KeyboardSafe";
@@ -61,6 +63,26 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
       .then((r) => setViews(r.views))
       .catch(() => {});
   }, [shelf.links]);
+
+  // TAKE A COPY. Built from the shelf in memory, on the device — no server
+  // sees it. "saved" / "failed" are said in words on the screen: an export
+  // that fails silently is the worst kind, because the person believes they
+  // have a backup.
+  const [copy, setCopy] = useState<{ state: "idle" | "busy" | "saved" | "failed"; note?: string }>({ state: "idle" });
+  async function takeCopy(kind: "html" | "json") {
+    setCopy({ state: "busy" });
+    try {
+      const now = new Date();
+      const ok = await saveFile(
+        exportFilename(kind, now),
+        kind === "html" ? "text/html" : "application/json",
+        kind === "html" ? exportHtml(shelf, { now }) : exportJson(shelf, { now }),
+      );
+      setCopy(ok ? { state: "saved" } : { state: "idle" });
+    } catch (e) {
+      setCopy({ state: "failed", note: (e as Error).message });
+    }
+  }
 
   const counts = countsOf(shelf);
   const total = Object.values(counts).reduce((n, x) => n + x, 0);
@@ -218,6 +240,33 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
             </>
           )}
         </View>
+
+        {/* Paper: "Export — in Your card". Never hold a shelf hostage: this
+            ships BEFORE anything is charged for. */}
+        <View style={[s.inset, s.linksWrap]}>
+          <View style={s.rule} />
+          <Text style={[s.h2, s.copyLabel]}>Take a copy</Text>
+          <Text style={s.copyHead}>
+            {/* EVERY item, not `total` (which is the shelved ones): the copy
+                also holds the pile, and the number here is a promise about
+                what is in the file. */}
+            {shelf.items.length} {shelf.items.length === 1 ? "thing" : "things"}, with your notes and the saved articles.
+          </Text>
+          <Text style={s.copyBody}>Keep it in Files, or send it to yourself. It is yours.</Text>
+          <View style={s.actions}>
+            <Press onPress={() => takeCopy("html")} disabled={copy.state === "busy"} style={s.btn} size={TOUCH_MIN} label="Save a page you can read">
+              <Text style={s.btnLabel}>A page you can read →</Text>
+            </Press>
+            <Press onPress={() => takeCopy("json")} disabled={copy.state === "busy"} style={s.btnGhost} size={TOUCH_MIN} label="Save the data">
+              <Text style={s.micro}>The data →</Text>
+            </Press>
+          </View>
+          <Text style={s.body}>One .html file that opens anywhere. One .json file for other apps.</Text>
+          {copy.state === "saved" ? <Fact ok good="Copy saved." bad="" s={s} c={c} /> : null}
+          {copy.state === "failed" ? (
+            <Fact ok={false} good="" bad={`The copy was not saved. ${copy.note ?? ""}`.trim()} s={s} c={c} />
+          ) : null}
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -293,6 +342,9 @@ const styles = (c: Palette) => StyleSheet.create({
   micro: { ...t.micro, color: c.ink },
   body: { ...t.meta, color: c.inkSoft, marginTop: sp.sm },
   h2: { ...t.section, color: c.ink },
+  copyLabel: { marginTop: sp.lg },
+  copyHead: { ...t.title, color: c.ink, marginTop: sp.md },
+  copyBody: { ...t.body, color: c.inkSoft, marginTop: sp.md },
 
   spread: { flexDirection: "row", gap: 2, marginTop: sp.xxl },
   spreadCell: { flex: 1, paddingVertical: sp.md, paddingHorizontal: sp.sm, minHeight: 72, justifyContent: "flex-end" },

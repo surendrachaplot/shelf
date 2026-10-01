@@ -31,7 +31,12 @@ const EMPTY = () => ({
 
 // ── small parsers ────────────────────────────────────────────────────────────
 
-const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'", nbsp: " ", "#x27": "'", "#x2F": "/" };
+const ENTITIES = {
+  amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'", nbsp: " ", "#x27": "'", "#x2F": "/",
+  // The typographic ones. A caption never carries them; an ARTICLE carries one
+  // per sentence, and article.js reads whole pages through this table.
+  mdash: "—", ndash: "–", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", hellip: "…", pound: "£", euro: "€",
+};
 export function decodeEntities(s) {
   return String(s || "").replace(/&(#x?[0-9a-fA-F]+|[a-z]+);/gi, (m, e) => {
     const k = e.toLowerCase();
@@ -428,7 +433,11 @@ export async function resolveShare(sourceUrl) {
   if (/^https?:\/\//i.test(String(sourceUrl || ""))) {
     const { html } = await tryFetch(sourceUrl);
     const got = extractWebPage(html, sourceUrl);
-    if (got.caption) return got;
+    // `html` rides along for ONE reader: article.js, which needs the page and
+    // must not fetch it a second time. Web pages only — an Instagram page has
+    // no article in it. Nothing serialises the envelope; resolveRoute picks
+    // fields out of it by name.
+    if (got.caption) return { ...got, html };
   }
   return { ...EMPTY(), via: "none" };
 }

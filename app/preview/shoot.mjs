@@ -74,6 +74,20 @@ const SHOTS = [
   // most people see most often and the easiest to leave undesigned.
   { name: "app-find-empty-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Search everything you have saved" },
   // The camera-roll import, which had never been photographed.
+  // PHASE 2. Each of these is a screen that is only reachable by a tap, so each
+  // gets a frame: the reader (both schemes — it is the one place people read
+  // for minutes), the tag index, one tag opened, the connections on an item
+  // page, and the copy-your-shelf block at the foot of the card.
+  { name: "app-reader-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Not shelved,", "Open The dosa counter", "Read the saved article"] },
+  { name: "app-reader-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Not shelved,", "Open The dosa counter", "Read the saved article"] },
+  { name: "app-reader-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Not shelved,", "Open The dosa counter", "Read the saved article"] },
+  { name: "app-tags-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Browse by tag"] },
+  { name: "app-tags-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Search everything you have saved", "Browse by tag"] },
+  { name: "app-tags-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Search everything you have saved", "Browse by tag"] },
+  { name: "app-tag-open-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Browse by tag", "Lisbon,"] },
+  { name: "app-links-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Restaurants,", "St. John"], scroll: 700 },
+  { name: "app-export-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 1400 },
+  { name: "app-export-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card", scroll: 1400 },
   { name: "app-import-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Import screenshots" },
   { name: "app-import-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Import screenshots" },
   { name: "app-profile-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },
@@ -115,7 +129,7 @@ const SHOTS = [
   { name: "android-share-done-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light", click: "Places" },
 ];
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 for (const s of SHOTS) {
   const ctx = await browser.newContext({
     viewport: { width: s.w, height: s.h },

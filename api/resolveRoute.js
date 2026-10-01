@@ -20,7 +20,8 @@
 import { isMain } from "./ismain.js";
 import { json, normList } from "./http.js";
 import { resolveShare, handlesIn } from "./resolve.js";
-import { classifyShare, classifyImage, verifyItems, needsCheck } from "./classify.js";
+import { classifyShare, classifyImage, verifyItems, needsCheck, summarize } from "./classify.js";
+import { extractArticle } from "./article.js";
 import { imageBlock } from "./frames.js";
 import { enrich } from "./enrich/index.js";
 import { canonicalUrl } from "./url.js";
@@ -52,6 +53,56 @@ function shape(it, envelope, sourceUrl) {
 }
 
 /**
+ * THE ARTICLE, for a share that is an ordinary web page with a body.
+ *
+ *   { byline, siteName, text, readingMinutes, excerpt, hero, summary }
+ *
+ * Those seven names are a contract with the app (find.js, tags.js, export.js
+ * read them) — hence the object written out key by key instead of a spread
+ * of whatever article.js returns today.
+ *
+ * NEVER THROWS AND NEVER REJECTS. The article is a bonus on top of an item
+ * that is already resolved; a page that breaks the extractor, or a summary
+ * call that times out, costs the article (or just the summary) and nothing
+ * else. `extract` and `summarise` are parameters so the selftest can make
+ * each of them fail and watch the share survive.
+ */
+export async function articleFor(envelope, url, { extract = extractArticle, summarise = summarize } = {}) {
+  try {
+    const a = envelope?.html ? extract(envelope.html, url) : null;
+    if (!a) return null;
+    let summary = null;
+    try { summary = (await summarise(a)) || null; } catch (_) { /* the text is still worth having */ }
+    return {
+      byline: a.byline, siteName: a.siteName, text: a.text,
+      readingMinutes: a.readingMinutes, excerpt: a.excerpt, hero: a.hero,
+      summary,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Put the article / the screenshot's text on an item's `canonical`.
+ *
+ * AFTER enrich(), never before: enrich() REPLACES `canonical` with the
+ * provider's (or with `{}` on a miss), so anything attached earlier is
+ * silently dropped on exactly the items a catalogue recognised. And outside
+ * the provider cache, so `SHAPE` does not move — nothing here widens what an
+ * enricher returns.
+ *
+ * Empty things are OMITTED, not sent as null or "": `"article" in canonical`
+ * means there is one to read.
+ */
+export function carry(item, { article = null, ocr_text = "" } = {}) {
+  const extra = {};
+  if (article) extra.article = article;
+  if (ocr_text) extra.ocr_text = ocr_text;
+  return { ...item, canonical: { ...item.canonical, ...extra } };
+}
+
+/**
  * The response body, as a pure function.
  *
  * PULLED OUT BECAUSE IT SHIPPED BROKEN. A find-and-replace meant to add one
@@ -64,7 +115,7 @@ function shape(it, envelope, sourceUrl) {
  * Now it is a function with a test, so the same slip fails in milliseconds
  * instead of on somebody's phone.
  */
-export function summary({ url, envelope = {}, items = [], cover = null, read = [], handles = [] }) {
+export function summary({ url, envelope = {}, items = [], cover = null, read = [], handles = [], article = null }) {
   return {
     ok: true,
     url,
@@ -76,16 +127,26 @@ export function summary({ url, envelope = {}, items = [], cover = null, read = [
     saw_image: !!cover,
     checked_items: needsCheck(read).length,
     tagged_handles: handles.length,
+    // Counted for the same reason: "no article on this item" is either a page
+    // with no body or a body that had no item to ride on, and those are two
+    // different conversations.
+    article_chars: article?.text?.length || 0,
     items,
   };
 }
 
-export async function resolveRoute(req, res, body) {
+// What the two routes call out to. Named and passed in for ONE reason: so the
+// selftest can run a whole request — not just the helpers — with the network
+// swapped out. This file has already shipped a route that no test ever built.
+const IO = { resolveShare, imageBlock, classifyShare, classifyImage, verifyItems, enrich, articleFor };
+
+// (`_url` is the parsed request URL serve.js hands every route; unused here.)
+export async function resolveRoute(req, res, body, _url, io = IO) {
   const url = canonicalUrl(body?.url);
   if (!url) return json(res, 400, { ok: false, error: "a http(s) url is required" });
   const list = normList(body?.list);
 
-  const envelope = await resolveShare(url);
+  const envelope = await io.resolveShare(url);
 
   // A LIST POST THAT TAGS RATHER THAN NAMES. Measured on a real one: the
   // caption was "10 lovely bookshops … Bookshops featured: @a @b @c @d @e @f
@@ -110,30 +171,51 @@ export async function resolveRoute(req, res, body) {
   //
   // Fetched in parallel with nothing, because the scrape has already finished
   // by here; ~200 kB and a fraction of a second, and null on any failure.
-  const cover = await imageBlock(envelope.imageUrl);
+  const cover = await io.imageBlock(envelope.imageUrl);
 
-  const read = (envelope.caption || cover) ? await classifyShare(envelope, list, cover) : [];
+  // THE ARTICLE, started now and collected after the items exist. It cannot
+  // reject (see articleFor), so there is nothing to catch and no unhandled
+  // promise; it runs alongside the classifier because the summary is a second
+  // model call and the person is watching a row say "working it out".
+  const reading = io.articleFor(envelope, url);
+
+  const read = (envelope.caption || cover) ? await io.classifyShare(envelope, list, cover) : [];
 
   // AND THEN CHECK THE UNSURE ONES. See classify.js — the failure this exists
   // for is a confidently wrong name, which is indistinguishable from a right
   // one everywhere downstream. Only items below the confidence bar are looked
   // up, and a failure here returns them untouched.
-  const checked = await verifyItems(read, envelope);
+  const checked = await io.verifyItems(read, envelope);
 
   const homeCity = String(body?.home_city || "").slice(0, 80) || null;
+  const article = await reading;
   const items = [];
   for (const it of checked) {
-    items.push(shape(await enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url));
+    // ONE COPY. A "10 best books" page is ten items and one article; carrying
+    // 60,000 characters on each of them is 600 kB in a file the phone rewrites
+    // on every save. The first item holds it and the rest share its source_url.
+    items.push(carry(shape(await io.enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url),
+      { article: items.length === 0 ? article : null }));
+  }
+
+  // AN ARTICLE THAT IS NOT A BOOK, A FILM OR A PLACE IS STILL WORTH KEEPING.
+  // The classifier names things for six shelves; an essay names none of them,
+  // so it used to come back as zero items and the text was thrown away — the
+  // one case reading mode exists for. It lands on the pile instead, under the
+  // page's own title, with the article on it.
+  if (!items.length && article) {
+    const title = String(envelope.caption || "").split("\n")[0].trim() || null;
+    items.push(carry(shape({ list, title, subtitle: article.siteName || "", confidence: null }, envelope, url), { article }));
   }
 
   // An empty array is a legitimate, honest answer: the link is real, nothing
   // nameable came out of it. The device keeps the row unresolved and can ask
   // again later — which is a decision for the phone, not for this endpoint.
-  return json(res, 200, summary({ url, envelope, items, cover, read, handles }));
+  return json(res, 200, summary({ url, envelope, items, cover, read, handles, article }));
 }
 
 /** The path that never touches Meta: share a screenshot, read it with vision. */
-export async function resolveImageRoute(req, res, body) {
+export async function resolveImageRoute(req, res, body, _url, io = IO) {
   const b64 = String(body?.image_b64 || "").replace(/^data:[^,]*,/, "");
   if (!b64) return json(res, 400, { ok: false, error: "image_b64 required" });
   if (b64.length > 6 * 1024 * 1024) {
@@ -142,10 +224,10 @@ export async function resolveImageRoute(req, res, body) {
   const list = normList(body?.list);
   const envelope = { caption: "", imageUrl: null, locationTag: null, authorHandle: null,
                      outboundUrls: [], via: "screenshot" };
-  const read = await classifyImage(b64, String(body?.media_type || "image/jpeg").slice(0, 40), list);
+  const { items: read, ocr_text } = await io.classifyImage(b64, String(body?.media_type || "image/jpeg").slice(0, 40), list);
   const items = [];
-  for (const it of read) items.push(shape(await enrich(it, {}), envelope, null));
-  return json(res, 200, { ok: true, resolver: "screenshot", items });
+  for (const it of read) items.push(carry(shape(await io.enrich(it, {}), envelope, null), { ocr_text }));
+  return json(res, 200, { ok: true, resolver: "screenshot", ocr_chars: ocr_text.length, items });
 }
 
 if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
@@ -177,6 +259,95 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
     ok(out?.checked_items === 1, "and how many items were looked up", out?.checked_items);
     ok(summary({ url: "u" }).saw_image === false, "no cover, no claim to have read one");
     ok(!("checked" in summary({ url: "u" })), "the per-item verdict belongs on the item, not the envelope");
+  }
+
+  // ── THE ARTICLE AND THE SCREENSHOT'S TEXT ──────────────────────────────────
+  {
+    const p = "A sentence long enough to count as a real paragraph of prose, written out in full to be sure. ";
+    const page = `<html><head><meta property="og:site_name" content="Field Notes"></head><body><article>${`<p>${p}</p>`.repeat(8)}</article></body></html>`;
+    const web = { caption: "t", via: "web-og", html: page, outboundUrls: [] };
+
+    const a = await articleFor(web, "https://fieldnotes.example/x", { summarise: async () => "It says this." });
+    ok(Object.keys(a || {}).join() === "byline,siteName,text,readingMinutes,excerpt,hero,summary",
+       "the article carries EXACTLY the seven names the app reads", Object.keys(a || {}).join());
+    ok(a?.summary === "It says this." && a?.siteName === "Field Notes" && a?.text.startsWith("A sentence long enough"), "filled from the page and the summary");
+    ok(a?.byline === null && a?.hero === null, "what the page did not say is null, not undefined — undefined vanishes from JSON");
+
+    // NEVER THE REASON A SHARE FAILS. Each of these used to be a way to turn a
+    // resolved item into `{"ok":false}`.
+    const noSum = await articleFor(web, "https://fieldnotes.example/x", { summarise: async () => { throw new Error("529 overloaded"); } });
+    ok(noSum?.text && noSum.summary === null, "a summary call that throws costs the summary, not the article", noSum);
+    let threw = null, none;
+    try { none = await articleFor(web, "u", { extract: () => { throw new Error("regex blew up"); } }); } catch (e) { threw = e.message; }
+    ok(threw === null && none === null, "an extractor that throws costs the article, not the share", threw);
+    ok(await articleFor({ caption: "a reel", via: "embed-json" }, "https://instagram.com/reel/x/", { extract: () => ({ text: "WRONG" }) }) === null,
+       "an Instagram share has no page, so nothing is extracted from it");
+    let asked = false;
+    await articleFor(web, "u", { extract: () => null, summarise: async () => { asked = true; return "s"; } });
+    ok(asked === false, "no body, no summary call — a page with no article does not cost a request");
+    ok((await articleFor(web, "u", { summarise: async () => "" })).summary === null, "an empty summary is null");
+
+    // enrich() REPLACES canonical. Attached before it, the article is dropped
+    // on precisely the items a catalogue recognised.
+    const book = shape({ list: "books", title: "T", enriched: true, canonical: { isbn: "978" } }, env, "u");
+    const got = carry(book, { article: a });
+    ok(got.canonical.article === a && got.canonical.isbn === "978", "the article joins the provider's canonical, it does not replace it", got.canonical);
+    ok(!("article" in book.canonical), "and the item it was given is not mutated");
+    ok(!("article" in carry(book, { article: null }).canonical) && !("ocr_text" in carry(book, { ocr_text: "" }).canonical),
+       "nothing to read → the key is absent, not null and not ''");
+    ok(carry(book, { ocr_text: "PIRANESI" }).canonical.ocr_text === "PIRANESI" && carry(book, { ocr_text: "PIRANESI" }).canonical.isbn === "978",
+       "a screenshot's text rides on canonical too");
+    ok(carry({ title: "bare" }, { ocr_text: "x" }).canonical.ocr_text === "x", "an item with no canonical at all still gets one");
+
+    ok(summary({ url: "u", article: a }).article_chars === a.text.length && summary({ url: "u" }).article_chars === 0,
+       "the response says whether a body was found, items or no items");
+
+    // ── A WHOLE REQUEST, both routes, network swapped out ────────────────────
+    const fakeRes = () => ({ writeHead(s) { this.status = s; }, end(b) { this.body = JSON.parse(b); } });
+    const io = {
+      resolveShare: async () => web,
+      imageBlock: async () => null,
+      classifyShare: async () => [{ list: "books", title: "One", confidence: 0.9 }, { list: "books", title: "Two", confidence: 0.9 }],
+      verifyItems: async (items) => items,
+      // What enrich() really does to canonical: a hit replaces it, a miss empties it.
+      enrich: async (it) => (it.title === "One" ? { ...it, enriched: true, canonical: { isbn: "978" } } : { ...it, enriched: false, canonical: {} }),
+      articleFor,   // the real one: the page is under the summary threshold, so no model call
+    };
+    const r1 = fakeRes();
+    await resolveRoute({}, r1, { url: "https://fieldnotes.example/x", list: "books" }, null, io);
+    ok(r1.status === 200 && r1.body?.items?.length === 2, "a web share resolves", r1.body);
+    ok(r1.body?.items?.[0]?.canonical?.article?.text?.startsWith("A sentence long enough") && !("article" in r1.body.items[1].canonical),
+       "the FIRST item from an article page carries the article, and only the first", r1.body?.items?.map((it) => Object.keys(it.canonical)));
+    ok(r1.body?.items?.[0]?.canonical?.isbn === "978", "next to what the catalogue said, not instead of it");
+    ok(r1.body?.article_chars > 0 && !("html" in (r1.body || {})) && !JSON.stringify(r1.body).includes("<article>"),
+       "and the page's HTML does not leak into the response");
+
+    const r0 = fakeRes();
+    await resolveRoute({}, r0, { url: "https://fieldnotes.example/x" }, null, { ...io, classifyShare: async () => [] });
+    ok(r0.body?.items?.length === 1 && r0.body.items[0].list === "unsorted" && r0.body.items[0].title
+       && r0.body.items[0].canonical?.article?.text, "an article that fits no shelf is kept on the pile, with its text", r0.body?.items);
+    const rNone = fakeRes();
+    await resolveRoute({}, rNone, { url: "https://fieldnotes.example/x" }, null,
+      { ...io, classifyShare: async () => [], articleFor: async () => null });
+    ok(rNone.body?.items?.length === 0, "and a page with no article and no items is still an honest empty answer", rNone.body?.items);
+
+    const r2 = fakeRes();
+    await resolveRoute({}, r2, { url: "https://fieldnotes.example/x" }, null,
+      { ...io, articleFor: (e, u) => articleFor(e, u, { extract: () => { throw new Error("boom"); } }) });
+    ok(r2.status === 200 && r2.body?.items?.length === 2 && !("article" in r2.body.items[0].canonical),
+       "a share whose article extraction blows up still comes back, without the article", r2.body);
+
+    const shot = async (ocr_text) => {
+      const r = fakeRes();
+      await resolveImageRoute({}, r, { image_b64: "AAAA", list: "books" }, null,
+        { ...io, classifyImage: async () => ({ items: [{ list: "books", title: "Piranesi", confidence: 0.9 }], ocr_text }) });
+      return r;
+    };
+    const r3 = await shot("PIRANESI\nSusanna Clarke");
+    ok(r3.status === 200 && r3.body?.items?.[0]?.canonical?.ocr_text === "PIRANESI\nSusanna Clarke",
+       "a screenshot's item carries the text read off it", r3.body);
+    ok(r3.body?.ocr_chars === 23, "and the response counts it", r3.body?.ocr_chars);
+    ok(!("ocr_text" in (await shot("")).body.items[0].canonical), "a picture with no words adds no key");
   }
 
   console.log(fail ? `resolveRoute selftest FAILED (${fail})` : "resolveRoute selftest ok");

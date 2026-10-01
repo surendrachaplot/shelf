@@ -58,6 +58,10 @@ export const type = {
   display: mkType("display", step(5), "700"),
   title:   mkType("title",   step(3), "700"),
   heading: mkType("heading", step(1.5), "600"),
+  // Long-form reading: an article saved to survive link rot. Body is set for a
+  // label and a two-line note; a six-minute read at 15 is a squint. Derived
+  // from the same ratio like every other step, not picked.
+  read:    mkType("read",    step(0.75), "400"),
   body:    mkType("body",    step(0), "400"),
   bodyMed: mkType("bodyMed", step(0), "600"),
   meta:    mkType("meta",    step(-1), "400"),

@@ -55,11 +55,16 @@ const FIELD_LABEL: Record<string, string> = {
   subtitle: "the details",
   facts: "the details",
   list: "the shelf",
+  tags: "a tag",
+  ocr: "the screenshot",
+  article: "the article",
 };
 
-export function Find({ items, onClose, onOpen, onAdded, city }: {
+export function Find({ items, onClose, onOpen, onAdded, onTags, city }: {
   items: Item[];
   onClose: () => void;
+  /** Browse instead of search: the same shelf, by what things have in common. */
+  onTags: () => void;
   onOpen: (item: Item) => void;
   onAdded: (item: Item) => void | Promise<void>;
   city?: string;
@@ -249,6 +254,13 @@ export function Find({ items, onClose, onOpen, onAdded, city }: {
                 ? `${items.length} ${items.length === 1 ? "thing" : "things"} across your shelves. Search a title, an author, a neighbourhood, a cuisine, a year — or a word from a note you wrote. Type a shelf's name to see all of it.`
                 : "Your shelves are empty for now. Share a reel from Instagram, or type a name here and shelve it straight from the catalogue."}
             </Text>
+            {/* The other way in: not "what was it called" but "what else is
+                in Peckham". Only when there is something to browse. */}
+            {items.length ? (
+              <Press onPress={onTags} containerStyle={s.tagsSlot} style={s.tagsBtn} size={TOUCH_MIN} label="Browse by tag">
+                <Text style={s.micro}>Browse by tag →</Text>
+              </Press>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -375,6 +387,9 @@ const styles = (c: Palette) => StyleSheet.create({
   rowSub: { ...t.meta, color: c.inkFaint, marginTop: 2 },
   rowWhy: { ...t.meta, color: c.inkSoft, marginTop: sp.xs },
   addBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.md, alignItems: "center", justifyContent: "center" },
+
+  tagsSlot: { alignSelf: "flex-start", marginTop: sp.lg },
+  tagsBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, justifyContent: "center", borderWidth: 2, borderColor: c.ink },
 
   notice: { marginTop: sp.xl },
   noticeTitle: { ...t.section, color: c.ink },
