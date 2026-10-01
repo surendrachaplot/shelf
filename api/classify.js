@@ -11,8 +11,17 @@
 // caption mentioned garlic is a bug you can never quite prompt away.
 import { isMain } from "./ismain.js";
 import { readFile } from "node:fs/promises";
+import { LISTS as SHELVES } from "./http.js";
 
-export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
+// Every shelf — the one list, from http.js (which takes it from the app).
+export const LISTS = SHELVES;
+
+// WHAT THE MODEL MAY CHOOSE BY ITSELF. Notes is a shelf and it is in the
+// schema, because a person can pick it and their tap wins. But a caption is
+// never somebody's own note, so with no tap the model is not offered it and an
+// answer of "notes" is not accepted.
+// deliberate subset — every shelf but the one only a person can choose.
+const PICKABLE = LISTS.filter((l) => l !== "notes");
 
 // Opus 5 by default. Sonnet 5 is a drop-in via SHELF_MODEL if this ever runs
 // hot enough to care — a per-share extraction is a few thousand tokens, so at
@@ -57,7 +66,7 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with six lists: books, restaurants, movies, recipes, quotes, places.
+const SYSTEM = `You extract saveable things from social media captions for a personal shelf app with these lists: ${PICKABLE.join(", ")}.
 
 Return the thing itself, never the post about it. "POV: you finally read the book everyone's talking about 📚 Piranesi by Susanna Clarke" is one item titled "Piranesi", not "POV: you finally read...".
 
@@ -73,6 +82,8 @@ PLACES. ONE ITEM PER PLACE, not one per reel. "10 things to do in Lisbon" is ten
 
 TAGGED ACCOUNTS. Captions very often list things by TAGGING them instead of naming them: "10 lovely bookshops with cafes … Bookshops featured: @backstory.london @funnyweatherbooks @the_bookelephant". Those accounts ARE the list — three items, not one item called "10 lovely bookshops". The handle is the only name you get, so read it as one: @backstory.london is "Backstory", @funnyweatherbooks is "Funny Weather", @the_bookelephant is "The Book Elephant". BUILD THE NAME OUT OF THE LETTERS IN THE HANDLE AND NOTHING ELSE. Split it into words, drop a trailing city, country, "official", "hq" or "shop", and stop: @bookbaruk is "Book Bar", not "Book Bar UK". Do not add a word the handle does not contain, and do not reach for a similar place you happen to know — an exact short name is worth more than a fuller guess, because the map is searched with what you write here. Put the city from the caption in search_hints.city on every one of them — that is what turns a name into a place. Ignore the poster's own account and any account that is plainly a photographer credit, a friend, or a brand doing a giveaway. If a handle yields no plausible name, drop it: an item called "@xyz_92" is worse than nine items instead of ten.
 
+WISHLIST. A THING TO BUY that the caption names: a jacket, a lipstick, a lamp, a pair of headphones. Put what it is called in "title" — the product itself, with its colour, shade or model when the caption gives one — and the BRAND in "subtitle". A haul is one item per thing, not one item called "autumn haul". NEVER INVENT A PRICE, and never write one into the note from memory: what a thing costs is read off the shop's own page by a different step, on the day it is read, and a number you supply is a number nobody can check. If the caption states no price, the item has no price, and that is a complete answer. Something the poster is merely wearing while they talk about a restaurant is not a wishlist item — save what the post is ABOUT.
+
 RESTAURANTS vs PLACES: somewhere you would eat, at home, is a restaurant. Somewhere you would go on a trip — including its restaurants — is a place. When the caption is about travelling, prefer places.
 
 THE PICTURE. When a post's image is attached, READ IT — it is evidence, not decoration, and it is very often where the name actually is. A book cover carries the title and the author in print. A film has a poster or a title card. A restaurant has signage over the door, a menu header, a napkin, a shopfront. A recipe has its ingredients burned into the frame. A quote is frequently an image of text with no caption at all.
@@ -87,7 +98,7 @@ If the picture is unreadable, dark, tiny, or shows nothing relevant, ignore it e
 // accidentally drop when the prompt is edited.
 function listDirective(chosenList) {
   if (!chosenList || !LISTS.includes(chosenList)) {
-    return `The user did not pick a list — choose the best fitting one of: ${LISTS.join(", ")}.`;
+    return `The user did not pick a list — choose the best fitting one of: ${PICKABLE.join(", ")}.`;
   }
   return `The user already filed this under "${chosenList}". Every item you return MUST use list "${chosenList}". Do not re-categorise, even if the caption seems to point elsewhere — they can see the reel and you cannot.`;
 }
@@ -128,7 +139,7 @@ export function coerceItems(raw, chosenList) {
     const title = String(it?.title || "").trim().slice(0, 200);
     if (!title) continue; // a nameless item is not an item
     const list = LISTS.includes(chosenList) ? chosenList
-      : LISTS.includes(it?.list) ? it.list
+      : PICKABLE.includes(it?.list) ? it.list
       : "unsorted";
     let confidence = Number(it?.confidence);
     if (!Number.isFinite(confidence)) confidence = 0;
@@ -577,6 +588,24 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(coerceItems({ items: [{ title: "Piranesi", confidence: 0.9 }, { title: "Babel", confidence: 0.8 }] }, "books").length === 2, "multi-item reel");
 
   ok(SCHEMA.properties.items.items.properties.list.enum.join() === LISTS.join(), "schema enum tracks LISTS");
+
+  // ── THE SEVENTH AND EIGHTH SHELVES ─────────────────────────────────────────
+  ok(LISTS.includes("wishlist") && LISTS.includes("notes"), "the classifier knows every shelf the app has", LISTS);
+  ok(SYSTEM.includes("WISHLIST.") && /NEVER INVENT A PRICE/.test(SYSTEM),
+     "SYSTEM says what a wishlist item is, and that a price is never made up");
+  ok(/BRAND in "subtitle"/.test(SYSTEM), "and where the brand goes");
+  ok(coerceItems({ items: [{ list: "wishlist", title: "Wool overshirt", subtitle: "Northfield", confidence: 0.8 }] }, null)[0].list === "wishlist",
+     "a thing to buy named in a caption goes on the wishlist");
+  ok(!("price" in coerceItems({ items: [{ list: "wishlist", title: "Wool overshirt", price: 65, confidence: 0.8 }] }, null)[0]),
+     "and carries NO price, even if the model sent one — prices come from product.js alone");
+  // Notes is a shelf a PERSON picks. A caption is never somebody's own note.
+  ok(!/\bnotes\b/.test(buildPrompt(env, null).split("\n")[0]), "with no tap, the model is not offered Notes", buildPrompt(env, null).split("\n")[0]);
+  ok(/\bwishlist\b/.test(buildPrompt(env, null).split("\n")[0]), "but it is offered the wishlist");
+  ok(coerceItems({ items: [{ list: "notes", title: "A caption", confidence: 0.8 }] }, null)[0].list === "unsorted",
+     "and if it answers Notes anyway, that is not accepted");
+  ok(coerceItems({ items: [{ list: "books", title: "A thing", confidence: 0.8 }] }, "notes")[0].list === "notes"
+     && buildPrompt(env, "notes").includes('MUST use list "notes"'),
+     "a person who picked Notes gets Notes — the tap wins there too");
 
 
   // ── THE PICTURE ────────────────────────────────────────────────────────────

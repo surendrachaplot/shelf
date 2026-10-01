@@ -69,22 +69,29 @@ export function listSentence(lists) {
 
 // The app's own jacket rules, in CSS. Kept as ONE block that reads the tokens
 // so a change to the type ladder or the board thickness moves both surfaces.
+// Every shelf's field and the label that goes on it, FOR ONE SCHEME. Said per
+// scheme since Notes: its field is the page and its label is ink, and both of
+// those invert, so a light-only list of shelf colours would paint a white band
+// with white type on it the moment the page went dark.
+const shelfVars = (p) => D.LIST_KEYS.map((k) => `--${k}:${p[k]}; --on-${k}:${D.onFor(k, p)};`).join(" ");
+// A shelf that is paper has no edge; its band is ruled instead of filled.
+const paperClass = (list) => (D.isPaper(list, D.light) ? " paper" : "");
+
 function stylesheet() {
   const t = D.type;
   return `
 :root{
   --paper:${D.light.bg}; --ink:${D.light.ink}; --soft:${D.light.inkSoft}; --faint:${D.light.inkFaint};
-  ${D.LIST_KEYS.map((k) => `--${k}:${D.light[k]};`).join(" ")}
-  ${D.LIST_KEYS.map((k) => `--on-${k}:${D.listOn[k]};`).join(" ")}
+  ${shelfVars(D.light)}
   --board:${D.BOARD}px; --rule:${D.RULE}px; --key:${D.COVER_KEYLINE}px;
 }
 /* Dark is not a v2 thing here either. Only the STRUCTURE colour inverts; the
-   four primaries are the brand and do not move, so every label that clears
-   4.5:1 in one scheme clears it in both. */
+   primaries are the brand and do not move, so every label that clears 4.5:1
+   in one scheme clears it in both. (Notes is structure: it is paper.) */
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --paper:${D.dark.bg}; --ink:${D.dark.ink}; --soft:${D.dark.inkSoft}; --faint:${D.dark.inkFaint}; }
+  :root:not([data-theme="light"]){ --paper:${D.dark.bg}; --ink:${D.dark.ink}; --soft:${D.dark.inkSoft}; --faint:${D.dark.inkFaint}; ${shelfVars(D.dark)} }
 }
-:root[data-theme="dark"]{ --paper:${D.dark.bg}; --ink:${D.dark.ink}; --soft:${D.dark.inkSoft}; --faint:${D.dark.inkFaint}; }
+:root[data-theme="dark"]{ --paper:${D.dark.bg}; --ink:${D.dark.ink}; --soft:${D.dark.inkSoft}; --faint:${D.dark.inkFaint}; ${shelfVars(D.dark)} }
 *{margin:0;padding:0;box-sizing:border-box;border-radius:0;-webkit-font-smoothing:antialiased}
 body{background:var(--paper);color:var(--ink);font-family:Helvetica,Arial,sans-serif;font-kerning:normal}
 .wrap{max-width:760px;margin:0 auto;padding:0 ${D.sp.lg}px ${D.sp.huge}px}
@@ -108,6 +115,7 @@ a{color:inherit}
 /* ── band + bookcase, exactly as the app builds them ── */
 .band{display:flex;align-items:center;gap:${D.sp.md}px;padding:${D.sp.md}px ${D.sp.lg}px;margin-top:${D.sp.xl}px}
 .band h2{font-size:31px;line-height:31px;letter-spacing:-1.5px;font-weight:700;text-transform:uppercase;flex:1}
+.band.paper{border-top:var(--key) solid var(--ink);border-bottom:var(--key) solid var(--ink)}
 /* Rows are chunked server-side, not laid out by a grid, for the same reason
    the app does it: a board has to be drawn under EACH row, and no grid can
    express that. flex-wrap is the narrow-screen escape — below ~360px three
@@ -203,7 +211,7 @@ function bookcase(list, items) {
   const fill = `var(--${list})`;
   const on = `var(--on-${list})`;
   return `<section>
-    <div class="band bleed" style="background:${fill};color:${on}">
+    <div class="band bleed${paperClass(list)}" style="background:${fill};color:${on}">
       <h2>${esc(LIST_LABEL[list] || list)}</h2>
       <span class="micro">${String(items.length).padStart(2, "0")}</span>
     </div>
@@ -214,7 +222,7 @@ function bookcase(list, items) {
 }
 
 function plateBlock(owner) {
-  const colours = plateColours(owner.plate_seed || owner.handle, D.light, D.listOn);
+  const colours = plateColours(owner.plate_seed || owner.handle, D.light);
   const since = owner.since ? new Date(owner.since).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null;
   return `<div class="plate">
     ${plateSvg(owner.plate_seed || owner.handle, colours, 96)}
@@ -290,7 +298,7 @@ export function renderItem({ owner, item, note, url }) {
   const list = LIST_LABEL[item.list] ? item.list : "unsorted";
   const body = `${plateBlock(owner)}
     ${note ? `<div class="note">${esc(note)}</div>` : ""}
-    <div class="band bleed" style="background:var(--${list});color:var(--on-${list}, ${D.listOn.unsorted})">
+    <div class="band bleed${paperClass(list)}" style="background:var(--${list});color:var(--on-${list}, ${D.listOn.unsorted})">
       <h2>${esc(LIST_LABEL[list] || "Unsorted")}</h2><span class="micro">${LIST_N[list] || "00"}</span>
     </div>
     <div class="case solo" style="grid-template-columns:1fr">${jacket(item)}</div>
@@ -388,6 +396,16 @@ if (isMain(import.meta.url)) {
       ok(full.includes(`--${k}:`), `the page defines no colour for the ${k} shelf`);
     }
     ok(!/>Unsorted</.test(full), "a real shelf must never render as Unsorted");
+    // NOTES IS PAPER, so its colours are the only shelf colours that change
+    // with the scheme. Left light-only, the Notes band in dark mode is a white
+    // bar carrying white type.
+    ok(full.includes(`--notes:${D.light.notes}; --on-notes:${D.light.ink};`), "the light page does not paint Notes as paper with ink on it");
+    ok(full.split(`--notes:${D.dark.notes}; --on-notes:${D.dark.ink};`).length === 3, "BOTH dark blocks must repaint Notes: the media query and the data-theme override");
+    ok(/class="band bleed paper"/.test(full) && (full.match(/class="band bleed paper"/g) || []).length === 1,
+       "exactly one band is ruled instead of filled, and it is the paper one");
+    // A plate's ground is picked by `seed % length`. Had the two new shelves
+    // joined that list, every person's mark would have changed colour.
+    ok(plateFor("suren").list === "places" && plateFor("nadia").list === "restaurants", "a plate somebody already has changed its ground", [plateFor("suren").list, plateFor("nadia").list]);
     // A quote is the words. On a jacket it gets the app's excerpt rule, so it
     // ends on a word boundary with a mark saying there is more — not severed
     // mid-sentence into a wall of colour, which is what shipped.

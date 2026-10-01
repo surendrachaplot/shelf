@@ -73,6 +73,11 @@ export const USES = {
   recipes: ["Cook it later", "Recipes from videos and food sites. With the ingredients, the time and the steps."],
   quotes: ["Keep a line you liked", "The exact words, and who said them."],
   places: ["Plan a trip", "One travel reel can name ten places. You get all ten, by city, each with a map link."],
+  // The two added with the build that has their shelves. Both sentences are
+  // things the app does: api/product.js reads the price and the brand, and a
+  // note is an item, so Find reads it like everything else.
+  wishlist: ["Keep a wishlist", "Things you want to buy, from any shop page. With the price, the brand and a link back to the shop."],
+  notes: ["Write it down", "Short notes, next to everything else you saved. Search finds them too."],
 };
 
 /**
@@ -104,10 +109,12 @@ const JACKETS = [
 // Yellow cannot carry its own colour as a 12px label on white (1.4:1), so a
 // label takes the shelf colour only where that clears 4.5:1 and `warn` — the
 // palette's own dark yellow — where it does not.
-const labelColour = (shelf, c) => (D.contrast(c[shelf], c.bg) >= 4.5 ? c[shelf] : c.warn);
+// Notes is paper, so its own colour as a label would be white on white: a
+// paper shelf is labelled in ink.
+const labelColour = (shelf, c) => (D.isPaper(shelf, c) ? c.ink : D.contrast(c[shelf], c.bg) >= 4.5 ? c[shelf] : c.warn);
 
 const vars = (c) => `--bg:${c.bg};--ink:${c.ink};--soft:${c.inkSoft};--line:${c.lineStrong};--good:${c.good};` +
-  SHELVES.map((k) => `--${k}:${c[k]};--on-${k}:${D.listOn[k]};--label-${k}:${labelColour(k, c)};`).join("");
+  SHELVES.map((k) => `--${k}:${c[k]};--on-${k}:${D.onFor(k, c)};--label-${k}:${labelColour(k, c)};`).join("");
 
 const CSS = `
 :root{${vars(D.light)}}
@@ -150,8 +157,9 @@ h2{font-size:56px;line-height:58px;letter-spacing:-2.4px;font-weight:700;max-wid
 .src .col p.b{font-weight:700}
 .sec{padding-top:104px}
 .kick{display:flex;flex-direction:column;gap:16px;padding-bottom:40px}.kick .sub{color:var(--soft)}
-.spread{display:flex;gap:4px}
-.cell{flex:1;min-width:0;min-height:232px;display:flex;flex-direction:column;gap:8px;padding:20px}
+.spread{display:flex;flex-wrap:wrap;gap:4px}
+.cell{flex:1 1 22%;min-width:0;min-height:200px;display:flex;flex-direction:column;gap:8px;padding:20px}
+.cell.paper{border:2px solid var(--line)}
 .cell .n{font-size:12px;line-height:16px;letter-spacing:.14em;font-weight:700;font-variant-numeric:tabular-nums;text-transform:uppercase}
 .cell h3{font-size:21px;line-height:24px;letter-spacing:-.6px;font-weight:700}
 .cell p{font-size:15px;line-height:21px}
@@ -181,7 +189,7 @@ footer .mark{font-size:22px;line-height:26px;letter-spacing:-1.2px}
   .case{width:auto;max-width:468px}
   .src{flex-wrap:wrap;gap:16px 48px}.src .name{width:100%}
   .cols{flex-wrap:wrap}.colx{flex:1 1 40%}
-  .spread{flex-wrap:wrap}.cell{flex:1 1 30%;min-height:0}
+  .cell{flex:1 1 40%;min-height:0}
   .private{flex-direction:column;align-items:flex-start}
 }
 @media (max-width:700px){
@@ -206,7 +214,7 @@ footer .mark{font-size:22px;line-height:26px;letter-spacing:-1.2px}
   .src .name{font-size:44px;line-height:44px;letter-spacing:-2.2px}
   .src .col{padding-top:0}.src .col p{font-size:17px;line-height:25px}
   .src .col.share .micro{display:none}
-  .spread{flex-wrap:wrap}.cell{flex:1 1 100%;min-height:0;padding:16px}
+  .cell{flex:1 1 100%;min-height:0;padding:16px}
   #how{padding-top:56px}
   .cols{flex-direction:column;flex-wrap:nowrap;gap:28px;padding-top:28px}
   .tile{flex:1 1 100%;min-height:0;padding:16px}.kick{padding-bottom:24px}
@@ -232,7 +240,7 @@ export function landingHtml() {
     `<div class="col share"><div class="micro soft">You share</div><p>${esc(s.share)}</p></div>` +
     `<div class="col"><div class="micro" style="color:var(--label-${s.shelf})">You get</div><p class="b">${esc(s.get)}</p></div></div>`).join("");
   const cells = SHELVES.map((k, i) =>
-    `<div class="cell" style="background:var(--${k});color:var(--on-${k})"><div class="n">${String(i + 1).padStart(2, "0")} · ${esc(k)}</div>` +
+    `<div class="cell${D.isPaper(k, D.light) ? " paper" : ""}" style="background:var(--${k});color:var(--on-${k})"><div class="n">${String(i + 1).padStart(2, "0")} · ${esc(k)}</div>` +
     `<h3>${esc(USES[k]?.[0] ?? k)}</h3><p>${esc(USES[k]?.[1] ?? "")}</p></div>`).join("");
   const tile = ([h, p]) => `<div class="tile"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`;
   const next = NEXT.map(tile).join("");
@@ -262,7 +270,7 @@ export function landingHtml() {
 <section id="how"><div class="shead in"><h2>Works with the apps you already use</h2>
 <p>Tap Share in any app and pick shelf. That is the whole setup.</p></div>
 ${sources}</section>
-<section class="sec"><div class="kick in"><div class="micro soft">Six shelves, sorted for you</div><h2>What people use it for</h2></div>
+<section class="sec"><div class="kick in"><div class="micro soft">${SHELVES.length} shelves, sorted for you</div><h2>What people use it for</h2></div>
 <div class="spread in">${cells}</div><div class="board"></div></section>
 <section class="sec in"><div class="kick"><div class="micro soft">Lists</div><h2>Make your own lists</h2></div>
 <div class="tiles">${lists}</div></section>
@@ -330,12 +338,17 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
     ok(cut > 0 && html.indexOf(esc(h)) > cut, `"${h}" appears only under Coming next`, html.indexOf(esc(h)));
     ok(![...Object.values(USES).map((u) => u[0]), ...LATER.map((l) => l[1]), ...LISTS.map((l) => l[0])].includes(h), `"${h}" is not also claimed as built`);
   }
-  ok((html.match(/class="cell"/g) || []).length === SHELVES.length, "one cell per shelf, no more");
+  ok((html.match(/class="cell( paper)?"/g) || []).length === SHELVES.length, "one cell per shelf, no more");
+  ok((html.match(/class="cell paper"/g) || []).length === 1 && /class="cell paper" style="background:var\(--notes\)/.test(html),
+     "the one shelf that is paper is outlined — a white cell on a white page is a hole in the row");
+  ok(html.includes(`${SHELVES.length} shelves, sorted for you`) && !/Six shelves/.test(html), "the page counts the shelves it draws");
+  ok(html.includes(`--notes:${D.dark.notes};--on-notes:${D.dark.ink};`) && html.includes(`--notes:${D.light.notes};--on-notes:${D.light.ink};`),
+     "Notes is paper with ink on it in BOTH schemes");
 
   // A label on white must be readable: yellow is swapped for the dark yellow.
   for (const c of [D.light, D.dark]) for (const k of SHELVES) {
     ok(D.contrast(labelColour(k, c), c.bg) >= 4.5, `the ${k} label clears 4.5:1 on ${c === D.light ? "light" : "dark"} paper`, D.contrast(labelColour(k, c), c.bg));
-    ok(D.contrast(D.listOn[k], c[k]) >= 4.5 || k === "movies" && D.contrast(D.listOn[k], c[k]) >= 4.5, `type on the ${k} field is readable`);
+    ok(D.contrast(D.onFor(k, c), c[k]) >= 4.5, `type on the ${k} field is readable`, D.contrast(D.onFor(k, c), c[k]));
   }
   ok(/prefers-color-scheme:dark/.test(html), "dark mode is not a v2 thing");
   ok((html.match(/href="\/app\/"/g) || []).length >= 4, "every button opens the app");

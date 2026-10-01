@@ -5,6 +5,8 @@
 // phone. What is left is a resolver and a place to publish a snapshot to, and
 // both of those need exactly this much HTTP.
 
+import { LIST_KEYS } from "../app/src/design.js";
+
 export function json(res, status, obj, { priv = true } = {}) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -39,8 +41,28 @@ export function appKeyOk(req) {
   return diff === 0;
 }
 
-export const LISTS = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
+// DERIVED from the app's own list of shelves, the way page.js derives its
+// headings. Typed out here it stayed at six when the seventh was added, and
+// `normList` filed every "wishlist" it was sent under "unsorted" — no error,
+// just a thing on the wrong shelf. (The deploy already needs app/src: page.js.)
+export const LISTS = LIST_KEYS.filter((k) => k !== "unsorted");
 export const ALL_LISTS = [...LISTS, "unsorted"];
+
+// WHICH SHELVES THE BUILD THAT IS ASKING CAN DRAW.
+//
+// The server knows every shelf there is; a phone knows the ones it was built
+// with. An item filed on a shelf its build has never heard of is saved and
+// visible nowhere. So a client says what it has (`shelves` in the request),
+// and one that says nothing is a build from before the question existed: it
+// has the first six.
+// deliberate subset — what a build that does not say has.
+const FIRST_SHELVES = LISTS.slice(0, 6);
+export const shelvesOf = (said) => {
+  const named = Array.isArray(said) ? said.filter((s) => typeof s === "string" && LISTS.includes(s)) : [];
+  return named.length ? named : FIRST_SHELVES;
+};
+/** The shelf, or the pile when this build cannot draw that shelf. */
+export const fitShelf = (list, shelves) => (shelves.includes(list) ? list : "unsorted");
 
 // OLD NAMES NEVER STOP ARRIVING. "travel" became "places", and a phone still
 // running the previous build keeps sending the old word — as does every

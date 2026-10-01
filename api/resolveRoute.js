@@ -18,7 +18,7 @@
 // seconds. That is the honest cost of turning a reel into a named thing, and
 // the app shows it rather than hiding it.
 import { isMain } from "./ismain.js";
-import { json, normList } from "./http.js";
+import { json, normList, shelvesOf, fitShelf } from "./http.js";
 import { resolveShare, handlesIn } from "./resolve.js";
 import { classifyShare, classifyImage, verifyItems, needsCheck, summarize } from "./classify.js";
 import { extractArticle } from "./article.js";
@@ -128,8 +128,9 @@ export function onArticlePage(items, envelope, article) {
  * WHICH SHELF depends on who is asking. The Wishlist shelf exists only in
  * builds that have it, and a build that does not would file "wishlist" on a
  * shelf it cannot draw — saved, and visible nowhere. So the client says which
- * shelves it has (`shelves` in the request) and everybody else gets the item
- * as "unsorted", which every build shows in the pile. The facts (price, brand,
+ * shelves it has (`shelves` in the request, read by `shelvesOf` in http.js)
+ * and everybody else gets the item as "unsorted", which every build shows in
+ * the pile. The facts (price, brand,
  * shop) ride on `canonical.kind === "product"` either way, so the price is on
  * screen wherever the item stands.
  *
@@ -150,7 +151,7 @@ export function productItem(product, envelope, url, { shelves = [], now = new Da
       shop_url: product.url || url, price_at: now.toISOString(),
     },
   }, envelope, url);
-  return { ...item, list: Array.isArray(shelves) && shelves.includes("wishlist") ? "wishlist" : "unsorted" };
+  return { ...item, list: fitShelf("wishlist", shelvesOf(shelves)) };
 }
 
 /**
@@ -233,15 +234,22 @@ export async function resolveRoute(req, res, body, _url, io = IO) {
   // it without another request.
   const handles = handlesIn(envelope.caption).filter((h) => h !== envelope.authorHandle);
 
-  // A SHOP PAGE, when the person did not pick a shelf. If they DID pick one
-  // (a novel on a bookshop's site, filed under Books) the tap wins and the
-  // page is read the ordinary way. A parser that throws costs the product and
-  // nothing else — the share falls through to the classifier.
-  if (envelope.html && list === "unsorted") {
+  // What this build can draw. A shelf the person tapped is one it has, said
+  // or not — nobody can pick a tile their build did not paint.
+  const has = [...shelvesOf(body?.shelves), list];
+  const fit = (it) => ({ ...it, list: fitShelf(it.list, has) });
+
+  // A SHOP PAGE, when the person did not pick a shelf — or picked Wishlist,
+  // which is the same request said out loud, and must not cost them the price
+  // by sending the page to the classifier instead. If they picked any OTHER
+  // shelf (a novel on a bookshop's site, filed under Books) the tap wins and
+  // the page is read the ordinary way. A parser that throws costs the product
+  // and nothing else — the share falls through to the classifier.
+  if (envelope.html && (list === "unsorted" || list === "wishlist")) {
     let product = null;
     try { product = io.extractProduct(envelope.html, url); } catch (_) { /* not a product, then */ }
     if (product) {
-      const item = productItem(product, envelope, url, { shelves: body?.shelves });
+      const item = productItem(product, envelope, url, { shelves: has });
       return json(res, 200, summary({ url, envelope, items: [item], read: [], handles }));
     }
   }
@@ -274,7 +282,9 @@ export async function resolveRoute(req, res, body, _url, io = IO) {
   const article = await reading;
   const shaped = [];
   for (const it of checked) {
-    shaped.push(shape(await io.enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url));
+    // `fit`: the classifier knows shelves an older build does not have. What
+    // it files there goes to that build's pile instead of to nowhere.
+    shaped.push(fit(shape(await io.enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url)));
   }
   // ONE COPY. A "10 best books" page is ten items and one article; carrying
   // 60,000 characters on each of them is 600 kB in a file the phone rewrites
@@ -308,8 +318,12 @@ export async function resolveImageRoute(req, res, body, _url, io = IO) {
   const envelope = { caption: "", imageUrl: null, locationTag: null, authorHandle: null,
                      outboundUrls: [], via: "screenshot" };
   const { items: read, ocr_text } = await io.classifyImage(b64, String(body?.media_type || "image/jpeg").slice(0, 40), list);
+  const has = [...shelvesOf(body?.shelves), list];
   const items = [];
-  for (const it of read) items.push(carry(shape(await io.enrich(it, {}), envelope, null), { ocr_text }));
+  for (const it of read) {
+    const shaped = shape(await io.enrich(it, {}), envelope, null);
+    items.push(carry({ ...shaped, list: fitShelf(shaped.list, has) }, { ocr_text }));
+  }
   return json(res, 200, { ok: true, resolver: "screenshot", ocr_chars: ocr_text.length, items });
 }
 
@@ -439,6 +453,28 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
       const p2 = fakeRes();
       await resolveRoute({}, p2, { url: "https://shop.example/overshirt", shelves: ["books", "wishlist"] }, null, shopIo);
       ok(p2.body?.items?.[0]?.list === "wishlist", "a build that has the shelf gets it on the shelf", p2.body?.items?.[0]?.list);
+      // Picking Wishlist on a shop page is asking for exactly this. It used to
+      // skip the product reader (the tap "won") and lose the price.
+      const p2b = fakeRes();
+      await resolveRoute({}, p2b, { url: "https://shop.example/overshirt", list: "wishlist" }, null, shopIo);
+      ok(p2b.body?.items?.[0]?.list === "wishlist" && p2b.body.items[0].canonical.price === 65,
+         "a shop page shared TO the Wishlist keeps its price, and no model call", p2b.body?.items?.[0]);
+      // The classifier knows the wishlist too. A build that does not have the
+      // shelf must get the item in its pile, not on a shelf it cannot draw.
+      const wishIo = { ...io, classifyShare: async () => [{ list: "wishlist", title: "One", confidence: 0.9 }] };
+      const c1 = fakeRes();
+      await resolveRoute({}, c1, { url: "https://fieldnotes.example/x" }, null, wishIo);
+      ok(c1.body?.items?.[0]?.list === "unsorted", "a classifier-made wishlist item goes to the PILE of a build with no Wishlist shelf", c1.body?.items?.[0]?.list);
+      const c2 = fakeRes();
+      await resolveRoute({}, c2, { url: "https://fieldnotes.example/x", shelves: ["books", "wishlist", "nonsense", 7] }, null, wishIo);
+      ok(c2.body?.items?.[0]?.list === "wishlist", "and onto the shelf of a build that has one", c2.body?.items?.[0]?.list);
+      ok(!("price" in (c2.body?.items?.[0]?.canonical ?? {})), "with no price: only a shop page read by product.js has one");
+      const c3 = fakeRes();
+      await resolveRoute({}, c3, { url: "https://fieldnotes.example/x", shelves: [] }, null, io);
+      ok(c3.body?.items?.every((i) => i.list === "books"), "an empty `shelves` is a build that said nothing: the first six are still its shelves", c3.body?.items?.map((i) => i.list));
+      const c4 = fakeRes();
+      await resolveRoute({}, c4, { url: "https://fieldnotes.example/x", shelves: ["gadgets", 7, null] }, null, io);
+      ok(c4.body?.items?.every((i) => i.list === "books"), "and so is one that names only shelves nobody has heard of", c4.body?.items?.map((i) => i.list));
       const p3 = fakeRes();
       await resolveRoute({}, p3, { url: "https://shop.example/overshirt", list: "books" }, null, { ...io, extractProduct: () => prod });
       ok(p3.body?.items?.every((i) => i.list === "books" && i.canonical.kind !== "product"),
