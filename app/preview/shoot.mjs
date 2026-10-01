@@ -98,7 +98,31 @@ const SHOTS = [
   { name: "app-list-rows-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,", "Show as rows"] },
   { name: "app-list-rows-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,", "Show as rows"] },
   { name: "app-list-add-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Piranesi, Susanna Clarke", "Add to a list"] },
-  { name: "app-product-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Not shelved,", "Open Wool overshirt"], scroll: 520 },
+  // THE SEVENTH AND EIGHTH SHELVES. Wishlist at 320 is the tight one: nine
+  // blocks on the rail, and a band that carries a total as well as a count.
+  // Notes is the shelf with no colour, so it is shot in both schemes — an ink
+  // outline that is right on white and missing on black is exactly the defect
+  // a paper shelf can have.
+  { name: "app-wishlist-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Wishlist," },
+  { name: "app-wishlist-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Wishlist," },
+  { name: "app-wishlist-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Wishlist," },
+  { name: "app-notes-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Notes," },
+  { name: "app-notes-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Notes," },
+  { name: "app-notes-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Notes," },
+  { name: "app-note-writer-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Notes,", "Write a note"], type: ["Things to ask the landlord."] },
+  { name: "app-note-writer-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Notes,", "Write a note"], type: ["Things to ask the landlord."] },
+  { name: "app-note-detail-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Notes,", "Gift ideas"] },
+  { name: "app-note-detail-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Notes,", "Gift ideas"] },
+  // A thing to buy: the price block under the picture, then the table that no
+  // longer repeats it. And the one with no price, where there is no block.
+  { name: "app-product-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Wishlist,", "Wool overshirt"], scroll: 360 },
+  { name: "app-product-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Wishlist,", "Wool overshirt"], scroll: 360 },
+  { name: "app-product-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Wishlist,", "Wool overshirt"], scroll: 300 },
+  { name: "app-product-noprice-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Wishlist,", "Linen trousers"], scroll: 360 },
+  // The card's spread of shelves, which is three across here and two at 320.
+  { name: "app-spread-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 120 },
+  { name: "app-spread-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card", scroll: 120 },
+  { name: "app-spread-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: "Your card", scroll: 120 },
   { name: "app-version-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 900 },
   { name: "app-import-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Import screenshots" },
   { name: "app-import-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Import screenshots" },
@@ -128,7 +152,11 @@ const SHOTS = [
   { name: "share-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light" },
   { name: "share-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark" },
   { name: "share-320-light", q: "?screen=share", w: 320, h: 420, scheme: "light" },
+  { name: "share-320-dark", q: "?screen=share", w: 320, h: 420, scheme: "dark" },
   { name: "share-done-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light", click: "Restaurants" },
+  // The receipt on paper: the one "done" field that is not a colour.
+  { name: "share-done-notes-375-light", q: "?screen=share", w: 375, h: 420, scheme: "light", click: "Notes" },
+  { name: "share-done-notes-375-dark", q: "?screen=share", w: 375, h: 420, scheme: "dark", click: "Notes" },
   // THE ANDROID SHARE, at Android sizes. There is no extension and no 420pt
   // sheet: ACTION_SEND opens the app, so the same boards fill the screen. Six
   // bands over ~800pt is a different composition from six over 420 — the bands
@@ -138,6 +166,7 @@ const SHOTS = [
   { name: "android-share-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light" },
   { name: "android-share-412-dark", q: "?screen=android-share", w: 412, h: 915, scheme: "dark" },
   { name: "android-share-360-light", q: "?screen=android-share", w: 360, h: 800, scheme: "light" },
+  { name: "android-share-360-dark", q: "?screen=android-share", w: 360, h: 800, scheme: "dark" },
   { name: "android-share-done-412-light", q: "?screen=android-share", w: 412, h: 915, scheme: "light", click: "Places" },
 ];
 

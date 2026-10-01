@@ -8,6 +8,7 @@ import { chromium } from "playwright-core";
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { renderProfile, renderShelf, renderItem, renderGone } from "../../api/page.js";
+import { landingHtml } from "../../api/landing.js";
 
 const OUT = fileURLToPath(new URL("./shots/", import.meta.url));
 const TMP = fileURLToPath(new URL("./.public/", import.meta.url));
@@ -36,6 +37,12 @@ const lists = {
     ["A person who has not been completely alienated is a person who can still be surprised.", "John Berger"]]),
   places: mk("places", [["Backstory", "Balham · London"], ["Lala Books", "Camberwell · London"],
     ["Praia da Ursa", "Sintra"]]),
+  // The seventh and the eighth. Notes is the one that can go wrong without an
+  // error: it is paper, so a page that paints it from the light palette alone
+  // shows a white band in dark mode. A card never carries Notes (the app
+  // leaves them out), but one note shared on purpose is a page — see below.
+  wishlist: mk("wishlist", [["Wool overshirt, olive", "Northfield"], ["Lip tint, Rosewood", "Petal"]]),
+  notes: mk("notes", [["Brown boots, not black.", ""], ["Gift ideas", ""]]),
 };
 
 const PAGES = [
@@ -44,9 +51,13 @@ const PAGES = [
   ["public-item", renderItem({ owner, item: { ...lists.books[0], note: "The one everyone in my feed could not shut up about.", source_url: "https://instagram.com/reel/x" }, note: "You'll like this one." })],
   // A place and a quote, each shared on its own. Both rendered as "Unsorted"
   // until the labels stopped being a hand-written list of four.
-  ["public-item-travel", renderItem({ owner, item: { ...lists.travel[0], note: "Cafe at the back, open late on Thursdays.", source_url: "https://instagram.com/p/x" } })],
+  ["public-item-travel", renderItem({ owner, item: { ...lists.places[0], note: "Cafe at the back, open late on Thursdays.", source_url: "https://instagram.com/p/x" } })],
   ["public-item-quote", renderItem({ owner, item: lists.quotes[0] })],
-  ["public-shelf-travel", renderShelf({ owner, list: "places", items: lists.travel, note: "Bookshops worth the trip." })],
+  ["public-shelf-travel", renderShelf({ owner, list: "places", items: lists.places, note: "Bookshops worth the trip." })],
+  ["public-shelf-wishlist", renderShelf({ owner, list: "wishlist", items: lists.wishlist })],
+  ["public-item-note", renderItem({ owner, item: { ...lists.notes[0], note: "Brown boots, not black. Ask Maya about the scarf." } })],
+  // The front door, which counts and draws one cell per shelf.
+  ["landing", landingHtml()],
   ["public-gone", renderGone()],
 ];
 
@@ -55,16 +66,19 @@ const SHOTS = [
   // off after the second shelf, so the two shelves that were missing from a
   // shared card were also the two nobody could have seen in a screenshot.
   { w: 390, h: 3400, scheme: "light", tag: "390-light" },
-  { w: 390, h: 1200, scheme: "dark", tag: "390-dark" },
+  { w: 390, h: 3400, scheme: "dark", tag: "390-dark" },
+  { w: 1440, h: 1000, scheme: "light", tag: "1440-light" },
   { w: 320, h: 1100, scheme: "light", tag: "320-light" },
 ];
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 for (const [name, body] of PAGES) {
   const file = `${TMP}${name}.html`;
   await writeFile(file, body);
   for (const s of SHOTS) {
     if (name === "public-gone" && s.tag !== "390-light") continue;
+    // The desktop width is the landing page's: a shared card is a phone page.
+    if (s.w > 400 && name !== "landing") continue;
     const ctx = await browser.newContext({ viewport: { width: s.w, height: s.h }, deviceScaleFactor: 2, colorScheme: s.scheme });
     const page = await ctx.newPage();
     const errors = [];

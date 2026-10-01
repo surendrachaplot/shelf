@@ -79,6 +79,31 @@ say(await has("On 2 lists"), "adding it to a second list shows on the item");
 await tap("Pin to the top");
 say(await has("Pinned") || await has("PINNED"), "a pinned thing is on the home screen");
 
+// ── the seventh and eighth shelves, by their own front doors ─────────────────
+await page.goto(URLBASE); await page.waitForTimeout(800);
+await tap("Wishlist,");
+say(await has("£83 in all") || await has("£83 IN ALL"), "the Wishlist band says what the shelf comes to");
+say(await has("No price") || await has("NO PRICE"), "a thing with no price says so on its jacket");
+say(!(await has("£65.00")), "and a jacket uses the same format as the total");
+await tap("Wool overshirt");
+say((await has("Price read 1 Oct") || await has("PRICE READ 1 OCT")) && await has("£65"), "a thing to buy opens on its price, with the day it was read");
+say((await page.getByText("Price", { exact: true }).count()) === 0, "and the table under it does not say the price a second time");
+await tap("Close");
+await tap("Linen trousers");
+say(!(await has("Price read")) && (await has("Open the shop") || await has("OPEN THE SHOP")), "a thing with no price has no price block, and still opens its shop");
+await tap("Close");
+await tap("Notes,");
+say(await has("Gift ideas") && await has("Brown boots"), "the Notes shelf holds the notes, not the pile");
+await tap("Write a note");
+await page.keyboard.type("Ring the plumber\nBefore Friday");
+await tap("Save the note");
+say(await has("04") && await has("Ring the plumber"), "a note written from the band lands on the Notes shelf");
+await tap("Ring the plumber");
+say(await has("Before Friday") && (await has("Written by you") || await has("WRITTEN BY YOU")), "and opens with the rest of what was written");
+await tap("Close");
+await tap("Not shelved,");
+say(!(await has("Wool overshirt")) && !(await has("Ring the plumber")), "neither a thing to buy nor a note is left in the pile");
+
 say(errs.length === 0, "no page errors " + errs.slice(0, 2).join(" | "));
 // the archive renders
 const p2 = await ctx.newPage(); await p2.goto("file://" + out + "/export.html");

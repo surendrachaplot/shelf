@@ -48,11 +48,20 @@ const SCREENS = [
   { name: "list pictures 320", q: "", w: 320, h: 700, open: ["Search everything you have saved", "Your lists", "Autumn outfit,"] },
   { name: "list rows 320", q: "", w: 320, h: 700, open: ["Search everything you have saved", "Your lists", "Autumn outfit,", "Show as rows"] },
   { name: "add to list 320", q: "", w: 320, h: 700, open: ["Piranesi, Susanna Clarke", "Add to a list"] },
+  // The two new shelves. "app 320" above is where the NINE-block rail is
+  // measured: each block is about 30pt painted and clears the floor on hit
+  // slop alone, so it is the first thing to fail if a tenth shelf is added.
+  { name: "wishlist 320", q: "", w: 320, h: 700, open: "Wishlist," },
+  { name: "notes 320", q: "", w: 320, h: 700, open: "Notes," },
+  { name: "note writer 320", q: "", w: 320, h: 700, open: ["Notes,", "Write a note"], type: "Ask about the scarf" },
+  { name: "note 320", q: "", w: 320, h: 700, open: ["Notes,", "Gift ideas"] },
+  { name: "product 375", q: "", w: 375, h: 812, open: ["Wishlist,", "Wool overshirt"] },
+  { name: "product 320", q: "", w: 320, h: 700, open: ["Wishlist,", "Wool overshirt"] },
   { name: "pair 375", q: "?paired=0", w: 375, h: 812 },
   { name: "share 375", q: "?screen=share", w: 375, h: 320 },
   { name: "share 320", q: "?screen=share", w: 320, h: 320 },
-  // The Android host. Same controls, very different geometry — six bands over
-  // a whole screen instead of a 320pt sheet — so the numbers are not the iOS
+  // The Android host. Same controls, very different geometry — the tiles fill
+  // a whole screen instead of a 420pt sheet — so the numbers are not the iOS
   // ones and measuring only the sheet would leave the taller layout unchecked.
   { name: "android share 412", q: "?screen=android-share", w: 412, h: 915 },
   { name: "android share 360", q: "?screen=android-share", w: 360, h: 800 },

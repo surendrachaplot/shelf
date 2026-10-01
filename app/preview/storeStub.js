@@ -137,27 +137,38 @@ const PILE = [
     image_url: null, canonical: {}, confidence: null, enriched: false,
     source_url: "https://www.instagram.com/reel/DAbCdEf/", resolver: "none", created_at: "" },
   // THINGS TO BUY, in the shape api/product.js sends. Two with a price and one
-  // without, because "no price" is a state the row and the total both have to
-  // draw. Unsorted on purpose: this is what a build with no Wishlist shelf
-  // receives.
-  { id: "w1", list: "unsorted", status: "filed", title: "Wool overshirt, olive", subtitle: "Northfield", note: "",
+  // without, because "no price" is a state the jacket, the row and the total
+  // all have to draw. One has artwork and a price, one a price and no artwork,
+  // one artwork and no price — the three jackets the Wishlist shelf can show.
+  { id: "w1", list: "wishlist", status: "filed", title: "Wool overshirt, olive", subtitle: "Northfield", note: "",
     image_url: art("#2F3A2E", "#E9DCCB", "OVERSHIRT"), confidence: 0.9, enriched: true,
     source_url: "https://shop.example/overshirt", resolver: "web-og", created_at: "2026-09-20T09:00:00Z",
     canonical: { kind: "product", price: 65, currency: "GBP", price_text: "£65.00", brand: "Northfield",
-                 availability: "in_stock", seller: "Northfield", shop_url: "https://shop.example/overshirt" } },
-  { id: "w2", list: "unsorted", status: "filed", title: "Lip tint, Rosewood", subtitle: "Petal", note: "",
+                 availability: "in_stock", seller: "Northfield", shop_url: "https://shop.example/overshirt",
+                 price_at: "2026-10-01T09:00:00Z" } },
+  { id: "w2", list: "wishlist", status: "filed", title: "Lip tint, Rosewood", subtitle: "Petal", note: "",
     image_url: null, confidence: 0.9, enriched: true,
     source_url: "https://shop.example/tint", resolver: "web-og", created_at: "2026-09-21T09:00:00Z",
     canonical: { kind: "product", price: 18, currency: "GBP", price_text: "£18.00", brand: "Petal",
                  availability: "in_stock", shop_url: "https://shop.example/tint" } },
-  { id: "w3", list: "unsorted", status: "filed", title: "Linen trousers, ecru", subtitle: "Marlow & Co", note: "",
+  { id: "w3", list: "wishlist", status: "filed", title: "Linen trousers, ecru", subtitle: "Marlow & Co", note: "",
     image_url: art("#E9DCCB", "#2F3A2E", "LINEN"), confidence: 0.9, enriched: true,
     source_url: "https://shop.example/linen", resolver: "web-og", created_at: "2026-09-22T09:00:00Z",
     canonical: { kind: "product", price: null, currency: null, price_text: null, brand: "Marlow & Co",
                  shop_url: "https://shop.example/linen" } },
-  { id: "n1", list: "unsorted", status: "filed", title: "Brown boots, not black.", subtitle: "",
+  // NOTES, three lengths, because the jacket sets them three ways: a couple of
+  // sentences (small, from the top), two words (larger and bold), and one long
+  // enough that the jacket has to cut it and say so.
+  { id: "n1", list: "notes", status: "filed", title: "Brown boots, not black.", subtitle: "",
     note: "Brown boots, not black. Ask Maya about the scarf.", image_url: null, confidence: null, enriched: false,
     source_url: null, resolver: "note", created_at: "2026-09-23T09:00:00Z", canonical: { kind: "note" } },
+  { id: "n2", list: "notes", status: "filed", title: "Gift ideas", subtitle: "",
+    note: "Gift ideas", image_url: null, confidence: null, enriched: false,
+    source_url: null, resolver: "note", created_at: "2026-09-24T09:00:00Z", canonical: { kind: "note" } },
+  { id: "n3", list: "notes", status: "filed", title: "Things to ask the landlord.", subtitle: "",
+    note: "Things to ask the landlord.\nDoes the boiler get serviced, and who pays for it? Is the deposit in a scheme, and which one? Can we put shelves up in the back room? Who do we call when the lift stops, because it stopped twice in the week we looked round. And is the bike store locked at night.",
+    image_url: null, confidence: null, enriched: false,
+    source_url: null, resolver: "note", created_at: "2026-09-25T09:00:00Z", canonical: { kind: "note" } },
   // A SAVED ARTICLE. Read, named, and on no shelf — an essay is not a book, a
   // film or a place — carrying the text the server kept (api/article.js). Long
   // enough to scroll, with a summary, because the reader has to be looked at
