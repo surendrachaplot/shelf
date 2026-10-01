@@ -22,10 +22,22 @@ tapping Share, which you can revoke (a DELETE, not a flag).
 
 ## START HERE — after the laptop build session, 2026-10-01
 
-**Phase 2 of PRODUCT-PLAN.md is BUILT, for the app and the web app, and was
-PUSHED TO `main` on 2026-10-01** (commit `fd3604f`). That push deploys the API
-on Render, rebuilds the web app at `/app`, and publishes an over-the-air
-update to the build on the phone.
+**Phase 2 of PRODUCT-PLAN.md is BUILT AND LIVE (2026-10-01).** The API is
+deployed on Render at `cadab66`, the web app at `/app` is rebuilt, and the
+over-the-air update was published to the installed iOS build's runtime
+(`f60ddf7b…`, update group `1e538514`/`b49917b3`). The phone takes it on the
+next launch or two.
+
+**Proven against the live service, with the real model:**
+- an essay (`paulgraham.com/greatwork.html`) → one `unsorted` item under its
+  own title, 59,743 characters of text, a summary that ends on a sentence;
+- a book review (the Guardian on Piranesi) → `books · Piranesi · Susanna
+  Clarke`, enriched, with the review text and summary attached.
+
+The first live run got the essay WRONG — it came back as the book "Hackers &
+Painters", which the essay never mentions — and cut the summary mid-word.
+Both fixed in `resolveRoute.js` (`onArticlePage`) and `classify.js`. Neither
+could have been found on the Mac: no model key here.
 
 ### What was built, with the check that proves each
 
@@ -100,9 +112,10 @@ add `read: mkType("read", step(0.75), "400")` to `design.js`, `t.read` and
 
 ### Open — the blockers, in order
 
-1. **Pushed, and not yet looked at on the phone.** Open the app, pull down,
-   and check: the reader, Tags (Find → Browse by tag), a link on an item
-   page, the home card, and Take a copy on Your card.
+1. **Not yet looked at on the phone.** Open the app twice (the first launch
+   downloads the update, the second runs it), then check: the home card,
+   Find → Browse by tag, a link on an item page, Take a copy on Your card,
+   and share an article link to see the reader.
 2. **`app/app.json` has a stray local edit that is not from this session**:
    duplicated entitlements, `ITSAppUsesNonExemptEncryption`, and
    `android.permission.RECORD_AUDIO`. That is a NATIVE change. Committed, it
@@ -111,10 +124,9 @@ add `read: mkType("read", step(0.75), "400")` to `design.js`, `t.read` and
 3. **The 2026-09-01 build IS on the phone** (Suren confirmed, 2026-10-01). So
    this can reach it over the air once pushed. Nothing here has been looked at
    on the device yet.
-4. **The summary and the screenshot-text calls have never run against the real
-   model.** This Mac has no `ANTHROPIC_API_KEY` and no `api/.env`. After a
-   deploy: Actions → Diagnose → `resolve` with an article URL, and read
-   `article_chars` and the summary in the output.
+4. **The screenshot-text call (`ocr_text`) has not run against the real
+   model.** The summary and the article have (see above). Share one
+   screenshot and search for a word that is only in the picture.
 5. **"Near you / open now" is built and switched off.** `serendipity.js` does
    it and is tested; `App.tsx` passes `here: null` because reading location
    needs `expo-location`, a native module, so it needs a new build.
