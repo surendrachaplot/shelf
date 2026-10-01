@@ -76,17 +76,22 @@ export const USES = {
 };
 
 /**
- * NOT BUILT YET, AND LABELLED SO. The owner asked for these on the page while
- * they are being made. They sit under "Coming next", in outlined tiles rather
- * than filled ones, so nobody reads them as things the app does today. When
- * one ships, MOVE it up into USES or LATER and delete it here — a "coming"
- * tile for a thing that already exists undersells it, and one that never
- * ships is a promise on the front page.
+ * Your own lists — built 2026-10-01 (app/src/lists.js, ListsScreen.tsx,
+ * api/product.js). Each line is something the app does: the price is read off
+ * the shop page, pictures come from the camera roll, a list adds up.
+ */
+export const LISTS = [
+  ["Wishlists with prices", "Save clothes, make-up or anything you want to buy. shelf reads the price and adds up the list."],
+  ["Moodboards", "Add pictures from your camera roll and see them side by side."],
+  ["Lists for anything", "An outfit, a gift, a room, a trip. Put saved things, pictures and notes on one list."],
+];
+
+/**
+ * NOT BUILT YET, AND LABELLED SO. Outlined tiles under "Coming next", so
+ * nobody reads them as things the app does today. When one ships, MOVE it up
+ * and delete it here; when this is empty the section is not drawn at all.
  */
 export const NEXT = [
-  ["Wishlists with prices", "Save clothes, make-up or anything you want to buy. shelf shows the price next to each one."],
-  ["Moodboards", "Save pictures and put them side by side on one board."],
-  ["Your own lists", "Make a list for anything: an outfit, a gift, a room, a trip."],
   ["Browser extension", "Save from your laptop with one click."],
 ];
 
@@ -229,7 +234,9 @@ export function landingHtml() {
   const cells = SHELVES.map((k, i) =>
     `<div class="cell" style="background:var(--${k});color:var(--on-${k})"><div class="n">${String(i + 1).padStart(2, "0")} · ${esc(k)}</div>` +
     `<h3>${esc(USES[k]?.[0] ?? k)}</h3><p>${esc(USES[k]?.[1] ?? "")}</p></div>`).join("");
-  const next = NEXT.map(([h, p]) => `<div class="tile"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join("");
+  const tile = ([h, p]) => `<div class="tile"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`;
+  const next = NEXT.map(tile).join("");
+  const lists = LISTS.map(tile).join("");
   const later = LATER.map(([k, h, p]) =>
     `<div class="colx"><div class="micro soft">${esc(k)}</div><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join("");
 
@@ -257,9 +264,11 @@ export function landingHtml() {
 ${sources}</section>
 <section class="sec"><div class="kick in"><div class="micro soft">Six shelves, sorted for you</div><h2>What people use it for</h2></div>
 <div class="spread in">${cells}</div><div class="board"></div></section>
+<section class="sec in"><div class="kick"><div class="micro soft">Lists</div><h2>Make your own lists</h2></div>
+<div class="tiles">${lists}</div></section>
 <section class="sec in"><h2>What else it does</h2><div class="cols">${later}</div></section>
-<section class="sec in"><div class="kick"><div class="micro soft">Coming next</div><h2>We are building these now</h2></div>
-<div class="tiles">${next}</div></section>
+${next ? `<section class="sec in"><div class="kick"><div class="micro soft">Coming next</div><h2>We are building this now</h2></div>
+<div class="tiles">${next}</div></section>` : ""}
 <section class="sec" id="private"><div class="private in"><div class="text"><div class="micro">Private</div>
 <h2>Private by default</h2>
 <p>Your shelf is stored on your device. There is no account and no sign-up. You can export everything whenever you want.</p></div>
@@ -314,10 +323,12 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   // What is not built is SAID to be not built: every "next" tile sits after
   // the words "Coming next", and none of them is repeated as a present-tense
   // use or feature.
+  for (const [h, p] of LISTS) ok(html.includes(esc(h)) && html.includes(esc(p)) && html.indexOf(esc(h)) < html.indexOf("Coming next"),
+    `"${h}" is on the page as a thing it does, above Coming next`);
   const cut = html.indexOf("Coming next");
   for (const [h] of NEXT) {
     ok(cut > 0 && html.indexOf(esc(h)) > cut, `"${h}" appears only under Coming next`, html.indexOf(esc(h)));
-    ok(![...Object.values(USES).map((u) => u[0]), ...LATER.map((l) => l[1])].includes(h), `"${h}" is not also claimed as built`);
+    ok(![...Object.values(USES).map((u) => u[0]), ...LATER.map((l) => l[1]), ...LISTS.map((l) => l[0])].includes(h), `"${h}" is not also claimed as built`);
   }
   ok((html.match(/class="cell"/g) || []).length === SHELVES.length, "one cell per shelf, no more");
 

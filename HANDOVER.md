@@ -76,6 +76,32 @@ and a Blob download on the web. So all of this can travel over the air to the
 2026-09-01 build. `TagIndex.tsx` is not called `Tags.tsx` on purpose: next to
 `tags.js` on a case-insensitive Mac the two names collide.
 
+### v1 = everything mymind has (decided 2026-10-01, late)
+
+Suren's call. **`V1-PLAN.md` is the checklist** — read it before planning. In
+one evening, live on the server, the web app and over the air:
+
+- **YouTube and Reddit** have their own readers (`api/resolve.js`): YouTube's
+  player endpoint with a crawler UA, Reddit's `old.reddit.com/comments/<id>.json`
+  with a crawler UA. Both measured FROM RENDER. No keys. The watch page gets
+  rate-limited (`/sorry`) after about a dozen fetches; `via` then says
+  `youtube-oembed`.
+- **Things to buy**: `api/product.js` reads a shop page's own markup and gives
+  a price only when it is certain. No model call. A build without the Wishlist
+  shelf gets the item as `unsorted` (the client says which shelves it has in
+  `shelves`); the price rows are on `canonical.kind === "product"`.
+- **Lists** (`app/src/lists.js`, `ListsScreen.tsx`, `shelf.boards`): pictures
+  view = moodboard, rows view = prices and a total per currency. Add to a
+  list and Pin on every item page. Notes and camera-roll pictures are items
+  (`kind: "note"` / `"picture"`, list `unsorted`). Entry: Find → Your lists.
+- **The 7th and 8th shelves (Wishlist pink `#D4107A`, Notes paper-white) are
+  on Paper and NOT in code**: `design.js`, `theme.ts` and `api.ts` cannot
+  change over the air. They go in with the next build.
+- **Known wrong, not fixed**: the catalogue lookup still swaps names on books
+  and films ("Fight" → "Fight Club"); `nameFound` guards places only.
+- `Lists.tsx` is named `ListsScreen.tsx` for the same reason `TagIndex.tsx`
+  is: next to `lists.js` on a case-insensitive Mac the names collide.
+
 ### The website (2026-10-01, evening)
 
 `GET /` is a landing page now (`api/landing.js`, `node landing.js --selftest`).
