@@ -106,12 +106,15 @@ function stylesheet() {
   const t = D.type;
   const vars = (p) => `--paper:${p.bg}; --sunk:${p.surfaceSunk}; --ink:${p.ink}; --soft:${p.inkSoft}; --faint:${p.inkFaint}; --line:${p.line};`;
   const step = (s) => `font-size:${s.fontSize}px;line-height:${s.lineHeight}px;font-weight:${s.fontWeight}`;
+  // A shelf's field and its label, per scheme. Six of the eight are the same
+  // in both; Notes is paper with ink on it, and both of those invert.
+  const shelves = (p) => D.LIST_KEYS.map((k) => `--${k}:${p[k]}; --on-${k}:${D.onFor(k, p)};`).join(" ");
   return `
 :root{ ${vars(D.light)}
-  ${D.LIST_KEYS.map((k) => `--${k}:${D.light[k]}; --on-${k}:${D.listOn[k]};`).join(" ")} }
+  ${shelves(D.light)} }
 /* Only the structure colour inverts. The shelf colours are the brand and are
-   the same in both schemes, as in the app. */
-@media (prefers-color-scheme: dark){ :root{ ${vars(D.dark)} } }
+   the same in both schemes, as in the app — except Notes, which is paper. */
+@media (prefers-color-scheme: dark){ :root{ ${vars(D.dark)} ${shelves(D.dark)} } }
 *{margin:0;padding:0;box-sizing:border-box;border-radius:0}
 body{background:var(--paper);color:var(--ink);font-family:Helvetica,Arial,sans-serif;${step(t.body)}}
 .wrap{max-width:760px;margin:0 auto;padding:0 ${D.sp.lg}px ${D.sp.huge}px}

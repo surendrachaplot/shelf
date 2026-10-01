@@ -26,6 +26,9 @@
 //                and whoever said it is in `subtitle`, where the reading step
 //                is told to put it. So for a quote, and only for a quote, the
 //                subtitle is the author.
+//   a product    brand — api/product.js reads it off the shop's own page
+//   a note       NOTHING, and correctly: a note is what somebody wrote, and
+//                no catalogue has said a thing about it
 //   any          article.siteName, once a page has been read
 
 /**
@@ -118,6 +121,9 @@ export function tagsFor(item) {
 
   add("author", c.author || (item.list === "quotes" ? item.subtitle : null));
   add("director", c.director);
+  // Who MAKES it. Only on a thing to buy: `brand` on anything else is a field
+  // nobody vouched for.
+  add("brand", c.kind === "product" ? c.brand : null);
   // Nominatim falls back to the city when a place has no suburb, so `area` and
   // `city` are often the same word. Said once, as the city.
   if (tagKey("x", c.area) !== tagKey("x", c.city)) add("area", c.area);

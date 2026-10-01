@@ -9,7 +9,7 @@ import { View } from "react-native";
 import Svg, { Circle, Line, Path, Polygon, Rect, Text as SvgText } from "react-native-svg";
 import { arcPath, PLATE, plateColours, plateShapes } from "./exlibris.js";
 import * as D from "./design.js";
-import { listOn, useTheme } from "./theme";
+import { useTheme } from "./theme";
 
 /**
  * `seed` is what the plate is derived from — the handle at the time it was
@@ -21,7 +21,7 @@ export function ExLibris({ seed, size = 96 }: { seed: string; size?: number }) {
   // Resolved against the LIVE palette rather than frozen at import: a mark that
   // could not follow the system appearance would be the one thing on screen
   // still in yesterday's scheme.
-  const colours = plateColours(seed, dark ? D.dark : D.light, listOn);
+  const colours = plateColours(seed, dark ? D.dark : D.light);
 
   return (
     <View style={{ width: size, height: size }}>

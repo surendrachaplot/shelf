@@ -179,6 +179,8 @@ const LIST_WORDS = {
   recipes: ["recipes", "recipe", "cook", "cooking"],
   quotes: ["quotes", "quote", "said"],
   places: ["places", "place", "travel", "trip", "visit"],
+  wishlist: ["wishlist", "wish", "buy", "shopping"],
+  notes: ["notes", "note"],
   unsorted: ["unsorted", "pile", "inbox"],
 };
 

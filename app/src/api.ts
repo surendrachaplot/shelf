@@ -13,6 +13,7 @@
 // an app key so a stranger who finds the URL cannot spend the provider quota;
 // it identifies the BUILD, not you, and it can read nothing.
 import * as SecureStore from "expo-secure-store";
+import { LIST_KEYS } from "./design.js";
 
 export const API_BASE = process.env.EXPO_PUBLIC_SHELF_API ?? "https://shelf-api-u8xy.onrender.com";
 
@@ -25,8 +26,12 @@ const APP_KEY = process.env.EXPO_PUBLIC_SHELF_KEY ?? "";
 export const SHARE_BASE = process.env.EXPO_PUBLIC_SHELF_WEB ?? API_BASE;
 export const shareUrl = (code: string) => `${SHARE_BASE}/s/${code}`;
 
-export type ListName = "books" | "restaurants" | "movies" | "recipes" | "quotes" | "places" | "unsorted";
-export const LISTS: ListName[] = ["books", "restaurants", "movies", "recipes", "quotes", "places"];
+export type ListName = "books" | "restaurants" | "movies" | "recipes" | "quotes" | "places" | "wishlist" | "notes" | "unsorted";
+// Every shelf this build can draw, in shelf order. Derived from the one list
+// in design.js — and SENT to the server with every resolve (`shelves` below),
+// because the server files a thing to buy on Wishlist only for a build that
+// says it has one. An older build gets it in the pile, where it can be seen.
+export const LISTS = LIST_KEYS.filter((k: string) => k !== "unsorted") as ListName[];
 
 /** What the resolver hands back. The device turns this into a stored Item. */
 export type Resolved = {
@@ -76,14 +81,14 @@ async function req<T>(path: string, init: RequestInit = {}, timeoutMs = 12000): 
 export const resolveLink = (url: string, list: ListName, homeCity?: string) =>
   req<{ items: Resolved[]; resolver: string; caption_chars: number }>(
     "/api/resolve",
-    { method: "POST", body: JSON.stringify({ url, list, home_city: homeCity || "" }) },
+    { method: "POST", body: JSON.stringify({ url, list, home_city: homeCity || "", shelves: LISTS }) },
     60000
   );
 
 export const resolveImage = (imageB64: string, mediaType: string, list: ListName) =>
   req<{ items: Resolved[]; resolver: string }>(
     "/api/resolve/image",
-    { method: "POST", body: JSON.stringify({ image_b64: imageB64, media_type: mediaType, list }) },
+    { method: "POST", body: JSON.stringify({ image_b64: imageB64, media_type: mediaType, list, shelves: LISTS }) },
     60000
   );
 

@@ -141,7 +141,13 @@ const menu = item({
   id: "o", list: "unsorted", title: "Screenshot", created_at: "2026-03-01T00:00:00.000Z",
   canonical: { ocr_text: "MENÚ DEL DÍA\nCroquetas de jamón 9€\nPulpo a la gallega 14€" },
 });
-const SHELF = [piranesi, ganapati, bookBar, sinners, harry, cafe, nameless, quote, dal, menu];
+// The two newest shelves: a thing to buy, found by its brand (a fact), and a
+// note, found by a word that is only in what was written.
+const overshirt = item({ id: "w", list: "wishlist", title: "Wool overshirt, olive", subtitle: "Northfield",
+  canonical: { kind: "product", price: 65, currency: "GBP", brand: "Northfield", shop_url: "https://shop.example/overshirt" } });
+const jotting = item({ id: "j", list: "notes", title: "Brown boots, not black.",
+  note: "Brown boots, not black. Ask Maya about the scarf.", canonical: { kind: "note" } });
+const SHELF = [piranesi, ganapati, bookBar, sinners, harry, cafe, nameless, quote, dal, menu, overshirt, jotting];
 
 // ALL SIX SHELVES, derived. "A fixture that stops at four shelves cannot show
 // you the fifth" — this file had no recipe in it until it was counted.
@@ -153,6 +159,9 @@ const find = (q, opts) => searchShelf(SHELF, q, opts);
 const ids = (q, opts) => find(q, opts).hits.map((h) => h.item.id);
 
 ok(ids("piranesi")[0] === "p", "the obvious one", ids("piranesi"));
+ok(ids("northfield")[0] === "w", "a thing to buy is found by who makes it", ids("northfield"));
+ok(ids("scarf")[0] === "j", "a note is found by a word that is only in the note", ids("scarf"));
+ok(ids("buy").join() === "w" && ids("note").join() === "j", "and both new shelves answer to the words people use for them", [ids("buy"), ids("note")]);
 ok(ids("piranese")[0] === "p", "one letter wrong still finds it", ids("piranese"));
 ok(ids("PIRANESI")[0] === "p", "case does not matter");
 ok(ids("cafe")[0] === "c", "no accents typed, accented title found", ids("cafe"));

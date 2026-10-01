@@ -20,7 +20,7 @@ import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View, StyleSheet } from "react-native";
 import { imagePicker, canPickPhotos } from "./native";
 import { Press } from "./Press";
-import { lists, listOn, sp, t, TOUCH_MIN, RULE, useTheme, type Palette } from "./theme";
+import { COVER_KEYLINE, isPaper, lists, onFor, sp, t, TOUCH_MIN, RULE, useTheme, type Palette } from "./theme";
 import { LISTS, type ListName } from "./api";
 
 export type Picked = { uri: string };
@@ -160,13 +160,13 @@ export function Import({ onImport, onClose }: {
           <Text style={s.lead}>
             {phase.picked.length} {phase.picked.length === 1 ? "picture" : "pictures"} — which shelf?
           </Text>
-          {/* Same six shelves, same colours, same order as the share sheet.
+          {/* The same shelves, same colours, same order as the share sheet.
               A second way in that files things differently is a second app. */}
           <View style={s.boards}>
             {LISTS.map((l) => (
               <Press key={l} onPress={() => file(l)} size={TOUCH_MIN} label={`File on ${lists[l].label}`}
-                     style={[s.board, { backgroundColor: c[l] ?? c.accent }]}>
-                <Text style={[s.boardLabel, { color: listOn[l] ?? c.onList }]}>{lists[l].label}</Text>
+                     style={[s.board, { backgroundColor: c[l] ?? c.accent }, isPaper(l, c) ? s.boardPaper : null]}>
+                <Text style={[s.boardLabel, { color: onFor(l, c) }]}>{lists[l].label}</Text>
               </Press>
             ))}
           </View>
@@ -204,5 +204,6 @@ const styles = (c: Palette) => StyleSheet.create({
   thumbGoneMark: { ...t.meta },
   boards: { gap: sp.sm, marginTop: sp.md },
   board: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, justifyContent: "center" },
+  boardPaper: { borderWidth: COVER_KEYLINE, borderColor: c.ink },
   boardLabel: { ...t.micro },
 });

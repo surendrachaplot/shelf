@@ -15,8 +15,9 @@
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { idFor, upsert, type Board, type Item, type Shelf } from "./store";
+import { noteItem } from "./NoteWriter";
 import {
-  itemsOf, listsWith, makeList, pin, priceOf, priceText, removeList, setView, togglePin, totalOf,
+  itemsOf, listsWith, makeList, pin, priceOn, removeList, setView, togglePin, totalOf,
 } from "./lists.js";
 import { keepPicture } from "./pictures";
 import { imagePicker } from "./native";
@@ -24,7 +25,7 @@ import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { KeyboardSafe, scrollKeyboardProps } from "./KeyboardSafe";
 import {
-  BOARD, COVER_KEYLINE, labelOf, listOn, numberOf, numeric, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
+  BOARD, COVER_KEYLINE, HAIRLINE, isPaper, labelOf, onFor, numberOf, numeric, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./theme";
 
 // EVERYTHING is a list nobody made: all of it, as pictures. It is not stored —
@@ -37,18 +38,6 @@ const everything = (view: Board["view"]): Board =>
 const two = (n: number) => String(n).padStart(2, "0");
 const kindOf = (item: Item) => (item.canonical as { kind?: string } | null)?.kind ?? null;
 
-/** What an item costs, as it should be shown, or null. */
-// ONE formatter for a row and for the total under it. The server's own text
-// says "£65.00" and the total says "£83"; side by side that reads as two
-// different apps. The server's text is kept only for what a single number
-// cannot say — a range ("$20 to $35") — or when there is no currency to
-// format with.
-const priceOn = (item: Item): string | null => {
-  const said = (item.canonical as { price_text?: string } | null)?.price_text ?? null;
-  if (said && / to /.test(said)) return said;
-  const p = priceOf(item);
-  return p ? priceText(p.amount, p.currency) : said;
-};
 // "No price" is a fact about a THING TO BUY. A book or a note on the same list
 // is not missing a price, so it is not counted as one that is.
 const unpricedOf = (items: Item[]) => items.filter((i) => kindOf(i) === "product" && !priceOn(i)).length;
@@ -115,15 +104,10 @@ export function Lists({ shelf, start = null, adding = null, onChange, onClose, o
 
   /** A note is an item whose words are the whole of it. */
   async function saveNote() {
-    const text = (note ?? "").trim();
-    if (!text) { setNote(null); return; }
-    const now = new Date().toISOString();
-    const item: Item = {
-      id: idFor(`note:${now}`), list: "unsorted", status: "filed",
-      title: text.split("\n")[0].slice(0, 80), subtitle: "", note: text,
-      image_url: null, canonical: { kind: "note" }, confidence: null, enriched: false,
-      source_url: null, resolver: "note", created_at: now, resolved_at: now,
-    };
+    // The same item the Notes shelf's own writer makes (NoteWriter.tsx): it
+    // stands on that shelf AND on this list.
+    const item = noteItem(note ?? "");
+    if (!item) { setNote(null); return; }
     const withItem = upsert(shelf, item);
     await onChange(list && list.id !== EVERYTHING ? { ...withItem, boards: pin(boards, list.id, item.id) } : withItem);
     setNote(null);
@@ -254,7 +238,7 @@ export function Lists({ shelf, start = null, adding = null, onChange, onClose, o
             <View style={s.inset}>
               {members.map((item, i) => {
                 const fill = (c as Record<string, string>)[item.list] ?? c.unsorted;
-                const on = (listOn as Record<string, string>)[item.list] ?? c.onList;
+                const on = onFor(item.list, c);
                 return (
                   <Reveal key={item.id} index={i}>
                     <Press onPress={() => onOpen(item)} style={s.row} size={TOUCH_MIN + 20}
@@ -362,7 +346,10 @@ export function Lists({ shelf, start = null, adding = null, onChange, onClose, o
                   {mix.length ? (
                     <View style={s.mix}>
                       {mix.map(([l, n]) => (
-                        <View key={l} style={[s.mixBar, { flexGrow: n, backgroundColor: (c as Record<string, string>)[l] ?? c.unsorted }]} />
+                        // A paper bar on paper is a gap, and a gap reads as
+                        // "nothing here" in a bar that exists to show shares.
+                        <View key={l} style={[s.mixBar, { flexGrow: n, backgroundColor: (c as Record<string, string>)[l] ?? c.unsorted },
+                                              isPaper(l, c) ? s.mixPaper : null]} />
                       ))}
                     </View>
                   ) : null}
@@ -395,7 +382,7 @@ function Tile({ item, onOpen, s, c }: { item: Item; onOpen: () => void; s: Retur
   const art = item.image_url && !failed ? item.image_url : null;
   const note = kindOf(item) === "note";
   const fill = note ? c.bg : (c as Record<string, string>)[item.list] ?? c.unsorted;
-  const on = note ? c.ink : (listOn as Record<string, string>)[item.list] ?? c.onList;
+  const on = note ? c.ink : onFor(item.list, c);
   const price = priceOn(item);
   const h = note ? undefined : heightOf(item.id);
   return (
@@ -435,6 +422,7 @@ const styles = (c: Palette) => StyleSheet.create({
   boardEdge: { height: BOARD, backgroundColor: c.ink },
   mix: { flexDirection: "row", gap: 2, height: sp.sm, width: "70%", marginTop: sp.xs },
   mixBar: { flexBasis: 0, height: sp.sm },
+  mixPaper: { borderWidth: HAIRLINE, borderColor: c.ink },
 
   newBlock: { marginTop: sp.xxl },
   newLabel: { marginTop: sp.xl },

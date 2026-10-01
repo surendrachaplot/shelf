@@ -20,7 +20,7 @@ import { ExLibris } from "./ExLibris";
 import { Press } from "./Press";
 import { KeyboardSafe } from "./KeyboardSafe";
 import * as D from "./design.js";
-import { labelOf, listOn, placeholderOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
+import { labelOf, onFor, placeholderOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 export function ShareSheet({ kind, item, list, title, shelf, onClose, onLinked }: {
   kind: PublishKind;
@@ -35,7 +35,7 @@ export function ShareSheet({ kind, item, list, title, shelf, onClose, onLinked }
   const s = styles(c);
   const listKey = list ?? item?.list ?? "unsorted";
   const fill = (c as Record<string, string>)[listKey] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[listKey] ?? c.onList;
+  const on = onFor(listKey, c);
   // An empty field must READ as empty. Set in the full label colour, the
   // placeholder looked like something somebody had already typed.
   const ghost = placeholderOn(listKey, dark ? D.dark : D.light);
@@ -64,7 +64,13 @@ export function ShareSheet({ kind, item, list, title, shelf, onClose, onLinked }
       // and stayed at four when quotes and travel shipped — so sharing your
       // card silently left two shelves out of it, with no error and nothing on
       // the page to say anything was missing.
-      : { kind, owner, lists: Object.fromEntries(LISTS.map((l) => [l, shelfOf(shelf, l)])) };
+      //
+      // …EXCEPT NOTES, and that is a decision, not an oversight. A note is
+      // something you wrote to yourself — "ask the landlord about the boiler" —
+      // and "share your shelves" is not a request to publish those. One note
+      // can still be shared from its own page, on purpose.
+      // deliberate subset — every shelf but Notes goes on a card.
+      : { kind, owner, lists: Object.fromEntries(LISTS.filter((l) => l !== "notes").map((l) => [l, shelfOf(shelf, l)])) };
 
     publish(body)
       .then((r) => {

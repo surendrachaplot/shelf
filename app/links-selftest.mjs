@@ -59,8 +59,21 @@ const upstream = item({ id: "u", list: "books", title: "Upstream", canonical: { 
 const SHELF = [piranesi, strange, klara, sinners, creed, justMercy, ganapati, dishoom,
                multiStory, bookBar, belem, dal, curry, toast, devotion, upstream];
 
-// ── ALL SIX SHELVES have something in this test that links ──────────────────
-for (const list of LIST_KEYS.filter((k) => k !== "unsorted")) {
+// ── EVERY SHELF THAT CAN LINK has something in this test that links ─────────
+// Wishlist and Notes cannot, and that is LINK_KINDS saying so rather than this
+// loop forgetting them: a link is the same person or the same place, a thing
+// to buy has a brand (a tag, not one of the link kinds), and a note has no
+// facts at all. Both are asserted below.
+// deliberate subset — the two shelves with nothing a link is made of.
+const NO_LINKS = ["wishlist", "notes"];
+{
+  const shirt = item({ id: "w1", list: "wishlist", title: "Overshirt", canonical: { kind: "product", brand: "Northfield" } });
+  const scarf = item({ id: "w2", list: "wishlist", title: "Scarf", canonical: { kind: "product", brand: "Northfield" } });
+  const note = item({ id: "n1", list: "notes", title: "Ask Maya", note: "Ask Maya about the scarf", canonical: { kind: "note" } });
+  ok(linksFor(shirt, [shirt, scarf, note]).length === 0, "wishlist: a shared brand is a tag, and is NOT a link", linksFor(shirt, [shirt, scarf, note]));
+  ok(linksFor(note, [shirt, scarf, note]).length === 0, "notes: a note links to nothing", linksFor(note, [shirt, scarf, note]));
+}
+for (const list of LIST_KEYS.filter((k) => k !== "unsorted" && !NO_LINKS.includes(k))) {
   const linked = SHELF.filter((x) => x.list === list).some((x) => linksFor(x, SHELF).length > 0);
   ok(linked, `${list}: at least one fixture on this shelf has a link`);
 }

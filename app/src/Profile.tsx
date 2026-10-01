@@ -20,14 +20,16 @@ import { ExLibris } from "./ExLibris";
 import { exportHtml, exportJson, exportFilename } from "./export.js";
 import { saveFile } from "./saveFile";
 import { updates } from "./native";
-import * as D from "./design.js";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { scrollKeyboardProps } from "./KeyboardSafe";
 import { Screen } from "./Screen";
 import {
-  BOARD, labelOf, lists, listOn, LIST_ORDER, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
+  BOARD, COVER_KEYLINE, gridFor, isPaper, labelOf, lists, onFor, LIST_ORDER, rowsOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./theme";
+
+// The same 2pt the rail leaves between its blocks.
+const SPREAD_GAP = 2;
 
 export function Profile({ shelf, onClose, onChange, onShare }: {
   shelf: Shelf;
@@ -41,6 +43,9 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
   const [editing, setEditing] = useState(!shelf.profile.name);
   const [draft, setDraft] = useState(shelf.profile);
   const [views, setViews] = useState<Record<string, number>>({});
+  // The spread solves its own column, like the bookcase does (see below).
+  const [spreadW, setSpreadW] = useState(0);
+  const grid = gridFor(spreadW, SPREAD_GAP);
   // Two local facts, no network: can the share sheet see this phone's
   // Keychain, and is anything stuck in it. `sharedKeychainOk` existed from the
   // first day and was rendered nowhere, which is how "sharing silently does
@@ -182,22 +187,35 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
           </View>
         )}
 
-        {/* The four shelves as a spread of colour, standing on a board — the
-            same language as the app itself. 2x2, not 1x4: in a single row the
-            cells are 78pt wide and "RESTAURANTS" truncates. */}
-        {[LIST_ORDER.slice(0, 2), LIST_ORDER.slice(2)].map((row, r) => (
-          <View key={r}>
-            <View style={[s.spread, s.inset]}>
-              {row.map((l) => (
-                <View key={l} style={[s.spreadCell, { backgroundColor: c[l] }]}>
-                  <Text style={[s.spreadNum, { color: listOn[l] }]}>{String(counts[l] ?? 0).padStart(2, "0")}</Text>
-                  <Text style={[s.spreadLabel, { color: listOn[l] }]} numberOfLines={1}>{lists[l].label}</Text>
-                </View>
-              ))}
+        {/* The shelves as a spread of colour, standing on boards — the same
+            language as the app itself.
+
+            THE COLUMN IS SOLVED, with the bookcase's own `gridFor`. It was two
+            hand-cut rows, which was right for four shelves and six and is not
+            for eight: four across is 84pt a cell and "RESTAURANTS" truncates,
+            two across is four rows and pushes the links off the first screen.
+            `cover.minW` is already the narrowest box that holds a twelve-letter
+            word at the 11px floor, so the same number gives three across on a
+            375pt phone and two on a 320pt one. Cells keep one width, so a row
+            that is not full leaves room on its board — which is a shelf. */}
+        <View onLayout={(e) => setSpreadW(e.nativeEvent.layout.width - sp.lg * 2)}>
+          {rowsOf(LIST_ORDER.length, grid.cols).map((row: number[], r: number) => (
+            <View key={r}>
+              <View style={[s.spread, r === 0 ? s.spreadFirst : null, s.inset]}>
+                {row.map((i) => {
+                  const l = LIST_ORDER[i];
+                  return (
+                    <View key={l} style={[s.spreadCell, { width: grid.width, backgroundColor: c[l] }, isPaper(l, c) ? s.spreadPaper : null]}>
+                      <Text style={[s.spreadNum, { color: onFor(l, c) }]}>{String(counts[l] ?? 0).padStart(2, "0")}</Text>
+                      <Text style={[s.spreadLabel, { color: onFor(l, c) }]} numberOfLines={1}>{lists[l].label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={s.board} />
             </View>
-            <View style={s.board} />
-          </View>
-        ))}
+          ))}
+        </View>
 
         <View style={[s.inset, s.linksWrap]}>
           <Text style={s.h2}>Links you have handed out</Text>
@@ -385,14 +403,14 @@ const styles = (c: Palette) => StyleSheet.create({
   body: { ...t.meta, color: c.inkSoft, marginTop: sp.sm },
   h2: { ...t.section, color: c.ink },
   copyLabel: { marginTop: sp.lg },
-  copyHead: {
-    ...t.itemTitle, fontSize: D.type.title.fontSize, lineHeight: D.type.title.lineHeight,
-    letterSpacing: D.type.title.letterSpacing, color: c.ink, marginTop: sp.md,
-  },
+  copyHead: { ...t.title, color: c.ink, marginTop: sp.md },
   copyBody: { ...t.body, color: c.inkSoft, marginTop: sp.md },
 
-  spread: { flexDirection: "row", gap: 2, marginTop: sp.xxl },
-  spreadCell: { flex: 1, paddingVertical: sp.md, paddingHorizontal: sp.sm, minHeight: 72, justifyContent: "flex-end" },
+  spread: { flexDirection: "row", gap: SPREAD_GAP, marginTop: sp.lg },
+  spreadFirst: { marginTop: sp.xxl },
+  spreadCell: { paddingVertical: sp.md, paddingHorizontal: sp.sm, minHeight: 72, justifyContent: "flex-end" },
+  // Paper has no edge of its own. Open at the foot: it stands on the board.
+  spreadPaper: { borderWidth: COVER_KEYLINE, borderBottomWidth: 0, borderColor: c.ink },
   spreadNum: { ...t.itemTitle },
   spreadLabel: { ...t.tag, marginTop: sp.xs },
   // Full bleed, exactly like the bookcase. A board that stops at the inset is

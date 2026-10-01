@@ -37,6 +37,9 @@ const items = [
   item("c1", "recipes", "Dal", { canonical: { total_time: "40 min", recipe_url: "https://food.example/dal" } }),
   item("q1", "quotes", "The trouble with the rat race is that even if you win, you're still a rat.", { canonical: { author: "Lily Tomlin" } }),
   item("p1", "places", "Book Bar", { canonical: { city: "London", located: false } }),
+  item("w1", "wishlist", "Wool overshirt", { canonical: { kind: "product", price: 65, currency: "GBP", price_text: "£65.00",
+    brand: "Northfield", availability: "in_stock", shop_url: "https://shop.example/overshirt" } }),
+  item("n1", "notes", "Brown boots, not black.", { note: "Brown boots, not black.\nAsk Maya about the scarf.", canonical: { kind: "note" } }),
   item("a1", "unsorted", "A long read", { source_url: "https://example.com/long-read",
     canonical: { article: { text: ARTICLE, byline: "A. Writer", siteName: "The Paper" }, ocr_text: "words read off a screenshot" } }),
   { ...item("u1", "unsorted", null, { source_url: "https://www.instagram.com/reel/zzz/" }), status: "unread", error: "could not read it" },
@@ -59,8 +62,8 @@ ok(back.version === EXPORT_VERSION && back.version === 1, "…and its version", 
 ok(back.exported_at === NOW.toISOString(), "exported_at is the time it was GIVEN", back.exported_at);
 ok(back.items.length === items.length, "every item is in the file, filed or not", back.items.length);
 items.forEach((it, i) => ok(JSON.stringify(back.items[i]) === JSON.stringify(it), `${it.id} did not round-trip byte for byte`, back.items[i]));
-ok(back.items[6].canonical?.article?.text === ARTICLE, "the saved article text travels");
-ok(back.items[6].canonical?.ocr_text === "words read off a screenshot", "…and the text read off a screenshot");
+ok(back.items.find((i) => i.id === "a1").canonical?.article?.text === ARTICLE, "the saved article text travels");
+ok(back.items.find((i) => i.id === "a1").canonical?.ocr_text === "words read off a screenshot", "…and the text read off a screenshot");
 ok(back.items[0].note === items[0].note && back.items[0].caption === items[0].caption, "notes and captions travel");
 ok(JSON.stringify(back.profile) === JSON.stringify(shelf.profile), "the profile travels", back.profile);
 ok(json.includes('\n  "items": [\n    {'), "pretty-printed, so a person can read it and a diff can show it");
@@ -127,7 +130,7 @@ ok(exportHtml({ items: [item("s", "unsorted", "Plain", { canonical: { article: "
    "an article held as a bare string is printed too");
 ok(html.includes("<h3>Untitled</h3>") && html.includes("Not read yet"), "an unresolved save is still in the archive, and says what it is");
 ok(html.includes('<h1 class="name">Suren</h1>') && html.includes("Reads on trains"), "whose shelf it is");
-ok(html.includes("8 things · exported 1 Oct 2026"), "how much, and when", html.match(/\d+ things[^<]*/)?.[0]);
+ok(html.includes(`${items.length} things · exported 1 Oct 2026`), "how much, and when", html.match(/\d+ things[^<]*/)?.[0]);
 ok(html.includes('<img src="https://covers.example/piranesi.jpg" alt="Piranesi"'), "a cover carries the title as alt, so the row reads when the image rots");
 ok(!html.includes("k7m2pq9x"), "a link code reached the page");
 
@@ -144,6 +147,14 @@ ok(new RegExp(`prefers-color-scheme: dark\\)\\{ :root\\{ --paper:${D.dark.bg}; -
 ok(html.includes("border-radius:0") && [...html.matchAll(/border-radius:\s*([^;}]+)/g)].every((m) => m[1] === "0"), "a corner is rounded");
 const loose = [...html.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toUpperCase());
 const palette = new Set([...Object.values(D.light), ...Object.values(D.dark), ...Object.values(D.listOn)]);
+// NOTES IS PAPER: the one shelf whose field and label change with the scheme.
+// Painted from the light palette alone, a note in a dark archive is white type
+// on a white band.
+ok(html.includes(`--notes:${D.light.notes}; --on-notes:${D.light.ink};`), "the light archive does not paint Notes as paper with ink on it");
+ok(html.includes(`--notes:${D.dark.notes}; --on-notes:${D.dark.ink};`), "the dark archive does not repaint Notes");
+// What a thing costs and what a note says are in the archive in words.
+ok(/<dt>Price<\/dt><dd>£65\.00<\/dd>/.test(html) && html.includes("https://shop.example/overshirt"), "a thing to buy leaves with its price and its shop", html.match(/<dt>Price[^\n]*/)?.[0]);
+ok(html.includes("Brown boots, not black.\nAsk Maya about the scarf."), "a note leaves with every line of it");
 ok(loose.length > 0 && loose.every((h) => palette.has(h)), "a colour that is not in design.js", loose.filter((h) => !palette.has(h)));
 
 // ── EVERY STRING IS SOMEBODY ELSE'S ─────────────────────────────────────────
@@ -192,7 +203,7 @@ for (const junk of [null, undefined, {}, { items: null }, { items: [null, 7, "x"
   const out = exportHtml(junk, { now: NOW });
   ok(out.includes("Nothing on this shelf yet.") && out.includes("0 things"), `a shelf of ${JSON.stringify(junk)} is still a page`);
 }
-ok(exportHtml(shelf).includes("8 things</p>"), "no clock: the page is written without a date rather than not written");
+ok(exportHtml(shelf).includes(`${items.length} things</p>`), "no clock: the page is written without a date rather than not written");
 ok(exportHtml(shelf, { now: NOW }) === html, "same shelf, same moment, same page");
 
 // ── the filename ────────────────────────────────────────────────────────────

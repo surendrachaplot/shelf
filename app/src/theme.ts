@@ -10,8 +10,8 @@ import * as D from "./design.js";
 export const {
   icon, sp, radius, TOUCH, TOUCH_MIN, TYPE_FLOOR, STROKE,
   springs, duration, easing, staggerDelay, pressScale, elevation,
-  STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, listOn,
-  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, quoteType, excerpt, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS, mix, placeholderOn, PLACEHOLDER_MIN,
+  STAGGER_STEP, STAGGER_MAX_STEPS, LIST_KEYS, onFor, isPaper,
+  BOARD, BAND_BOARD, RULE, HAIRLINE, COVER_KEYLINE, JACKET_GLYPH, cover, coverFor, jacketType, quoteType, noteType, capsType, excerpt, mainTitle, gridFor, rowsOf, QUOTE_GLYPH, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch, MAX_EMPTY_BOARDS, mix, placeholderOn, PLACEHOLDER_MIN,
 } = D;
 
 const sans = Platform.select(D.family.sans);
@@ -25,14 +25,18 @@ export const lists = {
   recipes: { label: "Recipes", one: "recipe", n: "04" },
   quotes: { label: "Quotes", one: "quote", n: "05" },
   places: { label: "Places", one: "place", n: "06" },
+  wishlist: { label: "Wishlist", one: "thing", n: "07" },
+  notes: { label: "Notes", one: "note", n: "08" },
   unsorted: { label: "Not shelved", one: "item", n: "00" },
 } as const;
 
-export const LIST_ORDER = ["books", "restaurants", "movies", "recipes", "quotes", "places"] as const;
+// Every shelf, in shelf order, without the pile. Derived: the names are
+// written out once, in design.js.
+export const LIST_ORDER = LIST_KEYS.filter((k: string) => k !== "unsorted") as Array<Exclude<keyof typeof lists, "unsorted">>;
 
 // Indexed by a string that came off the wire — a share target, a received
 // delivery, a search hit — where the type system cannot know it is one of the
-// five. Falling back to the raw key is right: a list we do not recognise is
+// shelves. Falling back to the raw key is right: a list we do not recognise is
 // still better rendered as its own name than as "undefined".
 const byKey = lists as Record<string, { label: string; one: string; n: string }>;
 export const labelOf = (key: string | null | undefined) => byKey[key ?? ""]?.label ?? String(key ?? "");
@@ -80,6 +84,11 @@ export const t = {
   // Set on a jacket: the series line at the top of a cover, the author at
   // the foot. Tighter tracking than `micro` because it sits inside 96pt.
   tag: { ...asText(D.type.micro), fontWeight: "700" as const, letterSpacing: 0.5, textTransform: "uppercase" as const },
+  // An item page's title when the display step is too loud for it: a saved
+  // article's headline, a sentence that is a heading.
+  title: asText(D.type.title),
+  // What an article is set in. See `read` in design.js.
+  read: asText(D.type.read),
   body: asText(D.type.body),
   bodyMed: asText(D.type.bodyMed),
   meta: asText(D.type.meta),

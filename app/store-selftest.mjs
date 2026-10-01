@@ -310,5 +310,38 @@ fs.put("shelf.prev.json", shelfOf([item("a"), item("b")]));
   ok(weird.items[0].list === "constructor", "a shelf key is only renamed by an OWN key of the table", weird.items[0].list);
 }
 
+// ── 9. two shelves that arrived after their items did ────────────────────────
+// A build with no Wishlist and no Notes shelf could only put a thing to buy
+// and a note in the pile. The build that HAS the shelves must move them, or
+// both shelves open empty over a pile full of what belongs on them.
+fresh();
+fs.put("shelf.json", shelfOf([
+  item("shirt", "unsorted", { canonical: { kind: "product", price: 65, currency: "GBP" } }),
+  item("jot", "unsorted", { note: "Ask Maya", canonical: { kind: "note" } }),
+  item("essay", "unsorted", { canonical: { article: { text: "A long read." } } }),
+  item("picture", "unsorted", { canonical: { kind: "picture" } }),
+  item("novel", "books", { canonical: { kind: "product", price: 9, currency: "GBP" } }),
+  item("weird", "unsorted", { canonical: { kind: "constructor" } }),
+  item("nokind", "unsorted", { canonical: null }),
+], { boards: [board("outfit", { pins: ["shirt", "jot"] })] }));
+{
+  const r = await S.load();
+  const on = (id) => r.shelf.items.find((i) => i.id === id)?.list;
+  ok(r.state === "read" && r.shelf.items.length === 7, "the file still reads, with everything in it", r.state);
+  ok(on("shirt") === "wishlist", "a thing to buy in the pile moves to the Wishlist", on("shirt"));
+  ok(on("jot") === "notes", "a note in the pile moves to Notes", on("jot"));
+  ok(on("essay") === "unsorted" && on("picture") === "unsorted", "an article and a picture stay in the pile: they are neither", [on("essay"), on("picture")]);
+  ok(on("novel") === "books", "a product somebody filed under Books STAYS there — only the pile is emptied", on("novel"));
+  ok(on("weird") === "unsorted" && on("nokind") === "unsorted", "a kind nobody knows, and no canonical at all, move nothing and throw nothing", [on("weird"), on("nokind")]);
+  ok(r.shelf.boards[0].pins.join() === "shirt,jot", "and a list that held them still does: a pin is an id, and ids do not move", r.shelf.boards[0].pins);
+  ok(S.shelfOf(r.shelf, "wishlist").length === 1 && S.shelfOf(r.shelf, "notes").length === 1 && !S.pileOf(r.shelf).some((i) => i.id === "shirt" || i.id === "jot"),
+     "so each is on its shelf and no longer in the pile");
+  // Written back by the next save, and then it is not a migration any more.
+  await S.save(r.shelf);
+  const again = await S.load();
+  ok(again.shelf.items.find((i) => i.id === "shirt")?.list === "wishlist" && S.migrate(again.shelf) === again.shelf,
+     "a second read finds nothing left to move, and hands back the same shelf");
+}
+
 console.log(fail ? `store selftest FAILED (${fail})` : "store selftest ok");
 process.exit(fail ? 1 : 0);

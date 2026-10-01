@@ -12,8 +12,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Item } from "./store";
 import { Press } from "./Press";
 import { Screen } from "./Screen";
-import { listOn, numberOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
-import * as D from "./design.js";
+import { COVER_KEYLINE, isPaper, onFor, numberOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 export type Article = {
   byline?: string | null; siteName?: string | null; text?: string | null;
@@ -42,7 +41,7 @@ export function Reader({ item, onClose, onOpenOriginal }: {
   const a = articleOf(item);
   const list = item.list ?? "unsorted";
   const fill = (c as Record<string, string>)[list] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[list] ?? c.onList;
+  const on = onFor(list, c);
   const paragraphs = (a?.text ?? "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const meta = [a?.byline, a?.readingMinutes ? `${a.readingMinutes} min` : null].filter(Boolean).join(" · ");
   const saved = savedOn(item.created_at);
@@ -51,7 +50,7 @@ export function Reader({ item, onClose, onOpenOriginal }: {
     <Screen style={s.screen}>
       <View style={s.bar}>
         <View style={s.source}>
-          <View style={[s.chip, { backgroundColor: fill }]}>
+          <View style={[s.chip, { backgroundColor: fill }, isPaper(list, c) ? s.chipPaper : null]}>
             <Text style={[s.chipNum, { color: on }]}>{numberOf(list)}</Text>
           </View>
           {a?.siteName ? <Text style={s.site} numberOfLines={1}>{a.siteName}</Text> : null}
@@ -102,6 +101,7 @@ const styles = (c: Palette) => StyleSheet.create({
   },
   source: { flexDirection: "row", alignItems: "center", gap: sp.sm, flex: 1, minWidth: 0 },
   chip: { width: sp.xl + sp.xs, height: sp.xl + sp.xs, alignItems: "center", justifyContent: "center" },
+  chipPaper: { borderWidth: COVER_KEYLINE, borderColor: c.ink },
   chipNum: { ...t.tag },
   site: { ...t.micro, color: c.inkSoft, flex: 1, minWidth: 0 },
   close: { minHeight: TOUCH_MIN, justifyContent: "center" },
@@ -109,13 +109,7 @@ const styles = (c: Palette) => StyleSheet.create({
   rule: { height: RULE, backgroundColor: c.ink },
 
   scroll: { paddingHorizontal: sp.lg, paddingTop: sp.xl, paddingBottom: sp.huge },
-  // design.js's `title` step, applied here: theme.ts has no `t.title`, and
-  // neither file can change over the air (the share extension renders both
-  // from a bundle that only a BUILD replaces — see native-rules.mjs).
-  title: {
-    ...t.itemTitle, fontSize: D.type.title.fontSize, lineHeight: D.type.title.lineHeight,
-    letterSpacing: D.type.title.letterSpacing, color: c.ink,
-  },
+  title: { ...t.title, color: c.ink },
   meta: { ...t.micro, color: c.inkSoft, marginTop: sp.md },
   summary: {
     marginTop: sp.lg, padding: sp.lg, gap: sp.sm,
@@ -123,10 +117,7 @@ const styles = (c: Palette) => StyleSheet.create({
   },
   summaryText: { ...t.body, color: c.ink },
   body: { marginTop: sp.xl, gap: sp.lg },
-  // ponytail: body (15/22) for now. Paper sets reading text at 17/25 — a new
-  // `type.read` step — and a new step means editing design.js, which needs a
-  // build. Add the step and use it here with the next build.
-  para: { ...t.body, color: c.ink },
+  para: { ...t.read, color: c.ink },
 
   foot: {
     paddingHorizontal: sp.lg, paddingTop: sp.md, paddingBottom: sp.lg, gap: sp.md,

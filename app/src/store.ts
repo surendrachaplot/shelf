@@ -355,6 +355,18 @@ export async function rescue(current: Shelf): Promise<{ shelf: Shelf; added: num
  */
 const RENAMED: Record<string, string> = { travel: "places" };
 
+// TWO SHELVES THAT ARRIVED AFTER THEIR ITEMS DID. Things to buy and notes
+// were saved before Wishlist and Notes existed, and the only place a build
+// without those shelves could put them was the pile. They are told apart by
+// what they ARE (`canonical.kind`), which was written at save time, and they
+// move only from the pile: a product somebody filed under Books stays there.
+const HOME_OF: Record<string, string> = { product: "wishlist", note: "notes" };
+const homeOf = (it: Item | null | undefined): string | null => {
+  if (!it || it.list !== "unsorted") return null;
+  const kind = (it.canonical as { kind?: unknown } | null | undefined)?.kind;
+  return typeof kind === "string" && Object.prototype.hasOwnProperty.call(HOME_OF, kind) ? HOME_OF[kind] : null;
+};
+
 // `RENAMED[k]` on a raw string is a lookup through Object.prototype: an item
 // whose list said "constructor" would come back with a FUNCTION as its shelf.
 // Own keys only.
@@ -373,7 +385,7 @@ export function migrate(shelf: Shelf): Shelf {
   };
   let touched = before.items !== shelf.items || before.links !== shelf.links || before.boards !== shelf.boards;
   const items = before.items.map((it) => {
-    const to = renamedTo(it?.list);
+    const to = renamedTo(it?.list) ?? homeOf(it);
     if (!to) return it;
     touched = true;
     return { ...it, list: to };

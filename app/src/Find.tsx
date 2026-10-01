@@ -41,7 +41,7 @@ import { searchShelf, alreadyShelved, type FindHit } from "./find.js";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { KeyboardSafe, scrollKeyboardProps } from "./KeyboardSafe";
-import { labelOf, lists, listOn, numberOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
+import { labelOf, lists, onFor, numberOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 // Same debounce as Add, and for the same reason: every keystroke past it is a
 // question somebody's quota pays for. The LOCAL half of this screen has no
@@ -193,7 +193,7 @@ export function Find({ items, onClose, onOpen, onAdded, onTags, onLists, city }:
             <Press key={list} onPress={() => setOnly(only === list ? null : list)} size={TOUCH_MIN}
                    label={`${labelOf(list)}, ${n}`}
                    style={[s.chip, only === list ? { backgroundColor: c[list] ?? c.unsorted } : null]}>
-              <Text style={[s.chipLabel, only === list ? { color: listOn[list] ?? c.onList } : null]}>
+              <Text style={[s.chipLabel, only === list ? { color: onFor(list, c) } : null]}>
                 {labelOf(list)} {n}
               </Text>
             </Press>
@@ -282,7 +282,7 @@ function MineRow({ hit, onOpen, s, c }: {
 }) {
   const item = hit.item;
   const fill = (c as Record<string, string>)[item.list] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[item.list] ?? c.onList;
+  const on = onFor(item.list, c);
   // §6 — a cover that 404s lands on the same designed block a cover-less item
   // gets. An empty onError satisfies a grep and leaves a hole.
   const [artFailed, setArtFailed] = useState(false);
@@ -321,7 +321,7 @@ function WorldRow({ hit, state, onShelve, s, c }: {
   s: ReturnType<typeof styles>; c: Palette;
 }) {
   const fill = (c as Record<string, string>)[hit.list] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[hit.list] ?? c.onList;
+  const on = onFor(hit.list, c);
   const done = state === "done";
   const [artFailed, setArtFailed] = useState(false);
   const art = hit.image_url && !artFailed ? hit.image_url : null;

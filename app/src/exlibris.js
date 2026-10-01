@@ -16,7 +16,7 @@
 // component invents a colour, and a generator that baked in hexes would be the
 // largest violation of that rule in the codebase.
 
-import { LIST_KEYS } from "./design.js";
+import { LIST_KEYS, onFor } from "./design.js";
 
 export const PLATE = 100; // the viewBox everything below is drawn in
 
@@ -36,6 +36,16 @@ export function seedOf(handle) {
 // draw uses a different slice of the bits, so two handles that share a first
 // letter do not end up sharing a border AND a device AND a ground.
 const pick = (seed, shift, list) => list[(seed >>> shift) % list.length];
+
+// THE GROUNDS A PLATE CAN STAND ON, and why this is not "every shelf".
+//
+// The ground is picked by `seed % length`, so adding a shelf to this list
+// would hand every person who already has a plate a different one — and a
+// mark that changes is not an identity. Wishlist and Notes arrived after
+// plates did, so they are left out: the first six, for good. Notes could not
+// be a ground anyway — it is paper, and a plate on paper has no edge.
+// deliberate subset — a plate's ground never changes once it is drawn.
+export const GROUNDS = LIST_KEYS.slice(0, 6);
 
 export const BORDERS = ["double", "heavy", "brackets", "stepped"];
 export const DEVICES = ["ring", "diamond", "bars", "arc", "cross"];
@@ -58,7 +68,7 @@ export function plateFor(handle) {
     letters,
     // Never "unsorted" — grey is the colour of a thing that has no shelf yet,
     // and a person is not an unresolved item.
-    list: pick(seed, 3, LIST_KEYS.filter((k) => k !== "unsorted")),
+    list: pick(seed, 3, GROUNDS),
     border: pick(seed, 11, BORDERS),
     device: pick(seed, 17, DEVICES),
     // One letter reads as a monogram; two read as initials. Both are plates.
@@ -120,9 +130,9 @@ export function plateShapes(handle) {
 }
 
 /** Resolve the three roles against a palette. Never invents a value. */
-export function plateColours(handle, palette, listOn) {
+export function plateColours(handle, palette) {
   const p = plateFor(handle);
-  return { ground: palette[p.list], mark: listOn[p.list], paper: palette.bg };
+  return { ground: palette[p.list], mark: onFor(p.list, palette), paper: palette.bg };
 }
 
 // An arc as a path, because SVG has no arc primitive and both renderers need

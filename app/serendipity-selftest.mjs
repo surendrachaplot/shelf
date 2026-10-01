@@ -48,7 +48,13 @@ const fresh = item("fresh", "movies", "New Film", at(2026, 9, 28));             
 const pending = { ...item("pending", "unsorted", null, at(2025, 10, 1)), status: "pending" };
 const unread = { ...item("unread", "unsorted", null, at(2025, 10, 1)), status: "unread", canonical: north(50) };
 
-const ALL = [piranesi, sinners, dal, quote, loose, stJohn, bookBar, holiday, shut, peckham, noted, fresh, pending, unread];
+// The two newest shelves. Both too recent to be "forgotten" and neither a year
+// old, so they change no answer below — they are here so the loop under them
+// has every shelf in it.
+const overshirt = item("shirt", "wishlist", "Wool overshirt", at(2026, 9, 29), { canonical: { kind: "product", brand: "Northfield" } });
+const jotting = item("jot", "notes", "Ask Maya about the scarf", at(2026, 9, 29), { note: "Ask Maya about the scarf", canonical: { kind: "note" } });
+
+const ALL = [piranesi, sinners, dal, quote, loose, stJohn, bookBar, holiday, shut, peckham, noted, fresh, pending, unread, overshirt, jotting];
 const ids = (cards) => cards.map((c) => c.item.id);
 const kinds = (cards) => cards.map((c) => c.kind);
 

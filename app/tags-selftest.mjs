@@ -70,16 +70,34 @@ const dal = item({
 const quote = item({
   id: "q", list: "quotes", title: "Attention is the beginning of devotion.", subtitle: "Mary Oliver",
 });
-const SHELF = [piranesi, sinners, ganapati, bookBar, dal, quote];
+// A thing to buy, in the shape api/product.js sends. Its one fact is who makes it.
+const overshirt = item({
+  id: "w", list: "wishlist", title: "Wool overshirt, olive", subtitle: "Northfield",
+  canonical: { kind: "product", price: 65, currency: "GBP", price_text: "£65.00", brand: "Northfield",
+               availability: "in_stock", shop_url: "https://shop.example/overshirt" },
+});
+// A note: words somebody wrote. No catalogue has said anything about it.
+const jotting = item({
+  id: "n", list: "notes", title: "Brown boots, not black.", note: "Brown boots, not black. Ask Maya about the scarf.",
+  canonical: { kind: "note" },
+});
+const SHELF = [piranesi, sinners, ganapati, bookBar, dal, quote, overshirt, jotting];
 
-// ── ALL SIX SHELVES, derived — "a fixture that stops at four shelves cannot
-// show you the fifth". Add a shelf to LIST_KEYS and this fails until it has a
+// ── EVERY SHELF, derived — "a fixture that stops at four shelves cannot show
+// you the fifth". Add a shelf to LIST_KEYS and this fails until it has a
 // fixture here.
+//
+// Notes is the one shelf whose right answer is NO tags: a tag is a fact a
+// catalogue stated, and a note has none. That is asserted, not skipped.
 for (const list of LIST_KEYS.filter((k) => k !== "unsorted")) {
   const it = SHELF.find((x) => x.list === list);
   ok(!!it, `${list}: there is a fixture for this shelf`);
-  ok(it && tagsFor(it).length > 0, `${list}: a filed item with real facts has tags`, it && tagsFor(it));
+  if (list === "notes") ok(it && tagsFor(it).length === 0, "notes: a note has no tags — nothing in it is a catalogue's fact", it && tagsFor(it));
+  else ok(it && tagsFor(it).length > 0, `${list}: a filed item with real facts has tags`, it && tagsFor(it));
 }
+ok(tagsFor(overshirt).map((t) => t.key).join() === "brand:northfield", "a thing to buy is tagged by who makes it, and by nothing else", tagsFor(overshirt));
+ok(!tagsFor(item({ id: "x", list: "books", title: "x", canonical: { brand: "Penguin" } })).some((t) => t.kind === "brand"),
+   "a `brand` on something that is not a product is not a tag — only kind:product vouches for it");
 
 // ── the key ─────────────────────────────────────────────────────────────────
 ok(tagKey("author", "Susanna Clarke") === "author:susanna clarke", "a key is kind:folded value", tagKey("author", "Susanna Clarke"));

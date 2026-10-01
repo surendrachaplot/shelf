@@ -1,11 +1,17 @@
 // ShareBoards.tsx — the picker, on both platforms.
 //
-// One board per shelf, edge to edge, filling the sheet. No gaps, no radius, no
-// shadows: a shelf unit is continuous, and the thing that makes a coloured
-// field read as a SHELF rather than a rectangle is the board — a hard edge
-// with visible thickness that things rest on. Every band has one.
+// One tile per shelf, two across, edge to edge, filling the sheet. No gaps, no
+// radius, no shadows: a shelf unit is continuous, and the thing that makes a
+// coloured field read as a SHELF rather than a rectangle is the board — a hard
+// edge with visible thickness that things rest on. Every tile has one.
 //
-// Type is the icon. At 31pt tight caps you hit the right band without reading
+// IT WAS ONE BAND PER SHELF, full width, and six of those filled a 420pt sheet
+// exactly. Eight do not: each band came out 35pt tall, under the 44pt floor,
+// and the last one fell off the foot of the sheet. Two columns of four keep
+// every tile at 76pt in the sheet and still fill an Android screen.
+//
+// Type is the icon. Tight caps, solved from the longest shelf name so all
+// eight are one size (`capsType`), and you hit the right tile without reading
 // it, which is the entire job: this is on screen for about a second, one
 // handed, over whatever you were doing.
 //
@@ -19,11 +25,11 @@
 // It writes to the queue and nothing else. NO NETWORK. A failed write is the
 // one thing this screen must never report as a save.
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { queueShare, queueImage, type ListName, LISTS } from "./api";
 import { Press } from "./Press";
 import {
-  BAND_BOARD, lists, listOn, sp, t, TOUCH_MIN, useTheme, type Palette,
+  BAND_BOARD, capsType, COVER_KEYLINE, isPaper, lists, onFor, rowsOf, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./theme";
 
 export type ShareBoardsProps = {
@@ -50,10 +56,25 @@ function darken(hex: string, amount = 0.34) {
   return "#" + v.map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
+// The board under a tile. Paper driven dark is grey in one scheme and
+// invisible in the other, so a paper shelf stands on ink, like a jacket does.
+const boardOf = (list: ListName, c: Palette) => (isPaper(list, c) ? c.ink : darken(c[list] ?? c.accent));
+
+// Two across. Four rows of eight shelves is the most a 420pt sheet holds with
+// every tile clear of the 44pt floor.
+const COLS = 2;
+
 export function ShareBoards({ url, text, images, onDone, hosted }: ShareBoardsProps) {
   const { c } = useTheme();
   const s = useMemo(() => styles(c), [c]);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  // The sheet is as wide as the window on both hosts, so the tile width is
+  // known before the first frame: no measuring pass, no reflow on open.
+  const tileW = useWindowDimensions().width / COLS;
+  const label = useMemo(
+    () => capsType(LISTS.map((l) => lists[l].label), tileW - sp.lg * 2, t.band.fontSize),
+    [tileW]
+  );
 
   const sharedUrl = url ?? text?.match(/https?:\/\/\S+/)?.[0] ?? null;
   // THE SCREENSHOT PATH, and it is no longer "reserved". This variable was
@@ -116,15 +137,15 @@ export function ShareBoards({ url, text, images, onDone, hosted }: ShareBoardsPr
   // arm's length.
   if (phase.kind === "done") {
     const fill = c[phase.list] ?? c.accent;
-    const label = listOn[phase.list] ?? c.onList;
+    const on = onFor(phase.list, c);
     return (
       <View style={[s.wrap, { backgroundColor: fill }]}>
         <View style={s.doneInner}>
-          <Text style={[s.doneKicker, { color: label }]}>Saved</Text>
-          <Text style={[s.doneLabel, { color: label }]}>{lists[phase.list].label}</Text>
-          <Text style={[s.doneNote, { color: label }]}>{hosted ? "reading it now" : "shelf reads it next time you open the app"}</Text>
+          <Text style={[s.doneKicker, { color: on }]}>Saved</Text>
+          <Text style={[s.doneLabel, { color: on }]}>{lists[phase.list].label}</Text>
+          <Text style={[s.doneNote, { color: on }]}>{hosted ? "reading it now" : "shelf reads it next time you open the app"}</Text>
         </View>
-        <View style={[s.board, { backgroundColor: darken(fill) }]} />
+        <View style={[s.board, { backgroundColor: boardOf(phase.list, c) }]} />
       </View>
     );
   }
@@ -136,33 +157,43 @@ export function ShareBoards({ url, text, images, onDone, hosted }: ShareBoardsPr
         <Text style={s.source} numberOfLines={1}>{source}</Text>
       </View>
 
-      {LISTS.map((list) => {
-        const fill = c[list] ?? c.accent;
-        const label = listOn[list] ?? c.onList;
-        const busy = phase.kind === "saving" && phase.list === list;
-        return (
-          <Press
-            key={list}
-            onPress={() => save(list)}
-            disabled={phase.kind === "saving"}
-            containerStyle={s.bandOuter}
-            style={s.bandOuter}
-            size={340}
-            label={`Put it on ${lists[list].label}`}
-          >
-            <View style={[s.band, { backgroundColor: fill }]}>
-              <Text style={[s.bandNum, { color: label }]}>{lists[list].n}</Text>
-              <Text style={[s.bandLabel, { color: label }]} numberOfLines={1}>{lists[list].label}</Text>
-              {busy
-                ? <ActivityIndicator color={label} />
-                : <Text style={[s.bandNum, { color: label }]}>→</Text>}
-            </View>
-            {/* The board. Six points of visible thickness is the difference
-                between a shelf and a rectangle. */}
-            <View style={[s.board, { backgroundColor: darken(fill) }]} />
-          </Press>
-        );
-      })}
+      {rowsOf(LISTS.length, COLS).map((row: number[], r: number) => (
+        <View key={r} style={s.row}>
+          {row.map((i) => {
+            const list = LISTS[i];
+            const fill = c[list] ?? c.accent;
+            const on = onFor(list, c);
+            const busy = phase.kind === "saving" && phase.list === list;
+            return (
+              <Press
+                key={list}
+                onPress={() => save(list)}
+                disabled={phase.kind === "saving"}
+                containerStyle={s.tileOuter}
+                style={s.tileOuter}
+                size={tileW}
+                hitSlop={0}
+                label={`Put it on ${lists[list].label}`}
+              >
+                {/* Number at the head, name on the foot: the same two places a
+                    jacket puts its series strip and its title. Paper gets an
+                    ink keyline, because a white tile on a white sheet is a
+                    hole in the grid. */}
+                <View style={[s.tile, { backgroundColor: fill }, isPaper(list, c) ? s.tilePaper : null]}>
+                  <View style={s.tileHead}>
+                    <Text style={[s.tileNum, { color: on }]}>{lists[list].n}</Text>
+                    {busy ? <ActivityIndicator color={on} /> : <Text style={[s.tileNum, { color: on }]}>→</Text>}
+                  </View>
+                  <Text style={[s.tileLabel, label, { color: on }]} numberOfLines={1}>{lists[list].label}</Text>
+                </View>
+                {/* The board. Six points of visible thickness is the difference
+                    between a shelf and a rectangle. */}
+                <View style={[s.board, { backgroundColor: boardOf(list, c) }]} />
+              </Press>
+            );
+          })}
+        </View>
+      ))}
 
       <Press
         onPress={() => save("unsorted")}
@@ -187,12 +218,21 @@ const styles = (c: Palette) => StyleSheet.create({
   kicker: { ...t.micro, color: c.ink, flex: 1 },
   source: { ...t.meta, color: c.inkFaint },
 
-  // Each band takes an equal share of whatever height the sheet has, so the
+  // Each row takes an equal share of whatever height the sheet has, so the
   // unit always fills it — no dead space under the last shelf.
-  bandOuter: { flex: 1 },
-  band: { flex: 1, flexDirection: "row", alignItems: "center", gap: sp.md, paddingHorizontal: sp.lg, minHeight: TOUCH_MIN },
-  bandNum: { ...t.micro, opacity: 0.55 },
-  bandLabel: { ...t.band, flex: 1 },
+  row: { flex: 1, flexDirection: "row" },
+  tileOuter: { flex: 1 },
+  tile: { flex: 1, justifyContent: "space-between", paddingHorizontal: sp.lg, paddingVertical: sp.sm, minHeight: TOUCH_MIN },
+  // The keyline is INSIDE the tile's padding, not added to it, so "08" and
+  // "NOTES" start on the same x as every other tile's number and name.
+  tilePaper: {
+    borderWidth: COVER_KEYLINE, borderBottomWidth: 0, borderColor: c.ink,
+    paddingHorizontal: sp.lg - COVER_KEYLINE, paddingTop: sp.sm - COVER_KEYLINE,
+  },
+  tileHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  tileNum: { ...t.micro },
+  // The size comes from capsType at render; this is the rest of the band step.
+  tileLabel: { fontFamily: t.band.fontFamily, fontWeight: "700", textTransform: "uppercase" },
   board: { height: BAND_BOARD },
 
   foot: { flexDirection: "row", alignItems: "center", paddingHorizontal: sp.lg, minHeight: TOUCH + 0 },

@@ -18,13 +18,14 @@ import { tagIndex, itemsWithTag, type TagKind, type TagRow } from "./tags.js";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { Screen } from "./Screen";
-import { labelOf, listOn, numberOf, numeric, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
+import { labelOf, onFor, numberOf, numeric, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 // What a person would look under, in the order they would look. `year` is
 // deliberately absent: forty single years is a wall of chips, and the decade
 // says the same thing. A year still links two items on the item page.
 const GROUPS: { label: string; kinds: TagKind[] }[] = [
   { label: "People", kinds: ["author", "director", "cast"] },
+  { label: "Brands", kinds: ["brand"] },
   { label: "Where", kinds: ["area", "city"] },
   { label: "Kind", kinds: ["cuisine", "genre", "site"] },
   { label: "When", kinds: ["decade"] },
@@ -80,7 +81,7 @@ export function Tags({ items, start = null, onClose, onOpen }: {
             </Text>
             {tagged.map((item, i) => {
               const fill = (c as Record<string, string>)[item.list] ?? c.unsorted;
-              const on = (listOn as Record<string, string>)[item.list] ?? c.onList;
+              const on = onFor(item.list, c);
               return (
                 <Reveal key={item.id} index={i}>
                   <Press onPress={() => onOpen(item)} style={s.row} size={TOUCH_MIN + 20}

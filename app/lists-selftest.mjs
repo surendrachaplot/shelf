@@ -15,7 +15,7 @@
 import {
   NAME_MAX, VIEWS, makeList, renameList, removeList, setView, setQuery,
   pin, unpin, togglePin, movePin, itemsOf, prune, listsWith,
-  priceOf, priceText, totalOf, shelfTotal,
+  priceOf, priceText, priceOn, totalOf, shelfTotal,
 } from "./src/lists.js";
 import { searchShelf } from "./src/find.js";
 import { LIST_KEYS } from "./src/design.js";
@@ -52,15 +52,16 @@ const essay = item({ id: "e", list: "unsorted", title: "A week by the Tagus", su
 // A link nobody has read yet. No title, no facts — and it can still be pinned.
 const pending = item({ id: "z", list: "unsorted", status: "pending" });
 // Things to buy, in the shape api/product.js sends: a number, an ISO code, and
-// the shop's own label beside them. No such shelf is in LIST_KEYS today (on
-// this build a product lands in the pile); the day one is added, the loop
-// below already has its fixture.
+// the shop's own label beside them. They stand on the Wishlist shelf.
 const product = (id, title, price, currency, price_text) => item({ id, list: "wishlist", title,
   canonical: { kind: "product", price, currency, price_text, brand: "Maker", availability: "in_stock", shop_url: `https://shop.example/${id}` } });
 const lamp = product("w1", "Anglepoise lamp", 120, "GBP", "£120.00");
 const chair = product("w2", "Bentwood chair", 349.5, "EUR", "€349.50");
 const knife = product("w3", "Petty knife", 12000, "JPY", "¥12,000");
-const SHELF = [piranesi, sinners, ganapati, belem, market, dal, quote, essay, pending, lamp, chair, knife];
+// A note: an item whose words are the whole of it.
+const jotting = item({ id: "n", list: "notes", title: "Brown boots, not black.", note: "Brown boots, not black. Ask Maya about the scarf.",
+  canonical: { kind: "note" } });
+const SHELF = [piranesi, sinners, ganapati, belem, market, dal, quote, essay, pending, lamp, chair, knife, jotting];
 
 const list = (id, extra = {}) => ({ id, name: id, pins: [], query: null, view: "pictures", created_at: T, ...extra });
 
@@ -345,6 +346,24 @@ ok(priceText(12, "GBP", { NumberFormat: null }) === "GBP 12", "no Intl: and stil
   try { none = totalOf(null, SHELF, GB); } catch (_) {}
   ok(!!none && none.priced === 0 && none.unpriced === 0, "no list → nothing to total, no crash", none);
 }
+
+// ── ONE FORMATTER: a jacket, a row, an item page and the total ───────────────
+// The server's text says "£120.00" and the total says "£120"; side by side
+// that reads as two apps. So the number is formatted HERE, by the same
+// function the total uses, and the server's text is only a fallback.
+{
+  const GB = { locale: "en-GB" };
+  ok(priceOn(lamp, GB) === "£120" && priceOn(lamp, GB) === shelfTotal([lamp], GB).byCurrency[0].text,
+     "what one thing costs is written the way a total of one thing is", priceOn(lamp, GB));
+  ok(priceOn(chair, GB) === "€349.50", "pence are kept when there are pence", priceOn(chair, GB));
+  ok(priceOn(item({ id: "r", list: "wishlist", canonical: { kind: "product", price: 20, currency: "USD", price_text: "$20 to $35" } }), GB) === "$20 to $35",
+     "a range is something a single number cannot say, so the shop's own words are kept");
+  ok(priceOn(item({ id: "t", list: "wishlist", canonical: { kind: "product", price: null, currency: null, price_text: "From £9" } }), GB) === "From £9",
+     "with no number to format, the shop's text is still better than nothing");
+  ok(priceOn(jotting) === null && priceOn(piranesiNoPrice()) === null && priceOn(null) === null && priceOn({ canonical: { price_text: 7 } }) === null,
+     "no price is null — never '', never 'undefined', never a number");
+}
+function piranesiNoPrice() { return item({ id: "x", list: "books", title: "x", canonical: {} }); }
 
 console.log(fail ? `lists selftest FAILED (${fail})` : "lists selftest ok");
 process.exit(fail ? 1 : 0);

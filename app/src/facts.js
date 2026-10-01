@@ -62,7 +62,7 @@ export function mapUrl(item, platform) {
 
 // Said the way a person would say it. "preorder" is not a state anybody
 // recognises on a label; "Not out yet" is.
-const STOCK = { in_stock: "In stock", out_of_stock: "Sold out", preorder: "Not out yet" };
+export const STOCK = { in_stock: "In stock", out_of_stock: "Sold out", preorder: "Not out yet" };
 
 /**
  * @returns {{lede: string|null, rows: Array<{label:string,value:string}>, links: Array<{label:string,url:string}>}}
@@ -84,8 +84,11 @@ export function factsFor(item, opts) {
   //
   // `price_text` is the server's formatting of a number it parsed with
   // certainty (api/product.js). No price → no row, never "Price: unknown".
+  //
+  // `price: false` leaves the row out, for a screen that has already drawn the
+  // price somewhere larger (the item page's price block). Said once.
   if (c.kind === "product") {
-    row("Price", c.price_text);
+    if (!opts || opts.price !== false) row("Price", c.price_text);
     row("Brand", c.brand);
     row("Stock", STOCK[c.availability]);
     row("Sold by", c.seller && c.seller !== c.brand ? c.seller : null);

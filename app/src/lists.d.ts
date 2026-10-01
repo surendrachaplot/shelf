@@ -58,5 +58,7 @@ export function listsWith(lists: Board[] | null | undefined, itemId: string): Bo
 
 export function priceOf(item: Partial<Item> | null | undefined): { amount: number; currency: string } | null;
 export function priceText(amount: number, currency: string, opts?: MoneyOpts): string;
+/** What one item costs as it is SHOWN — the one formatter every screen uses. */
+export function priceOn(item: Partial<Item> | null | undefined, opts?: MoneyOpts): string | null;
 export function totalOf(list: Board | null | undefined, items: Item[] | null | undefined, opts?: MoneyOpts): Total;
 export function shelfTotal(items: Partial<Item>[] | null | undefined, opts?: MoneyOpts): Total;

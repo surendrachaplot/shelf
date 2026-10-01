@@ -6,7 +6,7 @@
 // header has claimed "a node selftest checks it" since the day it was written,
 // and until the map buttons turned out to be broken on iOS, that was a claim
 // with nothing behind it.
-import { factsFor, hasFacts, mapUrl } from "./src/facts.js";
+import { factsFor, hasFacts, mapUrl, STOCK } from "./src/facts.js";
 
 let fail = 0;
 const ok = (c, label, got) => { if (!c) { fail++; console.error("FAIL", label, got === undefined ? "" : `\n      got: ${JSON.stringify(got)}`); } };
@@ -66,6 +66,16 @@ for (const list of ["wishlist", "unsorted"]) {
   const p = factsFor(shirt(list));
   ok(p.rows[0]?.label === "Price" && p.rows[0]?.value === "£65", `${list}: the price is the first row`, p.rows);
   ok(p.links.some((x) => x.label === "Open the shop" && x.url === "https://shop.example/overshirt"), `${list}: and the shop opens`, p.links);
+}
+// THE ITEM PAGE SAYS THE PRICE ONCE. It draws it large, above the table, and
+// asks for the table without it — the rest of the rows must be untouched.
+{
+  const p = factsFor(shirt("wishlist", { seller: "Liberty" }), { price: false });
+  ok(!p.rows.some((x) => x.label === "Price"), "price:false leaves the Price row out", p.rows);
+  ok(p.rows.map((x) => x.label).join() === "Brand,Stock,Sold by" && p.links.some((x) => x.label === "Open the shop"),
+     "and keeps the brand, the stock, the seller and the shop", p.rows.map((x) => x.label));
+  ok(factsFor(shirt("wishlist"), { platform: "ios" }).rows[0]?.label === "Price", "any other option leaves the price where it was");
+  ok(STOCK.in_stock === "In stock" && STOCK.out_of_stock === "Sold out", "the item page reads stock from the same table the row does", STOCK);
 }
 ok(!factsFor(shirt("wishlist", { price: null, price_text: null })).rows.some((x) => x.label === "Price"),
    "no price → no Price row, never a guess or a dash");

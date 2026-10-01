@@ -50,15 +50,16 @@ import { Reveal } from "./src/Reveal";
 import { scrollKeyboardProps } from "./src/KeyboardSafe";
 import { Screen } from "./src/Screen";
 import {
-  BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, quoteType, excerpt, lists, listOn, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
+  BOARD, COVER_KEYLINE, coverFor, placeholderOn, jacketType, quoteType, noteType, excerpt, lists, onFor, isPaper, numeric, mainTitle, gridFor, rowsOf, emptyBoards, emptyPitch, EMPTY_BOARD_H, rowPitch,
   RULE, sp, t, TOUCH_MIN, useTheme, type Palette,
 } from "./src/theme";
 import * as D from "./src/design.js";
-import { factsFor, mapUrl } from "./src/facts.js";
+import { factsFor, mapUrl, STOCK } from "./src/facts.js";
 import { Reader, articleOf } from "./src/Reader";
 import { Tags } from "./src/TagIndex";
 import { Lists } from "./src/ListsScreen";
-import { listsWith } from "./src/lists.js";
+import { listsWith, priceOn, shelfTotal } from "./src/lists.js";
+import { NoteWriter } from "./src/NoteWriter";
 import { rebasePicture } from "./src/pictures";
 import * as FileSystem from "expo-file-system";
 import { tagKey } from "./src/tags.js";
@@ -76,7 +77,7 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "find" | "profile" | "import" | "tags" | "lists";
+type Route = "case" | "add" | "find" | "profile" | "import" | "tags" | "lists" | "write";
 
 /**
  * Which items keep the caption they came from.
@@ -92,6 +93,7 @@ type Route = "case" | "add" | "find" | "profile" | "import" | "tags" | "lists";
 const KEEPS_CAPTION = new Set(["places", "quotes"]);
 const keepCaption = (it: { list?: string; caption?: string }) =>
   KEEPS_CAPTION.has(it.list ?? "") ? (it.caption || "").slice(0, 4000) : undefined;
+const isNote = (it: Pick<Item, "canonical">) => (it.canonical as { kind?: string } | null)?.kind === "note";
 type Sharing = { kind: "item" | "shelf" | "profile"; item?: Item; list?: string; title: string };
 
 export default function App() {
@@ -509,7 +511,13 @@ export default function App() {
     const fields: Partial<Item> = {};
     if (body.action === "file") fields.status = "filed";
     if (typeof body.list === "string") { fields.list = body.list; fields.status = "filed"; }
-    if (typeof body.note === "string") fields.note = body.note;
+    if (typeof body.note === "string") {
+      fields.note = body.note;
+      // A note's title IS its first line (NoteWriter.tsx). Edit the words and
+      // the name on the shelf has to follow, or the jacket and the row go on
+      // showing a sentence that is no longer in the note.
+      if (isNote(item) && body.note.trim()) fields.title = body.note.trim().split("\n")[0].trim().slice(0, 80);
+    }
     if (typeof body.title === "string") fields.title = body.title;
     if (typeof body.top === "boolean") fields.top = body.top;
     await commit(patch(shelf, item.id, fields));
@@ -523,7 +531,10 @@ export default function App() {
   const total = Object.values(shelves).reduce((n, xs) => n + (xs?.length ?? 0), 0);
   const showing = tab === "unsorted" ? inbox : (shelves[tab] ?? []);
   const fill = c[tab] ?? c.unsorted;
-  const on = listOn[tab] ?? c.onList;
+  const on = onFor(tab, c);
+  // What the Wishlist shelf comes to. One line per currency, never added
+  // together (lists.js), and nothing at all when nothing has a price.
+  const money = tab === "wishlist" ? shelfTotal(showing).byCurrency : [];
 
   return (
     // The case is inset; the overlays below are NOT children of it. An
@@ -575,31 +586,45 @@ export default function App() {
         </View>
       </View>
 
-      {/* The rail. Five flat blocks of colour carrying nothing but their series
-          number — at 75pt wide "RESTAURANTS" does not fit, and a truncated
-          label is worse than none when the band below already names it. The
-          selected block bridges the 4pt gap into the band, so tab and panel
-          read as one continuous field rather than as a chip above a header. */}
+      {/* The rail. One flat block per shelf, carrying nothing but its series
+          number — at 30pt wide no name fits, and a truncated label is worse
+          than none when the band below already names it. The selected block
+          bridges the 4pt gap into the band, so tab and panel read as one
+          continuous field rather than as a chip above a header.
+
+          Notes is paper, so its block is an ink outline around the page
+          rather than a fill: the one shelf told apart by its edge. */}
       <View style={[s.rail, s.inset]}>
         {TABS.map((k) => (
           <Press
             key={k}
             onPress={() => setTab(k)}
-            style={[s.railTab, { backgroundColor: c[k] ?? c.unsorted }, k === tab ? s.railTabOn : null]}
+            style={[
+              s.railTab, { backgroundColor: c[k] ?? c.unsorted },
+              isPaper(k, c) ? s.railPaper : null,
+              k === tab ? s.railTabOn : null,
+              k === tab && isPaper(k, c) ? s.railPaperOn : null,
+            ]}
             containerStyle={s.railSlot}
             size={TOUCH_MIN}
             label={`${lists[k].label}, ${(k === "unsorted" ? inbox : shelves[k] ?? []).length} items`}
           >
-            <Text style={[s.railNum, { color: listOn[k] ?? c.onList }]}>{lists[k].n}</Text>
+            <Text style={[s.railNum, { color: onFor(k, c) }]}>{lists[k].n}</Text>
           </Press>
         ))}
       </View>
 
-      <View style={[s.band, { backgroundColor: fill }]}>
+      <View style={[s.band, { backgroundColor: fill }, isPaper(tab, c) ? s.bandPaper : null]}>
         <Text style={[s.bandLabel, { color: on }]} numberOfLines={1}>{lists[tab].label}</Text>
         {/* The pile is not a shelf you can hand to anyone — it is the things
-            you have not decided about yet. */}
-        {tab !== "unsorted" ? (
+            you have not decided about yet. And Notes are what you wrote to
+            yourself: the control on that band writes one, and a single note is
+            shared from its own page, on purpose, one at a time. */}
+        {tab === "notes" ? (
+          <Press onPress={() => setScreen("write")} style={[s.bandWrite, { backgroundColor: on }]} size={TOUCH_MIN} label="Write a note">
+            <Text style={[s.bandCount, { color: fill }]}>Write →</Text>
+          </Press>
+        ) : tab !== "unsorted" ? (
           <Press
             onPress={() => setSharing({ kind: "shelf", list: tab, title: `Your ${lists[tab].label.toLowerCase()} shelf` })}
             style={s.bandShare} size={TOUCH_MIN} label={`Share the ${lists[tab].label} shelf`}
@@ -607,7 +632,19 @@ export default function App() {
             <Text style={[s.bandCount, { color: on }]}>Share</Text>
           </Press>
         ) : null}
-        <Text style={[s.bandCount, { color: on }]}>{String(showing.length).padStart(2, "0")}</Text>
+        {/* The total and the count stay together: on a narrow phone they
+            wrap to a second line as one, rather than the count being left
+            behind on the first. */}
+        <View style={s.bandMeta}>
+          {money.length ? (
+            <View style={s.bandTotals}>
+              {money.map((m) => (
+                <Text key={m.currency} style={[s.bandCount, numeric, { color: on }]}>{m.text} in all</Text>
+              ))}
+            </View>
+          ) : null}
+          <Text style={[s.bandCount, numeric, { color: on }]}>{String(showing.length).padStart(2, "0")}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -654,7 +691,7 @@ export default function App() {
         {again && tab !== "unsorted" && health.state !== "unreadable" ? (
           <View style={[s.again, s.insetMargin]}>
             <View style={[s.againBlock, { backgroundColor: (c as Record<string, string>)[again.item.list] ?? c.unsorted }]}>
-              <Text style={[s.againNum, { color: (listOn as Record<string, string>)[again.item.list] ?? c.onList }]}>
+              <Text style={[s.againNum, { color: onFor(again.item.list, c) }]}>
                 {(lists as Record<string, { n: string }>)[again.item.list]?.n ?? "00"}
               </Text>
             </View>
@@ -829,6 +866,18 @@ export default function App() {
           />
         </View>
       ) : null}
+      {screen === "write" && shelf ? (
+        <View style={s.over}>
+          <NoteWriter
+            onClose={() => setScreen("case")}
+            onSave={async (it) => {
+              await commit(upsert(shelf, it));
+              setTab("notes");
+              setScreen("case");
+            }}
+          />
+        </View>
+      ) : null}
       {screen === "import" && shelf ? (
         <View style={s.over}>
           <Import onClose={() => setScreen("case")} onImport={importScreenshots} />
@@ -947,11 +996,20 @@ function Cover({ item, width, list, onOpen, s, c }: {
   const art = item.image_url && !failed ? item.image_url : null;
 
   const fill = c[list] ?? c.unsorted;
-  const on = listOn[list] ?? c.onList;
+  const on = onFor(list, c);
+  // TWO SHELVES WHOSE JACKETS ARE NOT THE THREE COMPOSITIONS.
+  //
+  // Notes is paper: the jacket is the page, and what is on it is what was
+  // written. Wishlist keeps its cover and stands a price tag on the foot — so
+  // it takes one composition (the name at the top), because the foot is taken.
+  const paper = isPaper(list, c);
+  const wish = list === "wishlist";
+  const price = wish ? priceOn(item) : null;
+  const page = paper ? noteType(item.note || item.title || "", width, dims.height) : null;
   // Composition 2 inverts the jacket. Same two colours, opposite roles — so the
   // contrast is the pairing `list-label-contrast` already proves (≥4.95:1 in
   // both schemes), and a shelf of five blue books still has a white one on it.
-  const inverted = dims.comp === 2;
+  const inverted = dims.comp === 2 && !wish && !paper;
   const field = inverted ? on : fill;
   const mark = inverted ? fill : on;
   // A QUOTE'S JACKET IS THE QUOTE. Not a label for it, not who said it — the
@@ -991,15 +1049,25 @@ function Cover({ item, width, list, onOpen, s, c }: {
       // is not a defect — that is the book standing on the shelf.
       style={[s.cover, { width, height: dims.height, backgroundColor: field, borderColor: c.ink }]}
     >
-      {art ? (
+      {page ? (
+        <View style={s.coverBody}>
+          <Text style={[page.loud ? s.coverNoteLoud : s.coverNote, { color: on }]} numberOfLines={page.lines}>
+            {page.text || "Empty note"}
+          </Text>
+        </View>
+      ) : art ? (
         <Image
           source={{ uri: art }}
-          style={s.coverArt}
+          style={wish ? s.coverArtAbove : s.coverArt}
           resizeMode="cover"
           // §6 — a 404 must land somewhere designed. It lands on the typographic
           // jacket below, which is the same fallback as having no artwork at all.
           onError={() => setFailed(true)}
         />
+      ) : wish ? (
+        <View style={s.coverBody}>
+          <Text style={[s.coverTitle, jacket, { color: mark }]} numberOfLines={4}>{title}</Text>
+        </View>
       ) : (
         <>
           {dims.comp !== 0 ? (
@@ -1036,6 +1104,15 @@ function Cover({ item, width, list, onOpen, s, c }: {
           ) : null}
         </>
       )}
+      {/* THE PRICE TAG. On paper, not on the picture: a number over a
+          photograph is a contrast ratio nobody computed. A thing with no
+          price says so — "no price" and "free" must not look alike, and a
+          tag that is simply missing reads as a jacket that failed to load. */}
+      {wish ? (
+        <View style={s.priceTag}>
+          <Text style={price ? s.priceTagText : s.priceTagNone} numberOfLines={1}>{price ?? "No price"}</Text>
+        </View>
+      ) : null}
     </Press>
   );
 }
@@ -1051,8 +1128,14 @@ function Empty({ title, body, s }: { title: string; body: string; s: ReturnType<
 }
 
 function EmptyShelf({ list, width, s, c }: { list: ListName; width: number; s: ReturnType<typeof styles>; c: Palette }) {
-  const fill = c[list] ?? c.unsorted;
+  // Paper has no colour to outline with, so its ghost is drawn in ink.
+  const fill = isPaper(list, c) ? c.ink : c[list] ?? c.unsorted;
   const dims = coverFor(list);
+  // What happens next differs by shelf: a note is written, not shared, and a
+  // thing to buy comes from a shop page rather than a reel.
+  const body = list === "notes" ? "Tap Write to keep a note here."
+    : list === "wishlist" ? "Share a shop page and pick Wishlist. The thing lands here with its price."
+    : `Share a reel and pick ${lists[list].label} — the ${lists[list].one} lands here with a cover.`;
   return (
     <View style={s.emptyShelf}>
       {/* An outline of the thing that is missing, at the exact trim a real one
@@ -1060,7 +1143,7 @@ function EmptyShelf({ list, width, s, c }: { list: ListName; width: number; s: R
       <View style={[s.ghost, { width, height: dims.height, borderColor: fill }]} />
       <Empty
         title="Nothing on this shelf"
-        body={`Share a reel and pick ${lists[list].label} — the ${lists[list].one} lands here with a cover.`}
+        body={body}
         s={s}
       />
     </View>
@@ -1202,12 +1285,13 @@ function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, 
   // Every word on this panel is `on` over the list colour — the one pairing
   // `list-label-contrast` proves in both schemes. No opacities: a label at 86%
   // is a contrast ratio nobody computed.
-  const on = listOn[list] ?? c.onList;
+  const on = onFor(list, c);
   const ghost = placeholderOn(list, dark ? D.dark : D.light);
   // CONNECTIONS NOBODY HAD TO MAKE. Same author, same director, same
   // neighbourhood — free, because the entities are resolved (links.js).
   const links = useMemo(() => linksFor(item, items), [item, items]);
   const hasArticle = articleOf(item) !== null;
+  const shown = isNote(item) ? note.split("\n").slice(1).join("\n").trim() : note;
   const onLists = useMemo(() => listsWith(boards ?? [], item.id), [boards, item.id]);
   return (
     <Screen style={[s.detail, { backgroundColor: fill }] as never}>
@@ -1236,6 +1320,8 @@ function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, 
             onError={() => setFailed(true)}
           />
         ) : null}
+
+        <PriceBlock item={item} on={on} s={s} />
 
         {/* What the catalogue knows. ABOVE your note and below the artwork:
             the facts are why you can decide something about this thing, and
@@ -1291,8 +1377,10 @@ function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, 
             </>
           ) : (
             <Press onPress={() => setEditingNote(true)} containerStyle={s.detailNoteTap} size={TOUCH_MIN} label={note ? "Edit your note" : "Add a note"}>
-              <Text style={[s.detailNote, { color: note ? on : ghost }]}>
-                {note || "Add a note — what you thought, why you saved it"}
+              {/* A note's first line is already the title above, so the field
+                  shows what comes after it. Tapping still opens the whole text. */}
+              <Text style={[s.detailNote, { color: shown ? on : ghost }]}>
+                {shown || (isNote(item) ? "Tap to write more" : "Add a note — what you thought, why you saved it")}
               </Text>
             </Press>
           )}
@@ -1311,7 +1399,7 @@ function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, 
                 size={TOUCH_MIN}
                 label={`Move to ${lists[l].label}`}
               >
-                <Text style={[s.detailMoveNum, { color: listOn[l] }]}>{lists[l].n}</Text>
+                <Text style={[s.detailMoveNum, { color: onFor(l, c) }]}>{lists[l].n}</Text>
               </Press>
             ))}
           </View>
@@ -1359,6 +1447,9 @@ function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, 
           <Text style={[s.detailMeta, { color: on }]}>
             {(item.canonical as { from?: string })?.from
               ? `From @${(item.canonical as { from?: string }).from}`
+              // A note was never read by anything: somebody wrote it.
+              : isNote(item)
+              ? "Written by you"
               : item.confidence == null
               ? "Not read yet"
               : `${Math.round(item.confidence * 100)}% sure · ${item.enriched ? "matched to a catalogue" : "from the caption only"}`}
@@ -1399,6 +1490,37 @@ async function openLink(url: string, onFail: (msg: string) => void) {
   }
 }
 
+/**
+ * WHAT A THING TO BUY COSTS, at the size of the decision it is.
+ *
+ * The price was the first row of the facts table, in the same 15pt as the
+ * brand under it — and it is the one fact on this page somebody is here for.
+ * So it stands alone, in the display step, and the table no longer repeats it.
+ *
+ * Beside it, on the same baseline: whether it can be bought, and the day the
+ * price was read. A price is true on a day; one with no date reads as today's.
+ * Each part is left out when it is not known, and with no price there is no
+ * block at all — never "Price: unknown".
+ */
+function PriceBlock({ item, on, s }: { item: Item; on: string; s: ReturnType<typeof styles> }) {
+  const k = item.canonical as { kind?: string; availability?: string; price_at?: string } | null;
+  const price = k?.kind === "product" ? priceOn(item) : null;
+  if (!price) return null;
+  const read = k?.price_at ? new Date(k.price_at) : null;
+  const said = [
+    (STOCK as Record<string, string>)[k?.availability ?? ""] ?? null,
+    read && !Number.isNaN(read.getTime())
+      ? `Price read ${read.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+      : null,
+  ].filter(Boolean).join(" · ");
+  return (
+    <View style={s.price}>
+      <Text style={[s.priceAmount, { color: on }]}>{price}</Text>
+      {said ? <Text style={[s.priceSaid, { color: on }]}>{said}</Text> : null}
+    </View>
+  );
+}
+
 function Facts({ item, on, fill, s, onFail }: {
   item: Item; on: string; fill: string; s: ReturnType<typeof styles>;
   onFail: (msg: string) => void;
@@ -1406,7 +1528,8 @@ function Facts({ item, on, fill, s, onFail }: {
   // The platform decides what a map link looks like — see mapUrl() in facts.js.
   // Passed in rather than read there because facts.js has no imports on
   // purpose: the server renders the same rows into the public page.
-  const { lede, rows, links } = factsFor(item, { platform: Platform.OS });
+  // `price: false` — the price block above has already said it, larger.
+  const { lede, rows, links } = factsFor(item, { platform: Platform.OS, price: false });
   if (!lede && !rows.length && !links.length) return null;
 
   return (
@@ -1468,18 +1591,39 @@ const styles = (c: Palette) => StyleSheet.create({
   plateBtn: { minHeight: TOUCH_MIN, justifyContent: "center" },
   over: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.bg },
 
-  // Five equal blocks of flat colour. The selected one drops 4pt to meet the
-  // band below it, so the tab and its panel are one continuous field.
+  // Equal blocks of flat colour, one per shelf. The selected one drops 4pt to
+  // meet the band below it, so the tab and its panel are one continuous field.
+  //
+  // NINE of them now, and at 320pt wide each is about 30pt painted. The touch
+  // target is the painted block plus Press's 8pt of hit slop on every side —
+  // 46pt — which preview/measure.mjs reads off the live layout.
   rail: { flexDirection: "row", gap: 2, marginBottom: sp.xs },
   railSlot: { flex: 1 },
   railTab: { minHeight: TOUCH_MIN, alignItems: "center", justifyContent: "center" },
   railTabOn: { marginBottom: -sp.xs },
-  railNum: { ...t.micro },
+  railPaper: { borderWidth: COVER_KEYLINE, borderColor: c.ink },
+  // Open at the foot, so the block runs into the band's own top rule instead
+  // of drawing a second line a few points above it.
+  railPaperOn: { borderBottomWidth: 0 },
+  // The series number at its own tracking: `micro`'s 1.8pt is set for a word,
+  // and on a 30pt block it pushes two digits off centre.
+  railNum: { ...t.tag, ...numeric },
 
-  band: { flexDirection: "row", alignItems: "center", gap: sp.md, paddingHorizontal: sp.lg, paddingVertical: sp.md },
-  bandLabel: { ...t.band, flex: 1 },
+  // WRAPS, and the label is as wide as its word. With a total on it the
+  // Wishlist band does not fit one line at 320pt, and the alternative was the
+  // shelf's own name cut to "WISHL…". What moves down is the meta, as a unit.
+  band: {
+    flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end",
+    columnGap: sp.md, paddingHorizontal: sp.lg, paddingVertical: sp.md,
+  },
+  // Paper has no edge, so the band is ruled above and below instead of filled.
+  bandPaper: { borderTopWidth: COVER_KEYLINE, borderBottomWidth: COVER_KEYLINE, borderColor: c.ink },
+  bandLabel: { ...t.band, flexGrow: 1, flexShrink: 1 },
   bandCount: { ...t.micro },
+  bandMeta: { flexDirection: "row", alignItems: "center", gap: sp.md },
+  bandTotals: { alignItems: "flex-end" },
   bandShare: { minHeight: TOUCH_MIN, justifyContent: "center", paddingHorizontal: sp.sm },
+  bandWrite: { minHeight: TOUCH_MIN, justifyContent: "center", paddingHorizontal: sp.md },
 
   flash: { ...t.meta, color: c.accent, marginBottom: sp.sm },
 
@@ -1518,6 +1662,16 @@ const styles = (c: Palette) => StyleSheet.create({
   spareRow: { height: EMPTY_BOARD_H },
   cover: { overflow: "hidden", borderWidth: COVER_KEYLINE },
   coverArt: { width: "100%", height: "100%" },
+  // With a price tag under it the artwork takes what is left, not the lot.
+  coverArtAbove: { width: "100%", flex: 1 },
+  coverNote: { ...t.meta },
+  coverNoteLoud: { ...t.bodyMed, fontWeight: "700" },
+  priceTag: {
+    backgroundColor: c.bg, borderTopWidth: COVER_KEYLINE, borderTopColor: c.ink,
+    paddingHorizontal: sp.sm, paddingVertical: sp.xs,
+  },
+  priceTagText: { ...t.meta, ...numeric, fontWeight: "700", color: c.ink },
+  priceTagNone: { ...t.micro, color: c.inkSoft },
   coverStrip: { height: 22, justifyContent: "center", paddingHorizontal: sp.sm },
   coverStripLabel: { ...t.tag },
   coverBody: { flex: 1, padding: sp.sm, paddingTop: sp.md },
@@ -1567,6 +1721,12 @@ const styles = (c: Palette) => StyleSheet.create({
   factLabel: { ...t.micro, width: 104 },
   factValue: { ...t.bodyMed, flex: 1 },
   factLinks: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.lg },
+
+  // Baseline, so the small line sits on the foot of the figures and not at
+  // their middle. Wraps: "€1,249.50" and a status do not share 288pt.
+  price: { flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", columnGap: sp.md, marginTop: sp.xl },
+  priceAmount: { ...t.detailTitle, ...numeric },
+  priceSaid: { ...t.micro, flexShrink: 1, textAlign: "right" },
 
   linkHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: sp.md, minHeight: TOUCH_MIN },
   linkHeadLabel: { flex: 1, minWidth: 0 },

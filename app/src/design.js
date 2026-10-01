@@ -58,6 +58,9 @@ export const type = {
   display: mkType("display", step(5), "700"),
   title:   mkType("title",   step(3), "700"),
   heading: mkType("heading", step(1.5), "600"),
+  // READING, not chrome: an article is read for minutes, and 15/22 set for a
+  // row label is small for that. Three quarters of a step up, 17/25.
+  read:    mkType("read",    step(0.75), "400"),
   body:    mkType("body",    step(0), "400"),
   bodyMed: mkType("bodyMed", step(0), "600"),
   meta:    mkType("meta",    step(-1), "400"),
@@ -132,6 +135,14 @@ export const light = {
   // place colour carries the meaning alone.
   quotes: "#6D28D9",
   places: "#C2410C",
+  // The seventh. Magenta is the last gap on the wheel between the violet and
+  // the red that does not read as either at 30pt on the rail, driven dark
+  // enough to carry white (5.05:1).
+  wishlist: "#D4107A",
+  // The eighth is NOT a colour. A note is something you wrote, on paper, so
+  // its field is the page itself and it is told apart by an ink keyline
+  // instead of a fill. See `isPaper` and `onFor`.
+  notes: "#FFFFFF",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
@@ -139,9 +150,15 @@ export const light = {
 // Yellow cannot carry white. Each list names its own label colour rather than
 // the system assuming one — an assumption that would have shipped a 1.6:1
 // label on Movies.
+//
+// NOTES IS NOT IN THIS TABLE, on purpose. Its field is paper, and the label on
+// paper is ink — which is black in one scheme and white in the other, so no
+// single value here could be right in both. Nothing reads this table directly
+// any more: `onFor` below is the one way to ask for a label colour.
 export const listOn = {
   books: "#FFFFFF", restaurants: "#FFFFFF", movies: "#0A0A0A",
   recipes: "#FFFFFF", quotes: "#FFFFFF", places: "#FFFFFF",
+  wishlist: "#FFFFFF",
   unsorted: "#FFFFFF",
 };
 
@@ -177,11 +194,39 @@ export const dark = {
   // place colour carries the meaning alone.
   quotes: "#6D28D9",
   places: "#C2410C",
+  // The seventh. Magenta is the last gap on the wheel between the violet and
+  // the red that does not read as either at 30pt on the rail, driven dark
+  // enough to carry white (5.05:1).
+  wishlist: "#D4107A",
+  // The eighth is NOT a colour. A note is something you wrote, on paper, so
+  // its field is the page itself and it is told apart by an ink keyline
+  // instead of a fill. See `isPaper` and `onFor`.
+  notes: "#0A0A0A",
   unsorted: "#6E6E6E",
   onList: "#FFFFFF",
 };
 
-export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "quotes", "places", "unsorted"];
+export const LIST_KEYS = ["books", "restaurants", "movies", "recipes", "quotes", "places", "wishlist", "notes", "unsorted"];
+
+/**
+ * Is this shelf PAPER in this scheme — a field that is the page itself?
+ *
+ * Asked of the palette, not of the name, so the answer cannot disagree with
+ * what is painted. A paper shelf has no edge of its own, so everything that
+ * draws one as a block (the rail, a band, a tile) gives it an ink keyline.
+ */
+export const isPaper = (list, palette) => !!palette[list] && palette[list] === palette.bg;
+
+/**
+ * THE LABEL COLOUR FOR A SHELF, IN A SCHEME.
+ *
+ * Movies was the first exception (yellow cannot carry white) and `listOn` was
+ * enough for it, because black on yellow is right in both schemes. Notes is
+ * the second, and it breaks the table: paper is written on in ink, and ink
+ * inverts. So the question takes the palette as well as the shelf.
+ */
+export const onFor = (list, palette) =>
+  isPaper(list, palette) ? palette.ink : listOn[list] ?? palette.onList;
 
 // Depth instead of outlines. A hairline border around every surface is the
 // visual equivalent of underlining every sentence: it flattens the hierarchy
@@ -303,7 +348,11 @@ export const mainTitle = (s) => {
 // a rendering failure, and no amount of numberOfLines hides it. Real covers do
 // exactly this: a long title is set smaller. The floor still outranks the fit —
 // below TYPE_FLOOR the answer is a shorter title, not smaller type.
-export const JACKET_GLYPH = 0.6;   // bold sans, mixed case, deliberately over-wide
+// 0.64, not 0.6. At 0.6 "Rosewood" — eight letters, one of them a w — measured
+// 89.5pt in an 89pt box and set as "Rosewoo / d", which is the exact defect
+// this solver exists to prevent. The number has to cover the widest word that
+// can occur, not the average one: words heavy in m and w run to 0.63.
+export const JACKET_GLYPH = 0.64;  // bold sans, mixed case, deliberately over-wide
 export function jacketType(title, coverWidth) {
   const box = coverWidth - 2 * COVER_KEYLINE - 2 * cover.pad;
   const longest = String(title).split(/\s+/).reduce((n, w) => Math.max(n, w.length), 1);
@@ -312,6 +361,25 @@ export function jacketType(title, coverWidth) {
   // longest word 1.6pt outside a 92pt box, which is the entire defect again.
   const size = Math.max(TYPE_FLOOR, Math.min(type.heading.fontSize, Math.floor(fit * 2) / 2));
   return { fontSize: size, lineHeight: Math.round(size * 1.05 * 2) / 2 };
+}
+
+/**
+ * CAPS THAT FIT THEIR TILE, for a set of labels that must all be one size.
+ *
+ * The share picker set every shelf's name at 31pt across the full width of the
+ * sheet. Eight shelves do not fit eight bands in 420pt, so the bands became a
+ * grid of tiles half as wide — and "RESTAURANTS" at 31pt is 218pt in a 128pt
+ * box. Same answer as a jacket: the type is solved from the LONGEST label and
+ * every tile takes that size, so the grid reads as one set and not as eight
+ * guesses. Capped at `max` (the band step) and floored at TYPE_FLOOR.
+ */
+export const CAPS_GLYPH = 0.72;    // bold sans capitals, deliberately over-wide
+export const CAPS_TRACKING = -0.048; // the band's -1.5pt at 31pt, as a ratio
+export function capsType(labels, boxWidth, max) {
+  const longest = labels.reduce((n, w) => Math.max(n, String(w).length), 1);
+  const fit = boxWidth / (longest * CAPS_GLYPH);
+  const size = Math.max(TYPE_FLOOR, Math.min(max, Math.floor(fit * 2) / 2));
+  return { fontSize: size, lineHeight: Math.ceil(size * 1.05), letterSpacing: Math.round(CAPS_TRACKING * size * 100) / 100 };
 }
 
 /**
@@ -360,6 +428,32 @@ export function quoteType(text, coverWidth, coverHeight) {
     // rather than letting numberOfLines guess.
     chars: perLine * lines,
   };
+}
+
+/**
+ * A NOTE'S JACKET IS A PAGE: the words, small, from the top.
+ *
+ * Not `quoteType`. A quote is one sentence made as large as it will go; a note
+ * is whatever somebody wrote down, and blowing "milk, eggs, call the plumber"
+ * up to fill a jacket turns a list into a poster. So a note is set at the
+ * `meta` step and cut with `excerpt` to what the page holds.
+ *
+ * ONE EXCEPTION: a note short enough to sit on two lines at the `bodyMed`
+ * step is a heading, not a paragraph ("Gift ideas"), and is set that way —
+ * larger and bold. No word in it may be longer than a line, or it would split
+ * mid-syllable, which is the defect `jacketType` exists for.
+ */
+export function noteType(text, coverWidth, coverHeight) {
+  const boxW = Math.max(1, coverWidth - 2 * COVER_KEYLINE - 2 * cover.pad);
+  const boxH = Math.max(1, coverHeight - 2 * COVER_KEYLINE - 2 * cover.pad);
+  const said = String(text ?? "").replace(/\s+/g, " ").trim();
+  const longest = said.split(" ").reduce((n, w) => Math.max(n, w.length), 0);
+  const perLoud = Math.floor(boxW / (type.bodyMed.fontSize * JACKET_GLYPH));
+  if (said.length <= perLoud * 2 && longest <= perLoud) return { loud: true, text: said, lines: 3 };
+  const perLine = Math.max(1, Math.floor(boxW / (type.meta.fontSize * QUOTE_GLYPH)));
+  const lines = Math.max(1, Math.floor(boxH / type.meta.lineHeight));
+  // One line of slack, as in quoteType: word wrap never fills a line.
+  return { loud: false, text: excerpt(said, perLine * Math.max(1, lines - 1)), lines };
 }
 
 /** Cut on a WORD boundary. A quote severed mid-word reads as a bug. */
@@ -413,7 +507,7 @@ export function mix(a, b, t) {
 export const PLACEHOLDER_MIX = 0.26;
 export const PLACEHOLDER_MIN = 3;
 /** The placeholder colour for a label colour sitting on a list's field. */
-export const placeholderOn = (list, palette) => mix(listOn[list] ?? "#FFFFFF", palette[list] ?? palette.unsorted, PLACEHOLDER_MIX);
+export const placeholderOn = (list, palette) => mix(onFor(list, palette), palette[list] ?? palette.unsorted, PLACEHOLDER_MIX);
 
 // WCAG 2.1 relative luminance + contrast ratio. Exact, not approximated.
 export function luminance(hex) {

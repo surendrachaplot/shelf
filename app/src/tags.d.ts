@@ -7,7 +7,7 @@ import type { Item } from "./store";
 
 /** A deliberate order: what a person would filter by first. */
 export type TagKind =
-  | "author" | "director" | "area" | "city" | "cuisine"
+  | "author" | "director" | "brand" | "area" | "city" | "cuisine"
   | "genre" | "cast" | "year" | "decade" | "site";
 
 export type Tag = {

@@ -83,7 +83,7 @@ const REQUIRED_NUMBERS = ["TOUCH_MIN", "TOUCH", "TYPE_FLOOR", "GRID", "FRAME_HZ"
 // TOUCH_MIN once, `family` once — and both times the failure surfaced far from
 // the cause (a missing tap-target floor; a crash inside Platform.select at
 // render). The gate names what must exist so a deletion fails HERE.
-const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "springs", "easing", "cover", "coverFor", "jacketType", "mainTitle", "gridFor", "rowsOf", "mix", "placeholderOn"];
+const REQUIRED_OBJECTS = ["family", "type", "sp", "radius", "light", "dark", "listOn", "onFor", "isPaper", "springs", "easing", "cover", "coverFor", "jacketType", "noteType", "capsType", "mainTitle", "gridFor", "rowsOf", "mix", "placeholderOn"];
 
 // Three times now a value has been added to design.js, imported by a component,
 // and forgotten in theme.ts's re-export list — each time the failure was an
@@ -140,7 +140,10 @@ const staticRules = [
       // Two or more shelf names side by side, quoted, comma-separated — what a
       // hand-maintained list of lists looks like in every language here.
       // LISTS / LIST_KEYS / LIST_ORDER are the real thing and may say it.
-      const NAMES = "books|restaurants|movies|recipes|quotes|travel";
+      // EVERY name a shelf has ever had. This said "travel" for two months
+      // after the shelf became "places", so a hand-written run of the current
+      // names went straight past it.
+      const NAMES = "books|restaurants|movies|recipes|quotes|places|travel|wishlist|notes";
       const RE = new RegExp(`(["'\`])(${NAMES})\\1\\s*,\\s*(["'\`])(${NAMES})\\3`);
       const lines = src.split("\n");
       lines.forEach((line, i) => {
@@ -391,16 +394,98 @@ const systemRules = [
   },
   {
     id: "list-label-contrast",
-    why: "§2 — every list colour carries a label on top of it, and the label colour is PER LIST (yellow cannot take white). This must read listOn rather than assume one label colour for all four — assuming it would have shipped a 1.4:1 label on Movies.",
+    why: "§2 — every list colour carries a label on top of it, and the label colour is PER LIST AND PER SCHEME: yellow cannot take white, and Notes is paper, whose label is ink and inverts. This must ask onFor rather than assume one label colour — assuming it would have shipped a 1.4:1 label on Movies, and reading the listOn table directly would have shipped white type on a white Notes band.",
     check: (d) => {
       const out = [];
       for (const scheme of ["light", "dark"]) {
         for (const k of d.LIST_KEYS) {
-          const r = d.contrast(d.listOn[k], d[scheme][k]);
-          if (r < 4.5) out.push({ msg: `${scheme}: ${d.listOn[k]} label on ${k} is ${r}:1` });
+          const field = d[scheme][k];
+          const on = d.onFor(k, d[scheme]);
+          // A shelf with no field colour is a shelf painted `undefined`, and
+          // `contrast(undefined)` would throw far from the cause. Say it here.
+          if (!/^#[0-9A-Fa-f]{6}$/.test(String(field)) || !/^#[0-9A-Fa-f]{6}$/.test(String(on))) {
+            out.push({ msg: `${scheme}: ${k} has field ${field} and label ${on} — a shelf in LIST_KEYS with no colour in this palette` });
+            continue;
+          }
+          const r = d.contrast(on, field);
+          if (r < 4.5) out.push({ msg: `${scheme}: ${on} label on ${k} is ${r}:1` });
         }
       }
       return out;
+    },
+  },
+  {
+    id: "paper-has-an-edge",
+    why: "§2 — a shelf whose field is the page (Notes) is invisible as a block: the same colour as what it sits on. It is told apart by an ink keyline, so the keyline has to exist as a colour that contrasts the page in BOTH schemes, and every other shelf must stay off the page colour or it silently becomes paper too — and loses the label colour listOn gave it.",
+    check: (d) => {
+      const out = [];
+      for (const scheme of ["light", "dark"]) {
+        const p = d[scheme];
+        const paper = d.LIST_KEYS.filter((k) => d.isPaper(k, p));
+        if (paper.join() !== "notes") out.push({ msg: `${scheme}: the paper shelves are [${paper.join(", ")}] — exactly one shelf, Notes, is the page` });
+        const edge = d.contrast(p.ink, p.bg);
+        if (edge < 3) out.push({ msg: `${scheme}: the ink keyline on paper is ${edge}:1 (needs 3:1 to read as an edge)` });
+        if (d.onFor("notes", p) !== p.ink) out.push({ msg: `${scheme}: the label on paper is ${d.onFor("notes", p)}, not ink` });
+      }
+      return out;
+    },
+  },
+  {
+    id: "tile-caps-fit",
+    why: "§1 — the share picker's tiles are half the sheet wide and every shelf name on them is ONE size, solved from the longest. Set at the band's 31pt, 'RESTAURANTS' is 218pt in a 128pt box. The solved size must fit the longest name at every width the picker is rendered at, never go under the 11px floor, and never set a line box shorter than its type.",
+    check: (d) => {
+      const out = [];
+      const names = d.LIST_KEYS.filter((k) => k !== "unsorted");
+      // The four hosts that are rendered: the iOS sheet at 320 and 375, and
+      // the Android screen at 360 and 412. Two tiles across, 16pt each side.
+      for (const screen of [320, 360, 375, 412]) {
+        const box = screen / 2 - 2 * d.sp.lg;
+        const r = d.capsType(names, box, 31);
+        const longest = names.reduce((n, w) => Math.max(n, w.length), 1);
+        const needed = longest * r.fontSize * d.CAPS_GLYPH;
+        if (needed > box + 1e-6 && r.fontSize > d.TYPE_FLOOR) out.push({ msg: `at ${screen}pt the longest shelf name needs ${needed.toFixed(1)}pt of a ${box}pt tile at ${r.fontSize}px` });
+        if (r.fontSize < d.TYPE_FLOOR) out.push({ msg: `at ${screen}pt the tile label is ${r.fontSize}px, below the ${d.TYPE_FLOOR}px floor` });
+        if (r.fontSize > 31) out.push({ msg: `at ${screen}pt the tile label is ${r.fontSize}px, above the band step it is capped at` });
+        if (r.lineHeight < r.fontSize) out.push({ msg: `at ${screen}pt the tile label's line box (${r.lineHeight}) is shorter than its type (${r.fontSize}) — iOS clips it` });
+      }
+      return out.slice(0, 4);
+    },
+  },
+  {
+    id: "note-fits",
+    why: "§1 — a note's jacket is the note, set small from the top and CUT ON A WORD when the page will not hold it. The one exception is a note short enough to be a heading, set larger and bold — and that branch must never take a word longer than a line, or it splits mid-syllable exactly as 'Disposs / essed' did.",
+    check: (d) => {
+      const out = [];
+      const notes = [
+        "Gift ideas",
+        "Brown boots, not black. Ask Maya about the scarf.",
+        "Extraordinarily",
+        "x ".repeat(400),
+        "",
+      ];
+      const COLS = [d.cover.minW, d.gridFor(288, 8).width, d.gridFor(343, 8).width];
+      for (const w of COLS) {
+        for (const h of d.cover.heights) {
+          const boxW = w - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
+          const boxH = h - 2 * d.COVER_KEYLINE - 2 * d.cover.pad;
+          for (const n of notes) {
+            const r = d.noteType(n, w, h);
+            if (!(r.lines >= 1)) out.push({ msg: `a note on a ${w}x${h} jacket was given ${r.lines} lines` });
+            if (r.loud) {
+              const longest = r.text.split(" ").reduce((m, x) => Math.max(m, x.length), 0);
+              if (longest * d.type.bodyMed.fontSize * d.JACKET_GLYPH > boxW + 1e-6) {
+                out.push({ msg: `"${r.text}" is set large on a ${w}pt jacket and its longest word does not fit the line — it will break mid-word` });
+              }
+            } else {
+              const perLine = Math.max(1, Math.floor(boxW / (d.type.meta.fontSize * d.QUOTE_GLYPH)));
+              if (r.lines * d.type.meta.lineHeight > boxH + 1e-6) out.push({ msg: `a note on a ${w}x${h} jacket is given ${r.lines} lines, more than its ${boxH}pt holds` });
+              if (r.text.length > perLine * r.lines) out.push({ msg: `a ${n.length}-char note was cut to ${r.text.length} chars on a ${w}x${h} jacket that holds ${perLine * r.lines}` });
+              if (r.text.length < n.trim().length && !r.text.endsWith("…")) out.push({ msg: `a note was cut with no ellipsis to say so` });
+            }
+          }
+        }
+      }
+      return out.slice(0, 4);
     },
   },
   {
@@ -415,7 +500,7 @@ const systemRules = [
           if (r < d.PLACEHOLDER_MIN) out.push({ msg: `${scheme}: placeholder on ${k} is ${r}:1 (needs ${d.PLACEHOLDER_MIN}:1)` });
           // And it must actually differ from a real value, or the whole point
           // of deriving it is lost.
-          if (ph === d.listOn[k]) out.push({ msg: `${scheme}: placeholder on ${k} is identical to the label colour — an empty field will read as a filled one` });
+          if (ph === d.onFor(k, d[scheme])) out.push({ msg: `${scheme}: placeholder on ${k} is identical to the label colour — an empty field will read as a filled one` });
         }
       }
       return out;
@@ -551,7 +636,9 @@ const systemRules = [
       const grounds = tally((p) => p.list);
       const borders = tally((p) => p.border);
       const devices = tally((p) => p.device);
-      const lists = d.LIST_KEYS.filter((k) => k !== "unsorted");
+      // The grounds a plate can stand on — exlibris.js says which and why it
+      // is not every shelf. Read from there, so the two cannot disagree.
+      const lists = E.GROUNDS;
       for (const k of lists) {
         const share = (grounds[k] || 0) / names.length;
         if (share < 0.15) out.push({ msg: `ground ${k} appears on ${(share * 100).toFixed(0)}% of plates — the ground slice is skewed` });
@@ -722,11 +809,19 @@ const SYSTEM_PROBES = {
   "spacing-grid": { ...D, sp: { ...D.sp, odd: 13 } },
   "placeholder-inverts": { ...D, dark: { ...D.dark, placeholder: "#000000" } },
   // The exact defect: a placeholder set in the full label colour.
-  "placeholder-on-field": { ...D, placeholderOn: (list) => D.listOn[list] },
+  "placeholder-on-field": { ...D, placeholderOn: (list, palette) => D.onFor(list, palette) },
   // This rule reads the GENERATOR, not the palette — the palette it gets is
   // the real one and the broken plate generator arrives via PROBE_E.
   "plate-variety": D,
-  "list-label-contrast": { ...D, listOn: { ...D.listOn, movies: "#FFFFFF" } },
+  "list-label-contrast": { ...D, onFor: (k, p) => (k === "movies" ? "#FFFFFF" : D.onFor(k, p)) },
+  // A second shelf drifts onto the page colour: it is now paper by accident,
+  // and its white label is gone.
+  "paper-has-an-edge": { ...D, isPaper: (k, p) => k === "notes" || k === "wishlist" },
+  // The band step, unsolved: what the picker did before the tiles were halved.
+  "tile-caps-fit": { ...D, capsType: () => ({ fontSize: 31, lineHeight: 31, letterSpacing: -1.5 }) },
+  // The heading branch with its guard removed: any short note is set large,
+  // whatever its longest word.
+  "note-fits": { ...D, noteType: (text) => ({ loud: true, text: String(text).trim(), lines: 3 }) },
   // A trim that is off-grid and far too square — exactly what hand-picking a
   // "nice looking" cover size produces.
   "cover-grid": { ...D, coverFor: () => ({ height: 110, comp: 0 }) },

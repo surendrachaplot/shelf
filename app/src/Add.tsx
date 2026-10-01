@@ -16,7 +16,7 @@ import { idFor, type Item } from "./store";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { KeyboardSafe, scrollKeyboardProps } from "./KeyboardSafe";
-import { lists, listOn, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
+import { lists, onFor, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
 
 // Long enough that a normal typing burst is one request, short enough that it
 // never feels like the field is thinking about it. Every keystroke past this
@@ -181,7 +181,7 @@ function Row({ hit, state, onAdd, s, c }: {
   s: ReturnType<typeof styles>; c: Palette;
 }) {
   const fill = (c as Record<string, string>)[hit.list] ?? c.unsorted;
-  const on = (listOn as Record<string, string>)[hit.list] ?? c.onList;
+  const on = onFor(hit.list, c);
   const done = state === "done";
   // §6 — a cover URL that 404s must land on the SAME designed block a result
   // with no cover gets. An empty onError satisfies a grep and leaves a hole.

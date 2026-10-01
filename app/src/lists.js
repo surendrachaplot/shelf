@@ -255,6 +255,22 @@ export function priceText(amount, currency, opts) {
 }
 
 /**
+ * What one item costs, AS IT IS SHOWN, or null.
+ *
+ * ONE formatter for a jacket, a row, an item page and the total under them.
+ * The server's own text says "£65.00" and a total says "£83"; side by side
+ * that reads as two different apps. The server's text is kept only for what a
+ * single number cannot say — a range ("$20 to $35") — or when there is no
+ * currency to format with.
+ */
+export function priceOn(item, opts) {
+  const said = (item && item.canonical && item.canonical.price_text) || null;
+  if (typeof said === "string" && / to /.test(said)) return said;
+  const p = priceOf(item);
+  return p ? priceText(p.amount, p.currency, opts) : (typeof said === "string" && said) || null;
+}
+
+/**
  * What a run of items comes to.
  *
  * One line per currency, largest amount first (the code breaks a tie, so two
