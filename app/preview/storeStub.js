@@ -136,6 +136,28 @@ const PILE = [
   { id: "p3", list: "unsorted", status: "unread", title: null, subtitle: "", note: "",
     image_url: null, canonical: {}, confidence: null, enriched: false,
     source_url: "https://www.instagram.com/reel/DAbCdEf/", resolver: "none", created_at: "" },
+  // THINGS TO BUY, in the shape api/product.js sends. Two with a price and one
+  // without, because "no price" is a state the row and the total both have to
+  // draw. Unsorted on purpose: this is what a build with no Wishlist shelf
+  // receives.
+  { id: "w1", list: "unsorted", status: "filed", title: "Wool overshirt, olive", subtitle: "Northfield", note: "",
+    image_url: art("#2F3A2E", "#E9DCCB", "OVERSHIRT"), confidence: 0.9, enriched: true,
+    source_url: "https://shop.example/overshirt", resolver: "web-og", created_at: "2026-09-20T09:00:00Z",
+    canonical: { kind: "product", price: 65, currency: "GBP", price_text: "£65.00", brand: "Northfield",
+                 availability: "in_stock", seller: "Northfield", shop_url: "https://shop.example/overshirt" } },
+  { id: "w2", list: "unsorted", status: "filed", title: "Lip tint, Rosewood", subtitle: "Petal", note: "",
+    image_url: null, confidence: 0.9, enriched: true,
+    source_url: "https://shop.example/tint", resolver: "web-og", created_at: "2026-09-21T09:00:00Z",
+    canonical: { kind: "product", price: 18, currency: "GBP", price_text: "£18.00", brand: "Petal",
+                 availability: "in_stock", shop_url: "https://shop.example/tint" } },
+  { id: "w3", list: "unsorted", status: "filed", title: "Linen trousers, ecru", subtitle: "Marlow & Co", note: "",
+    image_url: art("#E9DCCB", "#2F3A2E", "LINEN"), confidence: 0.9, enriched: true,
+    source_url: "https://shop.example/linen", resolver: "web-og", created_at: "2026-09-22T09:00:00Z",
+    canonical: { kind: "product", price: null, currency: null, price_text: null, brand: "Marlow & Co",
+                 shop_url: "https://shop.example/linen" } },
+  { id: "n1", list: "unsorted", status: "filed", title: "Brown boots, not black.", subtitle: "",
+    note: "Brown boots, not black. Ask Maya about the scarf.", image_url: null, confidence: null, enriched: false,
+    source_url: null, resolver: "note", created_at: "2026-09-23T09:00:00Z", canonical: { kind: "note" } },
   // A SAVED ARTICLE. Read, named, and on no shelf — an essay is not a book, a
   // film or a place — carrying the text the server kept (api/article.js). Long
   // enough to scroll, with a summary, because the reader has to be looked at
@@ -173,9 +195,21 @@ let SHELF = {
     { code: "k3f9xqm2", kind: "shelf", target: "restaurants", title: "Your restaurants shelf", at: "" },
     { code: "b7ttpzc4", kind: "item", target: null, title: "St. John", at: "" },
   ],
+  // TWO LISTS, one of each kind, so both halves of a list have been drawn:
+  // one that is only things somebody pinned (three covers, in an order that is
+  // NOT the shelf's order), and one that is only a saved search.
+  boards: [
+    // The moodboard-and-wishlist case: pictures, a jacket with no picture, a
+    // note, two prices and one thing with no price.
+    { id: "l-outfit", name: "Autumn outfit", pins: ["w1", "w3", "n1", "w2", "books-0"],
+      query: null, view: "pictures", created_at: "2026-09-24T10:00:00Z" },
+    { id: "l-weekend", name: "This weekend", pins: ["restaurants-2", "movies-0", "books-0"],
+      query: null, view: "pictures", created_at: "2026-09-20T10:00:00Z" },
+    { id: "l-lisbon", name: "Lisbon", pins: [], query: "lisbon", view: "rows", created_at: "2026-09-21T10:00:00Z" },
+  ],
 };
 
-export const emptyShelf = () => ({ version: 1, items: [], profile: { name: "", bio: "", seed: "", home_city: "" }, links: [] });
+export const emptyShelf = () => ({ version: 1, items: [], profile: { name: "", bio: "", seed: "", home_city: "" }, links: [], boards: [] });
 
 /**
  * `?broken=1` — the shelf file is there and would not open.

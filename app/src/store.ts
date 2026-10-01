@@ -60,16 +60,39 @@ export type Item = {
   created_at: string;
   resolved_at?: string | null;
   error?: string | null;
+  /** Pinned to the top of the home screen ("top of mind"). */
+  top?: boolean;
 };
 
 export type Profile = { name: string; bio: string; seed: string; home_city: string };
 export type Link = { code: string; kind: string; target: string | null; title: string; at: string };
+
+
+/**
+ * A LIST SOMEBODY MADE — a moodboard, a wishlist, a trip. On screen the word
+ * is "Lists". Here it is `boards`, because `list` on an Item already means
+ * which SHELF it is filed on, and two meanings of one word in one file is how
+ * the wrong one gets read.
+ *
+ * `pins` are item ids in the order the person arranged them. `query` is a
+ * saved search, null when there is none. Everything that works on these is in
+ * lists.js.
+ */
+export type Board = {
+  id: string;
+  name: string;
+  pins: string[];
+  query: string | null;
+  view: "pictures" | "rows";
+  created_at: string;
+};
 
 export type Shelf = {
   version: 1;
   items: Item[];
   profile: Profile;
   links: Link[];
+  boards: Board[];
 };
 
 const FILE = FileSystem.documentDirectory + "shelf.json";
@@ -88,6 +111,7 @@ export const emptyShelf = (): Shelf => ({
   items: [],
   profile: { name: "", bio: "", seed: "", home_city: "" },
   links: [],
+  boards: [],
 });
 
 /**
@@ -145,7 +169,38 @@ function normalise(raw: unknown): Shelf | null {
     items: o.items.filter((i): i is Item => !!i && typeof i === "object"),
     profile: { ...base.profile, ...profile },
     links: Array.isArray(o.links) ? o.links.filter((l): l is Link => !!l && typeof l === "object") : [],
+    boards: boardsOf(o.boards),
   };
+}
+
+/**
+ * THE SAME RULE, ONE LEVEL DOWN. A file written before lists existed has no
+ * `boards` key, and that is every file on every phone today — it has to read
+ * as a shelf with no lists, not as a shelf that will not open.
+ *
+ * And a board is checked field by field, for the same reason the shelf is:
+ * `pins: null` on one board is one `.map` away from the catch in `load`, which
+ * would tell somebody that everything they saved is gone because of one list.
+ *
+ * REPAIRED, NOT DROPPED. A board with a name and no id still has a name and
+ * its pins, and those are somebody's work — it is given an id. Only a thing
+ * that is not an object at all is left out. Keys this version does not know
+ * are kept, so a later version's field survives a round trip through this one.
+ */
+function boardsOf(raw: unknown): Board[] {
+  if (!Array.isArray(raw)) return [];
+  const str = (v: unknown): v is string => typeof v === "string";
+  return raw
+    .filter((b): b is Record<string, unknown> => !!b && typeof b === "object" && !Array.isArray(b))
+    .map((b): Board => ({
+      ...b,
+      id: str(b.id) && b.id ? b.id : idFor(null),
+      name: str(b.name) ? b.name : "",
+      pins: Array.isArray(b.pins) ? b.pins.filter((p): p is string => str(p) && !!p) : [],
+      query: str(b.query) && b.query.trim() ? b.query : null,
+      view: b.view === "rows" ? "rows" : "pictures",
+      created_at: str(b.created_at) ? b.created_at : "",
+    }));
 }
 
 /** Never throws, and never mistakes a file it could not read for an empty one. */
@@ -308,8 +363,15 @@ const renamedTo = (k: unknown): string | null =>
 
 /** Total, because a migration must survive being handed a shelf it did not expect. */
 export function migrate(shelf: Shelf): Shelf {
-  const before = { items: Array.isArray(shelf.items) ? shelf.items : [], links: Array.isArray(shelf.links) ? shelf.links : [] };
-  let touched = before.items !== shelf.items || before.links !== shelf.links;
+  const before = {
+    items: Array.isArray(shelf.items) ? shelf.items : [],
+    links: Array.isArray(shelf.links) ? shelf.links : [],
+    // No rename touches a board: a pin is an item ID, and ids do not change
+    // when a shelf does. It is here so a migration never hands back a shelf
+    // whose `boards` is not an array.
+    boards: Array.isArray(shelf.boards) ? shelf.boards : [],
+  };
+  let touched = before.items !== shelf.items || before.links !== shelf.links || before.boards !== shelf.boards;
   const items = before.items.map((it) => {
     const to = renamedTo(it?.list);
     if (!to) return it;
@@ -324,7 +386,7 @@ export function migrate(shelf: Shelf): Shelf {
     touched = true;
     return { ...l, target: to };
   });
-  return touched ? { ...shelf, items, links } : shelf;
+  return touched ? { ...shelf, items, links, boards: before.boards } : shelf;
 }
 
 export async function save(shelf: Shelf): Promise<void> {

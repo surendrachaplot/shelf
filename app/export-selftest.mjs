@@ -76,6 +76,14 @@ ok(JSON.stringify(back.links) === JSON.stringify([{ kind: "shelf", target: "book
 // A forgotten argument must not be the thing that stops somebody leaving.
 ok(JSON.parse(exportJson(shelf)).exported_at === null && JSON.parse(exportJson(shelf)).items.length === items.length,
    "no clock: exported_at is null, and the items still come out");
+// Your own lists travel too, pins in the order they were arranged.
+{
+  const boards = [{ id: "l1", name: "Autumn outfit", pins: ["b", "a"], query: null, view: "pictures", created_at: "x" }];
+  const j = JSON.parse(exportJson({ items: [], boards }, { now: NOW }));
+  ok(JSON.stringify(j.lists) === JSON.stringify(boards), "the lists are in the export, pins in order", j.lists);
+  ok(Array.isArray(JSON.parse(exportJson({ items: [], boards: null }, { now: NOW })).lists), "a shelf with no lists exports an empty array, not a crash");
+}
+
 for (const junk of [null, undefined, {}, { items: null, links: null, profile: null }, "x"]) {
   const j = JSON.parse(exportJson(junk, { now: NOW }));
   ok(Array.isArray(j.items) && j.items.length === 0 && Array.isArray(j.links), `a shelf of ${JSON.stringify(junk)} still exports`, j);

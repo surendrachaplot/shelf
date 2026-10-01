@@ -57,6 +57,10 @@ import * as D from "./src/design.js";
 import { factsFor, mapUrl } from "./src/facts.js";
 import { Reader, articleOf } from "./src/Reader";
 import { Tags } from "./src/TagIndex";
+import { Lists } from "./src/ListsScreen";
+import { listsWith } from "./src/lists.js";
+import { rebasePicture } from "./src/pictures";
+import * as FileSystem from "expo-file-system";
 import { tagKey } from "./src/tags.js";
 import { linksFor } from "./src/links.js";
 import { surface, type Surfaced } from "./src/serendipity.js";
@@ -72,7 +76,7 @@ const TABS: TabName[] = [...LISTS, "unsorted"];
 // would be a dependency that hides where you are; this is four words.
 // Named Route, not Screen: `Screen` is the safe-area root component now, and
 // a type and a value cannot share a name.
-type Route = "case" | "add" | "find" | "profile" | "import" | "tags";
+type Route = "case" | "add" | "find" | "profile" | "import" | "tags" | "lists";
 
 /**
  * Which items keep the caption they came from.
@@ -109,6 +113,9 @@ export default function App() {
   const [reading, setReading] = useState<Item | null>(null);
   // Which tag the Tags screen opens on — null is the whole index.
   const [tagStart, setTagStart] = useState<string | null>(null);
+  // Lists: which one to open on, and — when set — the item being added to one.
+  const [listStart, setListStart] = useState<string | null>(null);
+  const [listAdding, setListAdding] = useState<Item | null>(null);
   // Cards the person waved away. ponytail: kept for this launch only — the
   // "forgotten" pick already rotates by the day, so a dismissed card is not
   // the first thing back tomorrow. Persist it if people say it nags.
@@ -130,6 +137,10 @@ export default function App() {
   // memory. `here` is null: knowing where you are needs a location module the
   // installed binary does not carry (see native.ts), so "near you / open now"
   // waits for the next build. "A year ago" and "forgotten" need only the clock.
+  // TOP OF MIND. A flag on the item, not a list: it is a fact about the thing
+  // ("I am dealing with this now"), and a pin that lived in a list would be
+  // lost with the list. Three at most on the row — more than that is a shelf.
+  const pinned = useMemo(() => (shelf ? shelf.items.filter((i) => i.top).slice(0, 3) : []), [shelf]);
   const again = useMemo<Surfaced | null>(
     () => (shelf ? surface(shelf.items, { now: new Date(), here: null, limit: 1, seen: waved })[0] ?? null : null),
     [shelf, waved]
@@ -295,7 +306,12 @@ export default function App() {
   // over them costs nothing.
   useEffect(() => {
     (async () => {
-      const { shelf: loaded, state, note } = await loadShelf();
+      const { shelf: read, state, note } = await loadShelf();
+      // Kept pictures are files in the documents folder, and iOS can move
+      // that folder (see pictures.ts). Re-point them before anything draws.
+      const docs = FileSystem.documentDirectory ?? null;
+      const loaded = { ...read, items: read.items.map((i) =>
+        (i.image_url && i.image_url.includes("/pictures/") ? { ...i, image_url: rebasePicture(i.image_url, docs) } : i)) };
       setShelf(loaded);
       setHealth({ state, note });
       if (state === "unreadable") {
@@ -490,6 +506,7 @@ export default function App() {
     if (typeof body.list === "string") { fields.list = body.list; fields.status = "filed"; }
     if (typeof body.note === "string") fields.note = body.note;
     if (typeof body.title === "string") fields.title = body.title;
+    if (typeof body.top === "boolean") fields.top = body.top;
     await commit(patch(shelf, item.id, fields));
   }
 
@@ -609,6 +626,23 @@ export default function App() {
       >
         {flash ? <Text style={[s.flash, s.inset]}>{flash}</Text> : null}
 
+        {/* Paper: "Home — pinned row". What you said matters right now, on
+            every shelf, because that is the point of pinning it. */}
+        {pinned.length && health.state !== "unreadable" ? (
+          <View style={[s.pinned, s.inset]}>
+            <Text style={s.againReason}>Pinned</Text>
+            <View style={s.pinnedRow}>
+              {pinned.map((it) => (
+                <Press key={it.id} onPress={() => setOpen(it)} containerStyle={s.pinSlot} style={s.pin} size={TOUCH_MIN + 12}
+                       label={`Open ${it.title ?? "it"}, pinned`}>
+                  <View style={[s.pinEdge, { backgroundColor: (c as Record<string, string>)[it.list] ?? c.unsorted }]} />
+                  <Text style={s.pinTitle} numberOfLines={2}>{it.title ?? "Not read yet"}</Text>
+                </Press>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         {/* Paper: "Serendipity A — strip on home". One card, at the top of the
             scroll rather than between the rail and the band: the selected rail
             block bridges into the band and a strip there would cut the bridge. */}
@@ -709,6 +743,8 @@ export default function App() {
           items={shelf?.items ?? []}
           onOpen={setOpen}
           onRead={() => setReading(open)}
+          boards={shelf?.boards ?? []}
+          onList={() => { const it = open; setOpen(null); setListStart(null); setListAdding(it); setScreen("lists"); }}
           onTag={(key) => {
             // Same order problem as Find: Tags is painted AFTER the detail
             // sheet, so the sheet is closed before the tag opens.
@@ -744,6 +780,7 @@ export default function App() {
             city={shelf.profile.home_city}
             onClose={() => setScreen("case")}
             onTags={() => { setTagStart(null); setScreen("tags"); }}
+            onLists={() => { setListStart(null); setListAdding(null); setScreen("lists"); }}
             onOpen={(it) => {
               // Close Find before opening the item. The overlays are painted in
               // source order and this one is painted AFTER the detail sheet, so
@@ -766,6 +803,24 @@ export default function App() {
             start={tagStart}
             onClose={() => setScreen("case")}
             onOpen={(it) => { setScreen("case"); setOpen(it); }}
+          />
+        </View>
+      ) : null}
+      {screen === "lists" && shelf ? (
+        <View style={s.over}>
+          <Lists
+            shelf={shelf}
+            start={listStart}
+            adding={listAdding}
+            onChange={commit}
+            onClose={() => {
+              // Back to the item it was opened from, when there was one.
+              const it = listAdding;
+              setListAdding(null);
+              setScreen("case");
+              if (it) setOpen(shelf.items.find((i) => i.id === it.id) ?? it);
+            }}
+            onOpen={(it) => { setListAdding(null); setScreen("case"); setOpen(it); }}
           />
         </View>
       ) : null}
@@ -1106,7 +1161,9 @@ const ALSO: Record<string, string> = {
 // that lists eleven restaurants in London is a second screen wearing a hat.
 const LINK_ROWS = 3;
 
-function Detail({ item, items, onClose, onAct, onShare, onFail, onOpen, onRead, onTag, dark, s, c }: {
+function Detail({ item, items, boards, onClose, onAct, onShare, onFail, onOpen, onRead, onTag, onList, dark, s, c }: {
+  boards: Shelf["boards"];
+  onList: () => void;
   item: Item; onClose: () => void;
   /** The whole shelf — what this item is connected TO. */
   items: Item[];
@@ -1146,6 +1203,7 @@ function Detail({ item, items, onClose, onAct, onShare, onFail, onOpen, onRead, 
   // neighbourhood — free, because the entities are resolved (links.js).
   const links = useMemo(() => linksFor(item, items), [item, items]);
   const hasArticle = articleOf(item) !== null;
+  const onLists = useMemo(() => listsWith(boards ?? [], item.id), [boards, item.id]);
   return (
     <Screen style={[s.detail, { backgroundColor: fill }] as never}>
       <ScrollView contentContainerStyle={s.detailScroll} showsVerticalScrollIndicator={false} {...scrollKeyboardProps}>
@@ -1262,6 +1320,13 @@ function Detail({ item, items, onClose, onAct, onShare, onFail, onOpen, onRead, 
             <Press onPress={onShare} style={[s.detailBtn, { backgroundColor: on }]} size={TOUCH_MIN} label="Share this">
               <Text style={[s.detailBtnLabel, { color: fill }]}>Share →</Text>
             </Press>
+            <Press onPress={onList} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Add to a list">
+              <Text style={[s.detailBtnLabel, { color: on }]}>Add to a list →</Text>
+            </Press>
+            <Press onPress={() => onAct(item, { top: !item.top })} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN}
+                   label={item.top ? "Unpin from the top" : "Pin to the top"}>
+              <Text style={[s.detailBtnLabel, { color: on }]}>{item.top ? "Unpin" : "Pin"}</Text>
+            </Press>
             {item.source_url ? (
               <Press onPress={() => openLink(item.source_url as string, onFail)} style={[s.detailBtnGhost, { borderColor: on }]} size={TOUCH_MIN} label="Open the reel">
                 <Text style={[s.detailBtnLabel, { color: on }]}>Open reel →</Text>
@@ -1277,6 +1342,11 @@ function Detail({ item, items, onClose, onAct, onShare, onFail, onOpen, onRead, 
             </Press>
           </View>
 
+          {onLists.length ? (
+            <Text style={[s.detailMeta, { color: on }]} numberOfLines={2}>
+              On {onLists.length} {onLists.length === 1 ? "list" : "lists"} · {onLists.map((b) => b.name).join(", ")}
+            </Text>
+          ) : null}
           <View style={[s.detailFootRule, { backgroundColor: on }]} />
           {/* §8 — "no confidence recorded" and "low confidence" must never
               render the same way. One means we could not look at it; the other
@@ -1497,6 +1567,13 @@ const styles = (c: Palette) => StyleSheet.create({
   linkHeadLabel: { flex: 1, minWidth: 0 },
   linkItem: { minHeight: TOUCH_MIN, justifyContent: "center" },
   linkItemTitle: { ...t.bodyMed, fontWeight: "700" },
+
+  pinned: { marginTop: sp.md, gap: sp.sm },
+  pinnedRow: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm },
+  pinSlot: { flex: 1, minWidth: 96 },
+  pin: { flexDirection: "row", alignItems: "stretch", minHeight: TOUCH_MIN + 12, borderWidth: 2, borderColor: c.ink },
+  pinEdge: { width: sp.sm },
+  pinTitle: { ...t.meta, fontWeight: "700", color: c.ink, flex: 1, minWidth: 0, paddingHorizontal: sp.sm, paddingVertical: sp.sm },
 
   again: { flexDirection: "row", alignItems: "stretch", borderWidth: 2, borderColor: c.ink, marginTop: sp.md },
   againBlock: { width: TOUCH_MIN + 6, alignItems: "center", justifyContent: "center" },

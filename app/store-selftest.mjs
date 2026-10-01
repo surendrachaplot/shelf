@@ -53,6 +53,7 @@ fresh();
   const r = await S.load();
   ok(r.state === "fresh", "an empty documents directory is a FIRST LAUNCH", r);
   ok(r.shelf.items.length === 0, "and an empty shelf");
+  ok(Array.isArray(r.shelf.boards) && r.shelf.boards.length === 0, "with no lists on it — an array, not a missing key", r.shelf.boards);
 }
 
 fresh();
@@ -83,6 +84,87 @@ for (const [label, bad] of [
   ok(Array.isArray(r.shelf.links), `${label} gets a usable links array`, r.shelf.links);
   ok(typeof r.shelf.profile?.name === "string", `${label} gets a usable profile`, r.shelf.profile);
 }
+
+// ── 2b. THE SAME BUG, WAITING ONE FIELD ALONG ────────────────────────────────
+// `boards` — the lists a person makes — arrived after every file on every
+// phone was written. So the ordinary case is a file with NO such key, and the
+// first thing the screens do with it is `.map`.
+const board = (id, extra = {}) => ({ id, name: id, pins: [], query: null, view: "pictures", created_at: "2026-01-01T00:00:00.000Z", ...extra });
+
+fresh();
+fs.put("shelf.json", shelfOf([item("a"), item("b")]));
+{
+  const r = await S.load();
+  ok(!/"boards"/.test(fs.get("shelf.json")), "(the fixture really is a file from before lists existed)");
+  ok(r.state === "read" && r.shelf.items.length === 2, "an OLD file with no boards key reads, and keeps its items", r.state);
+  ok(Array.isArray(r.shelf.boards) && r.shelf.boards.length === 0, "and has an empty boards ARRAY, not undefined", r.shelf.boards);
+}
+
+for (const [label, bad] of [["boards: null", null], ["boards: a number", 7], ["boards: a string", "x"], ["boards: an object", { a: 1 }]]) {
+  fresh();
+  fs.put("shelf.json", shelfOf([item("a")], { boards: bad }));
+  const r = await S.load();
+  ok(r.state === "read" && r.shelf.items.length === 1, `${label} still reads, and keeps the item`, r.state);
+  ok(Array.isArray(r.shelf.boards) && r.shelf.boards.length === 0, `${label} gets a usable boards array`, r.shelf.boards);
+}
+
+// One bad FIELD on one board. Each of these is repaired; none of them costs
+// the board, and none of them costs the shelf.
+fresh();
+fs.put("shelf.json", shelfOf([item("a")], { boards: [
+  board("pins-null", { pins: null }),
+  board("pins-string", { pins: "a,b" }),
+  board("pins-mixed", { pins: ["a", 7, null, "", "b", { id: "c" }] }),
+  null,
+  "not a board",
+  ["nor", "this"],
+  board("query-number", { query: 7 }),
+  board("query-blank", { query: "   " }),
+  board("view-unknown", { view: "grid" }),
+  board("view-rows", { view: "rows", query: "lisbon", cover: "a" }),
+  { name: "No id, but a name and a pin", pins: ["a"] },
+  { id: "bare" },
+] }));
+{
+  const r = await S.load();
+  const by = (id) => r.shelf.boards.find((b) => b?.id === id);
+  ok(r.state === "read" && r.shelf.items.length === 1, "one list with a bad field does not cost the shelf", r);
+  ok(Array.isArray(by("pins-null")?.pins) && by("pins-null").pins.length === 0, "a board whose pins are null is KEPT, with no pins", by("pins-null"));
+  ok(Array.isArray(by("pins-string")?.pins) && by("pins-string").pins.length === 0, "a board whose pins are a string is kept, with no pins — not one pin per letter", by("pins-string"));
+  ok(by("pins-mixed")?.pins.join() === "a,b", "pins that are not ids are left out and the real ones keep their order", by("pins-mixed")?.pins);
+  ok(r.shelf.boards.length === 9, "a null, a string and an array in the list of boards are not boards; the other nine are", r.shelf.boards.length);
+  ok(by("query-number")?.query === null, "a saved search that is not text is no saved search", by("query-number"));
+  ok(by("query-blank")?.query === null, "and neither is a blank one", by("query-blank"));
+  ok(by("view-unknown")?.view === "pictures", "a view nothing can draw falls back to pictures", by("view-unknown"));
+  ok(by("view-rows")?.view === "rows" && by("view-rows").query === "lisbon", "a good view and a good search are left exactly as they were", by("view-rows"));
+  ok(by("view-rows")?.cover === "a", "a field this version does not know is KEPT — a later version wrote it", by("view-rows"));
+  const orphan = r.shelf.boards.find((b) => b?.name === "No id, but a name and a pin");
+  ok(!!orphan && typeof orphan.id === "string" && orphan.id.length > 0 && orphan.pins.join() === "a", "a board with no id is given one — its name and its pin are somebody's work", orphan);
+  ok(by("bare")?.name === "" && by("bare").created_at === "" && Array.isArray(by("bare").pins), "a board that is only an id has every field the screens read", by("bare"));
+  ok(r.shelf.boards.every((b) => !!b && typeof b.id === "string" && typeof b.name === "string" && Array.isArray(b.pins) &&
+       b.pins.every((p) => typeof p === "string") && (b.query === null || typeof b.query === "string") &&
+       (b.view === "pictures" || b.view === "rows") && typeof b.created_at === "string"),
+     "and EVERY board that comes out has the whole shape", r.shelf.boards);
+}
+
+// The round trip: what is saved is what is read. Two boards, in an order, with
+// pins in an order — an array that came back sorted would pass a looser check.
+fresh();
+{
+  const boards = [
+    board("z-first", { name: "This weekend", pins: ["c", "a", "b"] }),
+    board("a-second", { name: "Lisbon", query: "lisbon", view: "rows" }),
+  ];
+  await S.save({ ...S.emptyShelf(), items: [item("a"), item("b"), item("c")], boards });
+  ok(/"boards":\[\{"id":"z-first"/.test(fs.get("shelf.json")), "save writes the boards into the file", fs.get("shelf.json").slice(0, 80));
+  const r = await S.load();
+  ok(r.state === "read" && JSON.stringify(r.shelf.boards) === JSON.stringify(boards), "boards survive save → load exactly: order, pins, search, view", r.shelf.boards);
+  // And again, through the copy the app holds — load, change nothing, save, load.
+  await S.save(r.shelf);
+  const again = await S.load();
+  ok(JSON.stringify(again.shelf.boards) === JSON.stringify(boards), "and a second trip changes nothing", again.shelf.boards);
+}
+ok(Array.isArray(S.emptyShelf().boards) && S.emptyShelf().boards.length === 0, "an empty shelf has an empty boards array");
 
 // ── 3. a file we genuinely cannot read is never called empty ─────────────────
 fresh();
@@ -207,6 +289,20 @@ fs.put("shelf.prev.json", shelfOf([item("a"), item("b")]));
     let threw = null;
     try { S.migrate(shelf); } catch (e) { threw = e.message; }
     ok(threw === null, `migrate survives: ${label}`, threw);
+  }
+
+  // The rename rewrites the shelf. The lists must come out the other side.
+  const kept = [{ id: "l1", name: "Trip", pins: ["a"], query: null, view: "rows", created_at: "" }];
+  const moved = S.migrate({ version: 1, items: [item("a", "travel")], profile: {}, links: [], boards: kept });
+  ok(moved.items[0].list === "places" && JSON.stringify(moved.boards) === JSON.stringify(kept), "a migration that rewrites the items keeps the boards", moved.boards);
+  for (const [label, shelf] of [
+    ["boards missing", { version: 1, items: [item("a", "travel")], profile: {}, links: [] }],
+    ["boards null", { version: 1, items: [item("a")], profile: {}, links: [], boards: null }],
+    ["boards a string", { version: 1, items: [item("a")], profile: {}, links: [], boards: "x" }],
+  ]) {
+    let got = null;
+    try { got = S.migrate(shelf).boards; } catch (e) { got = e.message; }
+    ok(Array.isArray(got) && got.length === 0, `migrate hands back a boards ARRAY: ${label}`, got);
   }
 
   // A lookup through Object.prototype: "constructor" is not a rename.

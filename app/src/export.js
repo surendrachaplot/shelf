@@ -77,6 +77,9 @@ export function exportJson(shelf, { now } = {}) {
     exported_at: isDate(now) ? now.toISOString() : null,
     profile: s.profile && typeof s.profile === "object" ? s.profile : {},
     items: Array.isArray(s.items) ? s.items : [],
+    // Your own lists. Added the day lists were: an export that leaves out the
+    // outfit you spent an evening putting together is not "everything".
+    lists: (Array.isArray(s.boards) ? s.boards : []).filter((b) => b && typeof b === "object"),
     links: (Array.isArray(s.links) ? s.links : [])
       .filter((l) => l && typeof l === "object")
       .map((l) => ({ kind: l.kind ?? null, target: l.target ?? null, title: l.title ?? "", at: l.at ?? null })),

@@ -53,6 +53,32 @@ await page.keyboard.press("Escape");
 await page.goto(URLBASE); await page.waitForTimeout(800);
 await tap("Search everything you have saved"); await page.keyboard.type("tumbler"); await page.waitForTimeout(600);
 say(await has("the article:") && await has("dosa counter"), "Find matches a word that is only in the article body");
+// ── lists: made, filled, read as pictures and as rows, with a total ─────────
+await page.goto(URLBASE); await page.waitForTimeout(800);
+await tap("Search everything you have saved"); await tap("Your lists");
+say(await has("Everything") && await has("Autumn outfit"), "the lists screen shows Everything and the saved lists");
+await page.getByPlaceholder("A name for it").fill("Gifts for Maya");
+await tap("Make the list");
+say(await has("Nothing on this list yet"), "a new list opens, and says it is empty");
+await page.getByLabel("Write a note").first().click(); await page.waitForTimeout(300);
+await page.keyboard.type("Ask about the scarf");
+await tap("Save the note");
+say(await has("Ask about the scarf") && await has("01 thing"), "a note written on a list lands on it");
+await tap("All lists"); await tap("Autumn outfit,");
+say(await has("£83"), "the moodboard carries the total of what has a price");
+await tap("Show as rows");
+say(await has("£65") && await has("£18") && await has("2 with a price. 1 with no price."), "rows show each price and count only things to buy as unpriced");
+say(!(await has("£65.00")), "a row and the total use one format");
+await tap("Wool overshirt");
+say(await has("Open the shop") || await has("OPEN THE SHOP"), "a thing to buy opens with its shop link");
+say(await has("On 1 list"), "and says which list it is on");
+await tap("Add to a list");
+await tap("Add to Gifts for Maya");
+await page.getByLabel("Done").first().click(); await page.waitForTimeout(500);
+say(await has("On 2 lists"), "adding it to a second list shows on the item");
+await tap("Pin to the top");
+say(await has("Pinned") || await has("PINNED"), "a pinned thing is on the home screen");
+
 say(errs.length === 0, "no page errors " + errs.slice(0, 2).join(" | "));
 // the archive renders
 const p2 = await ctx.newPage(); await p2.goto("file://" + out + "/export.html");

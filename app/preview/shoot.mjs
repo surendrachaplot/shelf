@@ -88,6 +88,17 @@ const SHOTS = [
   { name: "app-links-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Restaurants,", "St. John"], scroll: 700 },
   { name: "app-export-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 1400 },
   { name: "app-export-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card", scroll: 1400 },
+  // LISTS. The index, one list as pictures (the moodboard), the same list as
+  // rows with its total, and "add this to a list" reached from an item.
+  { name: "app-lists-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists"] },
+  { name: "app-lists-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Search everything you have saved", "Your lists"] },
+  { name: "app-lists-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists"] },
+  { name: "app-list-pictures-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,"] },
+  { name: "app-list-pictures-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,"] },
+  { name: "app-list-rows-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,", "Show as rows"] },
+  { name: "app-list-rows-320-light", q: "", w: 320, h: 900, scheme: "light", clickLabel: ["Search everything you have saved", "Your lists", "Autumn outfit,", "Show as rows"] },
+  { name: "app-list-add-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Piranesi, Susanna Clarke", "Add to a list"] },
+  { name: "app-product-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Not shelved,", "Open Wool overshirt"], scroll: 520 },
   { name: "app-version-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 900 },
   { name: "app-import-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Import screenshots" },
   { name: "app-import-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Import screenshots" },

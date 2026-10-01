@@ -60,11 +60,13 @@ const FIELD_LABEL: Record<string, string> = {
   article: "the article",
 };
 
-export function Find({ items, onClose, onOpen, onAdded, onTags, city }: {
+export function Find({ items, onClose, onOpen, onAdded, onTags, onLists, city }: {
   items: Item[];
   onClose: () => void;
   /** Browse instead of search: the same shelf, by what things have in common. */
   onTags: () => void;
+  /** Your own lists: an outfit, a trip, gifts. */
+  onLists: () => void;
   onOpen: (item: Item) => void;
   onAdded: (item: Item) => void | Promise<void>;
   city?: string;
@@ -256,11 +258,16 @@ export function Find({ items, onClose, onOpen, onAdded, onTags, city }: {
             </Text>
             {/* The other way in: not "what was it called" but "what else is
                 in Peckham". Only when there is something to browse. */}
-            {items.length ? (
-              <Press onPress={onTags} containerStyle={s.tagsSlot} style={s.tagsBtn} size={TOUCH_MIN} label="Browse by tag">
-                <Text style={s.micro}>Browse by tag →</Text>
+            <View style={s.ways}>
+              <Press onPress={onLists} style={s.tagsBtn} size={TOUCH_MIN} label="Your lists">
+                <Text style={s.micro}>Your lists →</Text>
               </Press>
-            ) : null}
+              {items.length ? (
+                <Press onPress={onTags} style={s.tagsBtn} size={TOUCH_MIN} label="Browse by tag">
+                  <Text style={s.micro}>Browse by tag →</Text>
+                </Press>
+              ) : null}
+            </View>
           </View>
         ) : null}
       </ScrollView>
@@ -388,7 +395,7 @@ const styles = (c: Palette) => StyleSheet.create({
   rowWhy: { ...t.meta, color: c.inkSoft, marginTop: sp.xs },
   addBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.md, alignItems: "center", justifyContent: "center" },
 
-  tagsSlot: { alignSelf: "flex-start", marginTop: sp.lg },
+  ways: { flexDirection: "row", flexWrap: "wrap", gap: sp.sm, marginTop: sp.lg },
   tagsBtn: { minHeight: TOUCH_MIN, paddingHorizontal: sp.lg, justifyContent: "center", borderWidth: 2, borderColor: c.ink },
 
   notice: { marginTop: sp.xl },
