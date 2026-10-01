@@ -5,15 +5,20 @@
 // where it was tapped. Normalising here is what makes "share the same thing
 // twice" update rather than duplicate — which is a thing people do constantly.
 import { isMain } from "./ismain.js";
-import { parseInstagramUrl } from "./resolve.js";
+import { parseInstagramUrl, parseYoutubeUrl, youtubeUrl, parseRedditUrl } from "./resolve.js";
 
 export function canonicalUrl(raw) {
   const s = String(raw || "").trim();
   if (!/^https?:\/\//i.test(s)) return null;
   const ig = parseInstagramUrl(s);
   if (ig) return `https://www.instagram.com/${ig.kind === "p" ? "p" : "reel"}/${ig.shortcode}/`;
+  // One video, one row: youtu.be, m., ?si= and &t= are all the same video.
+  const yt = parseYoutubeUrl(s);
+  if (yt) return youtubeUrl(yt);
   try {
     const u = new URL(s);
+    // A Reddit post's query string is only ever tracking (share_id, context…).
+    if (parseRedditUrl(s)?.id) return u.origin + u.pathname;
     // Strip the usual campaign tail; keep everything else, since a recipe blog
     // may well need its query string to resolve the right page.
     for (const k of ["igsh", "igshid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "si"]) {
@@ -38,6 +43,15 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   // The point of all of the above: one reel, one row.
   ok(canonicalUrl("https://www.instagram.com/reel/DAbCdEf/?igsh=A") === canonicalUrl("https://instagram.com/reels/DAbCdEf?utm_source=x"),
      "two shares of one reel canonicalise identically");
+
+  const video = "https://www.youtube.com/watch?v=vAKRe8sp0I4";
+  ok(canonicalUrl("https://youtu.be/vAKRe8sp0I4?si=AbC&t=42") === video && canonicalUrl("https://m.youtube.com/watch?v=vAKRe8sp0I4&list=PL1&index=3") === video,
+     "youtube: every way of sharing one video is one url");
+  ok(canonicalUrl("https://youtube.com/shorts/vAKRe8sp0I4?feature=share") === "https://www.youtube.com/shorts/vAKRe8sp0I4", "a Short stays a Short");
+  ok(canonicalUrl("https://www.youtube.com/playlist?list=PL1") === "https://www.youtube.com/playlist?list=PL1", "a playlist keeps the query that IS the playlist");
+  ok(canonicalUrl("https://www.reddit.com/r/books/comments/1runrty/a_post/?share_id=x&utm_name=ioscss&context=3") === "https://www.reddit.com/r/books/comments/1runrty/a_post/",
+     "reddit: the share tail is dropped");
+  ok(canonicalUrl("https://www.reddit.com/r/books/search?q=piranesi") === "https://www.reddit.com/r/books/search?q=piranesi", "a Reddit page that is not a post keeps its query");
 
   ok(canonicalUrl("https://food.example/dal?utm_source=ig&page=2") === "https://food.example/dal?page=2", "web: campaign junk out, real params kept");
   ok(canonicalUrl("https://food.example/dal#jump") === "https://food.example/dal", "fragment dropped");

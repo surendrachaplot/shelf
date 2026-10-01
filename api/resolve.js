@@ -11,6 +11,9 @@
 //   1. instagram.com/reel/<code>/embed/captioned/   free, no auth
 //   2. og: tags on the canonical URL                truncated but often enough
 //   3. a paid resolver behind IG_RESOLVER_KEY       only if 1+2 failed AND set
+//
+// YouTube and Reddit have their own readers further down ("youtube-…",
+// "reddit-…"). Neither needs a key; both were chosen by what RENDER can reach.
 //   (4. screenshot + vision — not here; that path never has a URL to fetch,
 //       it comes in as an image and goes straight to classify.js)
 //
@@ -21,6 +24,7 @@
 // `via` is recorded on the item. When items start coming back thin, the
 // resolver histogram tells you which link in the chain died — without it you
 // are guessing at Meta's mood.
+import { readFileSync } from "node:fs";
 import { isMain } from "./ismain.js";
 import { fetchT, BROWSER_HEADERS, CRAWLER_HEADERS, isBotWall } from "./net.js";
 
@@ -234,6 +238,8 @@ export function extractInstagram(html) {
   return out;
 }
 
+export const walled = (status, type, body) => isBotWall(status, /json/i.test(type || "") ? "" : body);
+
 async function tryFetch(url, ms = 12000, headers = BROWSER_HEADERS) {
   try {
     const r = await fetchT(url, { headers, redirect: "follow" }, ms);
@@ -242,7 +248,10 @@ async function tryFetch(url, ms = 12000, headers = BROWSER_HEADERS) {
     // wall is NOT a fetch failure — 200 with a login page is the single most
     // common way this chain dies, and in a diagnosis it must not be
     // indistinguishable from "the network was down".
-    if (isBotWall(r.status, html)) return { blocked: true, html: "", status: r.status, bytes: html.length };
+    //
+    // A JSON body is judged on its status alone. A wall is a PAGE; and a Reddit
+    // post that says "just a moment" in its first paragraph is not one.
+    if (walled(r.status, r.headers.get("content-type"), html)) return { blocked: true, html: "", status: r.status, bytes: html.length };
     return { blocked: false, html, status: r.status, bytes: html.length };
   } catch (e) {
     return { blocked: false, html: "", status: 0, bytes: 0, error: e.message };
@@ -414,9 +423,230 @@ export function extractWebPage(html, url) {
   return out;
 }
 
+// ── YouTube ──────────────────────────────────────────────────────────────────
+//
+// MEASURED FROM RENDER, 2026-10-01 (GET /api/debug/reel?url=…&ua=…):
+//
+//   watch page, browser UA    200, 1.2 MB, LOGIN_REQUIRED — "sign in to confirm
+//                             you are not a bot". No description in it. This is
+//                             what the generic web path was reading: 137
+//                             characters of og:description and nothing else.
+//   watch page, crawler UA    200, 1.6–2.2 MB, `videoDetails` with the full
+//                             `shortDescription`. 5 videos out of 5.
+//   oEmbed                    200, 745 bytes: title, channel, thumbnail. No
+//                             description at all.
+//   captionTracks             absent for the crawler. There is no transcript to
+//                             read, so there is no transcript branch.
+//
+// So: the watch page asked as a link-preview crawler, and oEmbed behind it for
+// the day that door closes. A Short is the same video under /watch.
+
+/** watch, youtu.be, /shorts/, /live/, /embed/ → { id, kind }. Anything else: null. */
+export function parseYoutubeUrl(u) {
+  let url;
+  try { url = new URL(String(u || "").trim()); } catch (_) { return null; }
+  if (!/^https?:$/.test(url.protocol)) return null;
+  const host = url.hostname.toLowerCase().replace(/^(?:www|m|music)\./, "");
+  let id = null, kind = "watch";
+  if (host === "youtu.be") id = url.pathname.split("/")[1];
+  else if (host === "youtube.com") {
+    const m = /^\/(shorts|live|embed)\/([^/]+)/.exec(url.pathname);
+    if (m) { id = m[2]; if (m[1] === "shorts") kind = "short"; }
+    else if (url.pathname === "/watch") id = url.searchParams.get("v");
+  }
+  return /^[A-Za-z0-9_-]{11}$/.test(id || "") ? { id, kind } : null;
+}
+
+export const youtubeUrl = (yt) =>
+  yt.kind === "short" ? `https://www.youtube.com/shorts/${yt.id}` : `https://www.youtube.com/watch?v=${yt.id}`;
+
+// The JSON object that starts at `at`, parsed. Braces inside strings do not
+// count — a description with a "}" in it must not end the object early.
+function jsonObjectAt(text, at) {
+  if (text[at] !== "{") return null;
+  let depth = 0, inStr = false;
+  for (let i = at; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) { if (c === "\\") i++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) {
+      try { return JSON.parse(text.slice(at, i + 1)); } catch (_) { return null; }
+    }
+  }
+  return null;
+}
+
+/**
+ * Title, channel and the WHOLE description, from the watch page.
+ *
+ * SCOPED TO THE VIDEO THAT WAS ASKED FOR — the Wicker Man rule again. A watch
+ * page is two megabytes describing the video AND thirty recommended ones. Only
+ * a `videoDetails` whose videoId is the one in the URL is read; if it is not
+ * there, the answer is empty, never the nearest neighbour.
+ */
+export function extractYoutube(html, id) {
+  const out = EMPTY();
+  const key = `"videoDetails":{"videoId":"${id}"`;
+  const at = String(html || "").indexOf(key);
+  if (at < 0) return out;
+  const vd = jsonObjectAt(html, at + '"videoDetails":'.length);
+  if (!vd?.title) return out;
+  out.caption = [vd.title, vd.shortDescription].map((x) => String(x || "").trim()).filter(Boolean).join("\n\n");
+  out.authorHandle = vd.author || null;
+  out.imageUrl = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  out.outboundUrls = urlsIn(vd.shortDescription);
+  out.via = "youtube-player";
+  return out;
+}
+
+/** oEmbed: a title and a channel. Thin, and true. Scoped by the thumbnail's id. */
+export function extractYoutubeOembed(j, id) {
+  const out = EMPTY();
+  if (!j?.title || !String(j.thumbnail_url || "").includes(`/vi/${id}/`)) return out;
+  out.caption = String(j.title).trim();
+  out.authorHandle = j.author_name || null;
+  out.imageUrl = j.thumbnail_url;
+  out.via = "youtube-oembed";
+  return out;
+}
+
+const parseJson = (text) => { try { return JSON.parse(text); } catch (_) { return null; } };
+const ytWatch = (id) => `https://www.youtube.com/watch?v=${id}&hl=en`;
+const ytOembed = (id) => `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`;
+
+async function viaYoutube(yt, io) {
+  const page = await io.fetchPage(ytWatch(yt.id), 15000, CRAWLER_HEADERS);
+  const got = extractYoutube(page.html, yt.id);
+  if (got.caption) return got;
+  const thin = extractYoutubeOembed(parseJson((await io.fetchPage(ytOembed(yt.id))).html), yt.id);
+  return thin.caption ? thin : null;
+}
+
+// ── Reddit ───────────────────────────────────────────────────────────────────
+//
+// MEASURED FROM RENDER, 2026-10-01, same instrument:
+//
+//   www.reddit.com/<permalink>.json    403 for every user agent tried
+//   www.reddit.com/<permalink>         200, 8 kB: a wall with no post in it.
+//                                      The old web-og path read this, got six
+//                                      characters, and the classifier then
+//                                      named a book out of the URL's SLUG.
+//   www.reddit.com/oembed              200: a title and nothing else
+//   old.reddit.com, browser UA         302 to /login
+//   old.reddit.com/comments/<id>.json  crawler UA: 200, the post AND its
+//                                      comments, as JSON. (api.reddit.com
+//                                      answers the same; one door is enough.)
+//   www.reddit.com/r/<sub>/s/<code>    301, and the Location is the permalink
+//   redd.it/<id>                       the id is in the URL; nothing to fetch
+//
+// So no key and no OAuth: one JSON request, asked as a link-preview crawler.
+// The id is the only part of a Reddit URL that is trusted — the subreddit and
+// the slug in it can say anything, and the post they point at is decided by
+// the id alone.
+
+/**
+ * A Reddit URL → { id, comment } for a post or a comment permalink,
+ * { share } for an app share link (needs one redirect to become a post),
+ * { id: null } for any other Reddit page, and null for another site.
+ */
+export function parseRedditUrl(u) {
+  let url;
+  try { url = new URL(String(u || "").trim()); } catch (_) { return null; }
+  if (!/^https?:$/.test(url.protocol)) return null;
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  if (host === "redd.it") {
+    const m = /^\/([a-z0-9]{3,10})\/?$/i.exec(url.pathname);
+    return { id: m ? m[1].toLowerCase() : null, comment: null };
+  }
+  if (!/^(?:(?:old|new|np|m|sh)\.)?reddit\.com$/.test(host)) return null;
+  const post = /^\/(?:(?:r|u|user)\/[^/]+\/)?comments\/([a-z0-9]{3,10})(?:\/[^/]*\/([a-z0-9]{3,10}))?(?:\/|$)/i.exec(url.pathname);
+  if (post) return { id: post[1].toLowerCase(), comment: post[2] ? post[2].toLowerCase() : null };
+  const share = /^\/(?:r|u|user)\/[^/]+\/s\/[A-Za-z0-9]+\/?$/.exec(url.pathname);
+  if (share) return { id: null, comment: null, share: `https://www.reddit.com${share[0]}` };
+  return { id: null, comment: null };
+}
+
+export const redditJsonUrl = (rd) =>
+  `https://old.reddit.com/comments/${rd.id}${rd.comment ? `/_/${rd.comment}` : ""}.json?raw_json=1&sort=top&limit=40`;
+
+const CAPTION_MAX = 8000;   // what classify.js reads; past this nothing is seen
+const REDDIT_HOST = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:reddit\.com|redd\.it)\//i;
+
+/**
+ * The post and the comments under it, as one text.
+ *
+ * THE COMMENTS ARE NOT DECORATION. "Best restaurants in Lisbon?" has a title,
+ * an empty body and forty answers; the answers are the thing being saved.
+ * Top-level only, in the order Reddit ranks them, and each one is cut — one
+ * long reply must not push nineteen short ones past what the classifier reads.
+ * Left out: pinned moderator notes, the bot, deleted text, and anything voted
+ * below zero (a recommendation the thread itself rejected).
+ *
+ * For a COMMENT permalink the listing holds that one comment, which is the
+ * thing that was shared.
+ */
+export function extractReddit(data, rd) {
+  const out = EMPTY();
+  const post = data?.[0]?.data?.children?.[0]?.data;
+  if (!post?.title || !rd?.id || post.id !== rd.id) return out;
+
+  // A self post's `url` is its own permalink, and a Reddit-hosted video or
+  // picture is the post too. Only a link that LEAVES Reddit is an outbound one.
+  const link = /^https?:\/\//i.test(post.url || "") && !REDDIT_HOST.test(post.url) ? post.url : null;
+  const comments = (data?.[1]?.data?.children || [])
+    .filter((c) => !c.data.stickied && c.data.author !== "AutoModerator" && (c.data.score ?? 1) > 0)
+    .map((c) => String(c.data.body || "").trim())
+    .filter((b) => b && !/^\[(?:deleted|removed)\]$/.test(b))
+    .map((b) => "— " + (b.length > 600 ? b.slice(0, 600) + "…" : b));
+
+  let text = [
+    String(post.title).trim(),
+    `r/${post.subreddit}`,
+    String(post.selftext || "").trim().slice(0, 4000),
+    link ? `Link: ${link}` : "",
+  ].filter(Boolean).join("\n\n");
+  if (comments.length) {
+    text += rd.comment ? "\n\nThe comment that was shared:" : "\n\nTop comments, from other people:";
+    for (const c of comments) {
+      if (text.length + c.length + 1 > CAPTION_MAX) break;
+      text += "\n" + c;
+    }
+  }
+  out.caption = text;
+  out.outboundUrls = [...new Set([...(link ? [link] : []), ...urlsIn(post.selftext)])];
+  const img = post.preview?.images?.[0]?.source?.url || (/^https?:\/\//.test(post.thumbnail || "") ? post.thumbnail : null);
+  out.imageUrl = post.over_18 ? null : img;
+  out.via = rd.comment ? "reddit-json-comment" : "reddit-json";
+  return out;
+}
+
+/** A share link (/r/x/s/CODE) is a redirect. Its Location is the real post. */
+async function redditShareTarget(share) {
+  try {
+    const r = await fetchT(share, { headers: CRAWLER_HEADERS, redirect: "manual" }, 10000);
+    return { http: r.status, location: r.headers.get("location") };
+  } catch (e) {
+    return { http: 0, location: null, error: e.message };
+  }
+}
+
+async function viaReddit(rd, io) {
+  if (rd.share) rd = parseRedditUrl((await io.shareTarget(rd.share)).location) || { id: null };
+  if (!rd.id) return null;   // a subreddit, a share of one, or a redirect to nowhere
+  const { html } = await io.fetchPage(redditJsonUrl(rd), 12000, CRAWLER_HEADERS);
+  const got = extractReddit(parseJson(html), rd);
+  return got.caption ? got : null;
+}
+
 // ── the chain ────────────────────────────────────────────────────────────────
 
-export async function resolveShare(sourceUrl) {
+// `io` is the network, named so the selftest can swap it out. Only the YouTube
+// and Reddit readers take it: which door they knock on, and as whom, is the
+// whole of what was measured, and it is asserted below.
+const NET = { fetchPage: tryFetch, shareTarget: redditShareTarget };
+
+export async function resolveShare(sourceUrl, io = NET) {
   const ig = parseInstagramUrl(sourceUrl);
   if (ig) {
     // Crawler BEFORE the paid resolver and after the free browser attempts:
@@ -430,8 +660,16 @@ export async function resolveShare(sourceUrl) {
     // has your chosen list and a link you can open. It sits unshelved.
     return { ...EMPTY(), via: "none" };
   }
+  // YouTube and Reddit NEVER fall through to the generic reader below. From
+  // Render that reader gets a bot check or a wall, and what it makes of one is
+  // a guess: a Reddit link once came back as a book named after its own slug.
+  // Their own reader, or the honest empty envelope.
+  const yt = parseYoutubeUrl(sourceUrl);
+  if (yt) return (await viaYoutube(yt, io)) || { ...EMPTY(), via: "none" };
+  const rd = parseRedditUrl(sourceUrl);
+  if (rd) return (await viaReddit(rd, io)) || { ...EMPTY(), via: "none" };
   if (/^https?:\/\//i.test(String(sourceUrl || ""))) {
-    const { html } = await tryFetch(sourceUrl);
+    const { html } = await io.fetchPage(sourceUrl);
     const got = extractWebPage(html, sourceUrl);
     // `html` rides along for ONE reader: article.js, which needs the page and
     // must not fetch it a second time. Web pages only — an Instagram page has
@@ -540,6 +778,8 @@ export async function probeShare(sourceUrl) {
   if (prof) return probeProfile(prof.handle);
 
   const ig = parseInstagramUrl(sourceUrl);
+  const yt = ig ? null : parseYoutubeUrl(sourceUrl);
+  let rd = ig || yt ? null : parseRedditUrl(sourceUrl);
   const steps = [];
 
   const record = async (step, url, extract, headers) => {
@@ -596,6 +836,17 @@ export async function probeShare(sourceUrl) {
       configured: !!(process.env.IG_RESOLVER_KEY && process.env.IG_RESOLVER_URL),
       note: "off unless IG_RESOLVER_KEY and IG_RESOLVER_URL are both set",
     });
+  } else if (yt) {
+    await record("youtube-player", ytWatch(yt.id), (h) => extractYoutube(h, yt.id), CRAWLER_HEADERS);
+    await record("youtube-oembed", ytOembed(yt.id), (h) => extractYoutubeOembed(parseJson(h), yt.id));
+  } else if (rd) {
+    if (rd.share) {
+      const hop = await redditShareTarget(rd.share);
+      steps.push({ step: "reddit-share", url: rd.share, ...hop });
+      rd = parseRedditUrl(hop.location) || { id: null };
+    }
+    if (rd.id) await record("reddit-json", redditJsonUrl(rd), (h) => extractReddit(parseJson(h), rd), CRAWLER_HEADERS);
+    else steps.push({ step: "reddit-json", note: "not a post: no post id in this url, so nothing was fetched" });
   } else if (/^https?:\/\//i.test(String(sourceUrl || ""))) {
     await record("web", String(sourceUrl), (html) => extractWebPage(html, sourceUrl));
   }
@@ -625,7 +876,7 @@ export async function probeShare(sourceUrl) {
 
   return {
     url: sourceUrl,
-    kind: ig ? "instagram" : "web",
+    kind: ig ? "instagram" : yt ? "youtube" : rd ? "reddit" : "web",
     shortcode: ig?.shortcode ?? null,
     steps,
     verdict,   // the one-line answer; everything above is the working
@@ -748,6 +999,173 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   const webFix = `<html><meta property="og:title" content="Piranesi by Susanna Clarke"><meta property="og:description" content="A novel."></html>`;
   const e = extractWebPage(webFix, "https://books.example/piranesi");
   ok(e.via === "web-og" && e.caption.includes("Piranesi"), "web og fallback", e);
+
+  // ── YOUTUBE ────────────────────────────────────────────────────────────────
+  // Fixtures are real responses, fetched 2026-10-01 as the crawler and cut
+  // down to the part that is read.
+  const fx = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+  const BOOKS = "vAKRe8sp0I4", LISBON = "wUtY-gm-9ZI";
+
+  const ytIs = (u, id, kind) => { const p = parseYoutubeUrl(u); return p?.id === id && p?.kind === kind; };
+  ok(ytIs("https://www.youtube.com/watch?v=vAKRe8sp0I4&t=42s", BOOKS, "watch"), "youtube watch url, with a timestamp");
+  ok(ytIs("https://youtu.be/vAKRe8sp0I4?si=AbCdEf", BOOKS, "watch"), "youtu.be short link");
+  ok(ytIs("https://youtube.com/shorts/vAKRe8sp0I4?feature=share", BOOKS, "short"), "a Short is a Short");
+  ok(ytIs("https://m.youtube.com/watch?v=vAKRe8sp0I4", BOOKS, "watch") && ytIs("https://music.youtube.com/watch?v=vAKRe8sp0I4", BOOKS, "watch"), "mobile and music hosts");
+  ok(ytIs("https://www.youtube.com/live/vAKRe8sp0I4", BOOKS, "watch") && ytIs("https://www.youtube.com/embed/vAKRe8sp0I4", BOOKS, "watch"), "live and embed paths");
+  ok(parseYoutubeUrl("https://www.youtube.com/@delaneysmith") === null && parseYoutubeUrl("https://www.youtube.com/playlist?list=PL123") === null,
+     "a channel or a playlist is not a video");
+  ok(parseYoutubeUrl("https://notyoutube.com/watch?v=vAKRe8sp0I4") === null && parseYoutubeUrl("https://example.com/watch?v=vAKRe8sp0I4") === null,
+     "another site with the same path is not YouTube");
+  ok(parseYoutubeUrl("https://www.youtube.com/watch?v=short") === null && parseYoutubeUrl("https://youtu.be/") === null, "an id that is not an id is refused");
+  ok(youtubeUrl({ id: BOOKS, kind: "short" }) === `https://www.youtube.com/shorts/${BOOKS}` && youtubeUrl({ id: BOOKS, kind: "watch" }) === `https://www.youtube.com/watch?v=${BOOKS}`,
+     "one video, one url");
+
+  const yb = extractYoutube(fx("youtube/books.html"), BOOKS);
+  ok(yb.via === "youtube-player", "youtube via names its layer", yb.via);
+  ok(yb.caption.startsWith("The 8 Books I Read in September"), "the title is the first line", yb.caption.slice(0, 60));
+  // THE POINT OF ALL THIS. og:description stops at "…the 8 books I read..." —
+  // the list of books is in the part the old path never saw.
+  ok(yb.caption.includes("- Paper Ghosts") && yb.caption.includes("- Count the Ways"), "the FULL description, book list and all", yb.caption.length);
+  ok(yb.caption.length > 400, "and not the 137 characters og:description gives", yb.caption.length);
+  ok(yb.authorHandle === "Delaney Smith", "the channel name", yb.authorHandle);
+  ok(yb.imageUrl === `https://i.ytimg.com/vi/${BOOKS}/hqdefault.jpg`, "a thumbnail", yb.imageUrl);
+  ok(yb.outboundUrls.some((u) => u.includes("patreon.com")), "links in the description are collected", yb.outboundUrls);
+  ok(extractYoutube(fx("youtube/lisbon.html"), LISBON).caption.includes("Ramiro"), "a second real page: the restaurants are in the description");
+
+  // The neighbour rule. A watch page describes thirty other videos too.
+  const wrongVideo = extractYoutube(fx("youtube/books.html"), LISBON);
+  ok(wrongVideo.caption === "" && wrongVideo.via === null, "a page that does not hold the video asked for gives NOTHING, not the video it does hold", wrongVideo.caption.slice(0, 40));
+  const twoVideos = `<script>{"videoDetails":{"videoId":"AAAAAAAAAAA","title":"The neighbour","shortDescription":"wrong"}}
+    {"videoDetails":{"videoId":"BBBBBBBBBBB","title":"The one asked for","shortDescription":"a } brace, a \\" quote and a { brace","author":"Ch"}}</script>`;
+  const scoped = extractYoutube(twoVideos, "BBBBBBBBBBB");
+  ok(scoped.caption.startsWith("The one asked for"), "the second video on a page is read when it is the one in the url", scoped.caption);
+  ok(scoped.caption.endsWith('a } brace, a " quote and a { brace'), "braces and quotes inside a description do not end it early", scoped.caption);
+  const botCheck = `<html><meta property="og:title" content="A title"><script>{"playabilityStatus":{"status":"LOGIN_REQUIRED"}}</script></html>`;
+  ok(extractYoutube(botCheck, BOOKS).caption === "", "the sign-in page has no videoDetails and yields nothing");
+  ok(extractYoutube(null, BOOKS).caption === "" && extractYoutube(fx("youtube/books.html"), "").caption === "", "nothing in, nothing out");
+
+  const yo = extractYoutubeOembed(JSON.parse(fx("youtube/oembed.json")), BOOKS);
+  ok(yo.via === "youtube-oembed" && yo.caption.startsWith("The 8 Books I Read") && yo.authorHandle === "Delaney Smith" && yo.imageUrl.includes(BOOKS),
+     "oEmbed: title, channel, thumbnail — and a via that says it is the thin one", yo);
+  ok(extractYoutubeOembed(JSON.parse(fx("youtube/oembed.json")), LISBON).caption === "", "oEmbed for another video is not this video");
+  ok(extractYoutubeOembed(null, BOOKS).caption === "", "no oEmbed, nothing");
+
+  // ── REDDIT ─────────────────────────────────────────────────────────────────
+  const rdIs = (u, id, comment = null) => { const p = parseRedditUrl(u); return p?.id === id && p?.comment === comment && !p?.share; };
+  ok(rdIs("https://www.reddit.com/r/suggestmeabook/comments/1runrty/the_count_of_monte_cristo/", "1runrty"), "reddit post url");
+  ok(rdIs("https://old.reddit.com/r/books/comments/1rgdd5q/dan_simmons?utm_source=share", "1rgdd5q"), "old.reddit, no trailing slash, query");
+  ok(rdIs("https://reddit.com/comments/1runrty", "1runrty") && rdIs("https://redd.it/1runrty", "1runrty"), "the two short forms");
+  ok(rdIs("https://www.reddit.com/user/someone/comments/1runrty/a_post/", "1runrty"), "a post on a user page");
+  ok(rdIs("https://www.reddit.com/r/suggestmeabook/comments/1runrty/the_count/oamn7kn/?context=3", "1runrty", "oamn7kn"), "a comment permalink keeps the comment");
+  const sh = parseRedditUrl("https://www.reddit.com/r/AskReddit/s/71KspSnbCO?share_id=x");
+  ok(sh?.share === "https://www.reddit.com/r/AskReddit/s/71KspSnbCO" && sh.id === null, "an app share link is recognised, and is not yet a post", sh);
+  ok(parseRedditUrl("https://www.reddit.com/r/books/")?.id === null && parseRedditUrl("https://www.reddit.com/r/books/")?.share === undefined,
+     "a subreddit is a Reddit page with no post in it");
+  ok(parseRedditUrl("https://notreddit.com/r/x/comments/abc123/") === null && parseRedditUrl("https://reddit.com.evil.example/comments/abc123") === null
+     && parseRedditUrl("https://i.redd.it/abc123.jpg") === null && parseRedditUrl("https://example.com/comments/abc123") === null,
+     "another host is not Reddit");
+  ok(redditJsonUrl({ id: "1runrty" }) === "https://old.reddit.com/comments/1runrty.json?raw_json=1&sort=top&limit=40"
+     && redditJsonUrl({ id: "1runrty", comment: "oamn7kn" }) === "https://old.reddit.com/comments/1runrty/_/oamn7kn.json?raw_json=1&sort=top&limit=40",
+     "the one door that is open from Render: old.reddit.com, by id");
+
+  const SELF = { id: "1runrty", comment: null };
+  const rs = extractReddit(JSON.parse(fx("reddit/selfpost.json")), SELF);
+  ok(rs.via === "reddit-json", "reddit via names its layer", rs.via);
+  ok(rs.caption.startsWith("The Count of Monte Cristo changed me"), "the post title is the first line", rs.caption.slice(0, 50));
+  ok(rs.caption.includes("\n\nr/suggestmeabook\n\n"), "the subreddit is in the text");
+  ok(rs.caption.includes("I just finished Monte Cristo and it was life changing"), "the post's own text");
+  ok(rs.caption.includes("Top comments, from other people:") && rs.caption.includes("— East of Eden") && rs.caption.includes("Lonesome Dove"),
+     "THE ANSWERS: a recommendation thread keeps its comments");
+  ok(!rs.caption.includes("Link:") && rs.outboundUrls.length === 0, "a self post has no outbound link — its own url is not one", rs.outboundUrls);
+  ok(rs.authorHandle === null && !rs.caption.includes("someone"), "nobody's username is carried");
+
+  // THE SLUG LIES. `/r/books/comments/1b0i8yd/piranesi_by_susanna_clarke/` is a
+  // motorbike video; only the id decides. A listing for another id is refused.
+  ok(extractReddit(JSON.parse(fx("reddit/selfpost.json")), { id: "1b0i8yd" }).caption === "", "a listing whose post is not the id asked for gives nothing");
+  ok(extractReddit(null, SELF).caption === "" && extractReddit({ message: "Forbidden" }, SELF).caption === "" && extractReddit([], SELF).via === null,
+     "a wall, an error body or nothing at all → the empty envelope");
+
+  const rl = extractReddit(JSON.parse(fx("reddit/linkpost.json")), { id: "1rgdd5q" });
+  ok(rl.caption.includes("Link: https://www.dignitymemorial.com/") && rl.outboundUrls[0].startsWith("https://www.dignitymemorial.com/"), "a link post carries where it points", rl.outboundUrls);
+  ok(rl.caption.includes("Hyperion") && !rl.caption.includes("[deleted]"), "its comments are read, and deleted ones are not");
+  ok(/^https:\/\/external-preview\.redd\.it\/.+/.test(rl.imageUrl || "") && !rl.imageUrl.includes("width=140"), "the full preview image, not the 140px thumbnail", rl.imageUrl);
+
+  const rc = extractReddit(JSON.parse(fx("reddit/comment.json")), { id: "1runrty", comment: "oamn7kn" });
+  ok(rc.via === "reddit-json-comment" && rc.caption.includes("The comment that was shared:") && rc.caption.includes("Crime and Punishment")
+     && !rc.caption.includes("Top comments"), "a comment permalink is labelled as the comment that was shared", rc.caption.slice(-200));
+
+  const mk = (post, comments) => [
+    { data: { children: [{ kind: "t3", data: { id: "abc123", subreddit: "lisbon", title: "Where to eat?", selftext: "", is_self: true, ...post } }] } },
+    { data: { children: comments.map((c) => ({ kind: c.kind || "t1", data: { score: 5, ...c } })) } },
+  ];
+  const AB = { id: "abc123", comment: null };
+  const noise = extractReddit(mk({}, [
+    { body: "Read the rules before posting", stickied: true }, { body: "I am a bot", author: "AutoModerator" },
+    { body: "McDonalds lol", score: -4 }, { body: "[removed]" }, { kind: "more", count: 40 }, { body: "Ramiro" },
+  ]), AB).caption;
+  ok(noise.includes("— Ramiro"), "a real answer survives");
+  ok(!noise.includes("Read the rules"), "a pinned moderator note is not an answer");
+  ok(!noise.includes("I am a bot"), "nor is the bot");
+  ok(!noise.includes("McDonalds"), "nor is one the thread voted below zero");
+  ok(!noise.includes("[removed]") && !noise.includes("undefined"), "nor removed text, nor a 'load more' stub");
+  ok(!extractReddit(mk({}, []), AB).caption.includes("Top comments"), "no comments, no heading promising some");
+
+  const long = extractReddit(mk({}, [{ body: "x".repeat(2000) }, { body: "Prado" }]), AB).caption;
+  ok(long.includes("x".repeat(600) + "…") && !long.includes("x".repeat(601)) && long.includes("— Prado"), "one long reply is cut, and the next is still read");
+  const many = extractReddit(mk({ selftext: "s".repeat(9000) }, Array.from({ length: 60 }, (_, i) => ({ body: `place number ${i} ` + "y".repeat(480) }))), AB).caption;
+  ok(many.length <= 8000, "the whole text fits what the classifier reads", many.length);
+  ok(!many.includes("s".repeat(4001)) && many.includes("place number 0"), "a huge post body leaves room for answers");
+  ok(/y{480}$/.test(many), "and it ends on a whole comment, not half of one", many.slice(-20));
+
+  ok(extractReddit(mk({ is_self: false, url: "https://v.redd.it/qpocems2sxkc1" }, []), AB).caption.includes("Link:") === false, "reddit's own video host is not an outbound link");
+  ok(extractReddit(mk({ selftext: "see https://example.com/list for more" }, []), AB).outboundUrls[0] === "https://example.com/list", "a link written in the post body counts");
+  const pic = { preview: { images: [{ source: { url: "https://preview.redd.it/a.jpg" } }] } };
+  ok(extractReddit(mk(pic, []), AB).imageUrl === "https://preview.redd.it/a.jpg" && extractReddit(mk({ ...pic, over_18: true }, []), AB).imageUrl === null,
+     "a picture is carried; an 18+ one is not");
+  ok(extractReddit(mk({ thumbnail: "self" }, []), AB).imageUrl === null && extractReddit(mk({ thumbnail: "https://b.thumbs.redditmedia.com/t.jpg" }, []), AB).imageUrl !== null,
+     "'self' and 'default' are not thumbnails; a url is");
+
+  // A JSON body is never a wall page, whatever it says; a 403 always is.
+  ok(walled(200, "application/json; charset=UTF-8", '[{"selftext":"just a moment, accounts/login"}]') === false, "a post that SAYS 'just a moment' is not a bot wall");
+  ok(walled(403, "application/json", "{}") === true && walled(200, "text/html", "<title>Just a moment...</title>") === true, "a 403 is, and so is the real wall page");
+
+  // ── THE CHAIN, network swapped out ─────────────────────────────────────────
+  // Which door, and as whom. This is the measurement, held in place.
+  {
+    const wallPage = `<html><meta property="og:title" content="Reddit - Dive into anything"><meta property="og:description" content="piranesi by susanna clarke"></html>`;
+    const run = async (url, pages, location = null) => {
+      const calls = [];
+      const got = await resolveShare(url, {
+        fetchPage: async (u, _ms, headers) => { calls.push({ u, crawler: headers === CRAWLER_HEADERS }); return { html: pages(u) || "" }; },
+        shareTarget: async () => ({ http: 301, location }),
+      });
+      return { got, calls };
+    };
+
+    const y1 = await run(`https://youtu.be/${BOOKS}`, (u) => (u.includes("/watch?") ? fx("youtube/books.html") : ""));
+    ok(y1.got.via === "youtube-player" && y1.calls.length === 1, "a youtube link is read from the watch page, in one request", y1.calls);
+    ok(y1.calls[0].u === `https://www.youtube.com/watch?v=${BOOKS}&hl=en` && y1.calls[0].crawler === true,
+       "asked AS THE CRAWLER — a browser gets the sign-in page from Render", y1.calls[0]);
+    const y2 = await run(`https://www.youtube.com/shorts/${BOOKS}`, (u) => (u.includes("/oembed") ? fx("youtube/oembed.json") : botCheck));
+    ok(y2.got.via === "youtube-oembed" && y2.got.caption.startsWith("The 8 Books"), "the sign-in page falls back to oEmbed, and says so", y2.got.via);
+    const y3 = await run(`https://www.youtube.com/watch?v=${BOOKS}`, () => botCheck);
+    ok(y3.got.via === "none" && y3.got.caption === "", "YouTube unreadable → the empty envelope, NOT the og: tags of the sign-in page", y3.got);
+
+    const r1 = await run("https://www.reddit.com/r/books/comments/1runrty/piranesi_by_susanna_clarke/", (u) => (u.startsWith("https://old.reddit.com/comments/1runrty.json") ? fx("reddit/selfpost.json") : wallPage));
+    ok(r1.got.via === "reddit-json" && r1.calls.length === 1 && r1.calls[0].crawler === true, "a reddit link is one JSON request, as the crawler", r1.calls);
+    ok(r1.got.caption.startsWith("The Count of Monte Cristo") && !/piranesi/i.test(r1.got.caption), "and the post is what the ID says, not what the slug says");
+    const r2 = await run("https://www.reddit.com/r/books/comments/1runrty/x/", () => wallPage);
+    ok(r2.got.via === "none" && r2.got.caption === "", "Reddit unreadable → the empty envelope, NOT a guess from the wall page", r2.got);
+    const r3 = await run("https://www.reddit.com/r/AskReddit/s/71KspSnbCO", () => fx("reddit/selfpost.json"),
+      "https://www.reddit.com/r/suggestmeabook/comments/1runrty/the_count/?share_id=abc&utm_medium=ios_app");
+    ok(r3.got.via === "reddit-json" && r3.calls[0].u.startsWith("https://old.reddit.com/comments/1runrty.json"), "a share link follows its redirect to the post", r3.calls);
+    const r4 = await run("https://www.reddit.com/r/Eragon/s/9hd4Wo5sfE", () => fx("reddit/selfpost.json"), "https://www.reddit.com/r/Eragon?share_id=abc");
+    ok(r4.got.via === "none" && r4.calls.length === 0, "a share link that lands on a subreddit is not a post, and nothing is fetched", r4.calls);
+    const r5 = await run("https://www.reddit.com/r/books/", () => wallPage);
+    ok(r5.got.via === "none" && r5.calls.length === 0, "a Reddit page that is not a post never reaches the generic reader", r5);
+    const w1 = await run("https://books.example/piranesi", () => webFix);
+    ok(w1.got.via === "web-og" && w1.calls[0].crawler === false, "every other site still goes down the generic path, as a browser", w1.got.via);
+  }
 
   console.log(fail ? `selftest FAILED (${fail})` : "resolve selftest ok");
   process.exit(fail ? 1 : 0);
