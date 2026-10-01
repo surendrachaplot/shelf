@@ -47,6 +47,12 @@ jobs:
       - name: App selftests
         working-directory: app
         run: npm run preflight
+      # Phase 2's pure modules. Run from HERE and not from package.json
+      # `scripts`: Expo's fingerprint hashes the scripts block into the runtime
+      # version, so adding a script there strands every installed build.
+      - name: Phase 2 selftests
+        working-directory: app
+        run: node tags-selftest.mjs && node links-selftest.mjs && node serendipity-selftest.mjs && node export-selftest.mjs
 
       # DESIGN-RULES §0.1 — grep the new class names — as a machine step. The
       # rendered pass (preview/) needs Chromium and lives in `npm run verify`;

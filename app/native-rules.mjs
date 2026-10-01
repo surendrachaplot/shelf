@@ -47,8 +47,7 @@ export const NATIVE = [
 /**
  * Keys inside otherwise-native files that cannot reach a binary.
  *
- * `owner`/`extra` are EAS account routing. `scripts` are commands run on a
- * laptop. A guard that fires on a change it knows to be harmless teaches you
+ * `owner`/`extra` are EAS account routing. A guard that fires on a change it knows to be harmless teaches you
  * to ignore the guard, and the one time it is right is the time it matters.
  */
 export const EXEMPT = {
@@ -56,10 +55,14 @@ export const EXEMPT = {
     keys: "`owner`/`extra`", why: "EAS account routing, not the native project",
     strip: (j) => { delete j?.expo?.owner; delete j?.expo?.extra; },
   },
-  "app/package.json": {
-    keys: "`scripts`", why: "commands that run on a laptop, not code that ships",
-    strip: (j) => { delete j?.scripts; },
-  },
+  // `scripts` in package.json WAS exempt here ("commands that run on a
+  // laptop"). MEASURED WRONG on 2026-10-01: with `runtimeVersion: fingerprint`,
+  // Expo hashes `packageJson:scripts` into the runtime version. Adding two
+  // selftests to `scripts` moved the iOS runtime from f60ddf7b to 75a64b3a,
+  // this guard said "safe to publish", and the update went out to a runtime no
+  // phone has — so nothing arrived, and nothing said why. A scripts change IS
+  // a native change as far as the phone is concerned. Put new commands in
+  // checks.yml, not in package.json.
 };
 
 /** Which changed files need a build, and why. */

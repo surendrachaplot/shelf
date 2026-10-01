@@ -57,9 +57,9 @@ for (const [f, r] of Object.entries(EXEMPT)) {
      "app.json: anything else still is");
 
   const pkg = (extra) => JSON.parse(JSON.stringify({ dependencies: { expo: "52" }, scripts: { a: "1" }, ...extra }));
-  const stripP = (j) => { EXEMPT["app/package.json"].strip(j); return JSON.stringify(j); };
-  ok(stripP(pkg({})) === stripP(pkg({ scripts: { a: "1", b: "2" } })),
-     "package.json: scripts alone is not a native change");
+  const stripP = (j) => { EXEMPT["app/package.json"]?.strip(j); return JSON.stringify(j); };
+  ok(stripP(pkg({})) !== stripP(pkg({ scripts: { a: "1", b: "2" } })),
+     "package.json: a scripts change IS flagged — the fingerprint hashes scripts, so it moves the runtime version");
   ok(stripP(pkg({})) !== stripP(pkg({ dependencies: { expo: "52", "expo-linking": "7" } })),
      "package.json: a dependency still is");
 }

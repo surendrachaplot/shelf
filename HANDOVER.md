@@ -39,9 +39,9 @@ update to the build on the phone.
 | 5 | Automatic links (same author / director / cast / area / city) | `app/src/links.js` | `node app/links-selftest.mjs` |
 | 6 | Serendipity (open now, near, a year ago, forgotten) | `app/src/serendipity.js` | `node app/serendipity-selftest.mjs` |
 | 7 | Export: JSON + one readable HTML file | `app/src/export.js`, `app/src/saveFile.ts` | `node app/export-selftest.mjs` |
-| UI | Reader, tag index, one tag, links on the item page, the home strip, Take a copy | `app/src/Reader.tsx`, `app/src/TagIndex.tsx`, `App.tsx`, `src/Profile.tsx`, `src/Find.tsx` | `cd app && npm run phase2` |
+| UI | Reader, tag index, one tag, links on the item page, the home strip, Take a copy | `app/src/Reader.tsx`, `app/src/TagIndex.tsx`, `App.tsx`, `src/Profile.tsx`, `src/Find.tsx` | `cd app && node preview/build.mjs && node preview/phase2.mjs` |
 
-`npm run phase2` is the one to trust: it taps the real entry points in
+That last command is the one to trust: it taps the real entry points in
 Chromium, takes the real export downloads and opens the file. All four
 subagent-written modules were mutation-probed (every assertion watched to
 fail); the counts are in their selftest headers.
@@ -63,6 +63,25 @@ the Storage Access Framework (already inside `expo-file-system`) on Android,
 and a Blob download on the web. So all of this can travel over the air to the
 2026-09-01 build. `TagIndex.tsx` is not called `Tags.tsx` on purpose: next to
 `tags.js` on a case-insensitive Mac the two names collide.
+
+### THE PUSH THAT REACHED NO PHONE (2026-10-01) — read before touching package.json
+
+The first publish of this work succeeded and was offered to nobody. The iOS
+runtime version went from `f60ddf7b…` (the installed build) to `75a64b3a…`,
+because **Expo's fingerprint hashes `packageJson:scripts`** and four selftests
+had been added to `scripts`. `update-safety.mjs` said "safe to publish": it
+exempted `scripts` as "commands that run on a laptop". That exemption is
+deleted and the selftest now asserts the opposite.
+
+- **Never add or change a `scripts` entry in `app/package.json` between
+  builds.** New commands go in `checks.yml` or are run by path.
+- **The check that proves an update can land:**
+  `cd app && npx expo-updates fingerprint:generate --platform ios` must print
+  the installed build's runtime, `f60ddf7bcf0fec95891ebfc4adf43890a6cdbd6a`.
+- Also fixed on the way: the three EAS workflows pinned Node 20 and the
+  newest eas-cli needs 22, so the publish died before it started.
+- The Android fingerprint on this Mac is `2c17dd00…`; no Android build
+  exists to compare it with.
 
 ### Paper
 
