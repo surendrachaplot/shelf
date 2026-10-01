@@ -21,6 +21,7 @@ import { createServer } from "node:http";
 import { migrate, dbReady, query } from "./db.js";
 import { json, appKeyOk , cors } from "./http.js";
 import { serveApp } from "./site.js";
+import { serveLanding } from "./landing.js";
 import { secretMatches } from "./legacy.js";
 import { resolveRoute, resolveImageRoute } from "./resolveRoute.js";
 import { createPublish, revokePublish, publishStats, readPublished } from "./publish.js";
@@ -148,6 +149,9 @@ async function handle(req, res, url) {
     // the web build lives here rather than waiting on somebody to switch on a
     // hosting product.
     if (await serveApp(req, res, url)) return;
+    // The front door. `/` answered 404 until 2026-10-01: a product with a web
+    // app and no page that says what it is.
+    if (serveLanding(req, res, url)) return;
   }
 
   // Guarded, uniformly. `/api/legacy/wipe` takes the admin secret instead,

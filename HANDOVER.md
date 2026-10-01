@@ -76,6 +76,33 @@ and a Blob download on the web. So all of this can travel over the air to the
 2026-09-01 build. `TagIndex.tsx` is not called `Tags.tsx` on purpose: next to
 `tags.js` on a case-insensitive Mac the two names collide.
 
+### The website (2026-10-01, evening)
+
+`GET /` is a landing page now (`api/landing.js`, `node landing.js --selftest`).
+It answered 404 before. Paper: file "shelf" → page "WEBSITE — landing page",
+desktop 1440 and mobile 390. Headline "Save anything. Find it later."; the
+first section is the point of the page — Instagram, Reddit, YouTube, any link,
+each with what you get. **The copy is deliberately plain.** The first draft
+had written-sounding lines ("Not a pile of links. The real things.") and Suren
+asked, with feeling, for it to read like a normal landing page. Keep it that
+way: say what it does, no contrast-for-effect, no clever closers.
+
+Every claim on it has to be something the service does. The Reddit and YouTube
+rows depend on the resolvers in `resolve.js` (built the same evening — see the
+YouTube/Reddit section if present, and `git log`); if one is removed, its row
+goes too.
+
+### "The app is not updating" (2026-10-01)
+
+Reported from the phone after the publish. Expo's server WAS offering the
+update to the installed build (checked by asking it directly, with the build's
+runtime and channel in the headers — the curl is in the session, and
+`eas update:insights <group>` showed 0 launches). An update downloads on one
+cold start and runs on the NEXT, and nothing on screen said which was running.
+**Your card now has a Version block**: which update is running, and "Get the
+newest", which checks, downloads and restarts. Whether the phone has taken it
+is still unconfirmed — ask.
+
 ### THE PUSH THAT REACHED NO PHONE (2026-10-01) — read before touching package.json
 
 The first publish of this work succeeded and was offered to nobody. The iOS
