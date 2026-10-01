@@ -389,6 +389,11 @@ export default function App() {
   // curated must never be overwritten by a five-month-old export.
   useEffect(() => {
     if (!shelf || shelf.items.length) return;
+    // NEVER IN A BROWSER. The export is one person's old shelf, kept for one
+    // phone. The web build ran this too, so every new visitor to the web app
+    // was shown the owner's 21 items as their own. The server refuses a
+    // browser now as well (api/legacy.js); this is the client not asking.
+    if (Platform.OS === "web") return;
     let live = true;
     (async () => {
       const got = await legacyExport().catch(() => null);

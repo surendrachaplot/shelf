@@ -31,6 +31,10 @@ jobs:
       - name: API selftests
         working-directory: api
         run: npm run selftest
+      # The browser extension: its manifest, its URL builder, and that the two
+      # built folders match the source they are copied from.
+      - name: Extension selftest
+        run: node extension/selftest.mjs
 
   app:
     runs-on: ubuntu-latest

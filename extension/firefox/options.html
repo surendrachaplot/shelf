@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>shelf — options</title>
+<!-- Designed on Paper first: file "shelf", page "EXTENSION — options page".
+     Two values, the same two the web app paints before its bundle loads
+     (app/web/index.html). One family. Radius zero. 3px rules. -->
+<style>
+  :root { --bg: #FFFFFF; --ink: #0A0A0A; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0A0A0A; --ink: #FFFFFF; } }
+  * { box-sizing: border-box; border-radius: 0; }
+  /* On html AND body: Chromium gives an extension page's body its own
+     `font-family: system-ui; font-size: 75%`, so inheriting is not enough. */
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/22px Helvetica, Arial, sans-serif; }
+  main { max-width: 640px; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+  h1, h2, p { margin: 0; }
+  h1 { font-size: 42px; line-height: 48px; font-weight: 700; letter-spacing: -2.6px; }
+  hr { width: 100%; height: 3px; margin: 0; border: 0; background: var(--ink); }
+  section, header { display: flex; flex-direction: column; gap: 8px; }
+  header { gap: 4px; }
+  .label { font-size: 11px; line-height: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .small { font-size: 13px; line-height: 18px; }
+  input {
+    width: 100%; height: 44px; padding: 0 12px; border: 3px solid var(--ink);
+    background: var(--bg); color: var(--ink); font: inherit; appearance: none;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 8px; }
+  /* Natural width. A button is as wide as its word. */
+  button {
+    flex: none; height: 44px; padding: 0 20px; border: 3px solid var(--ink);
+    background: var(--bg); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer;
+  }
+  button.go { background: var(--ink); color: var(--bg); }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  #status { padding-left: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>shelf</h1>
+    <p class="label">Browser extension</p>
+  </header>
+  <hr>
+  <section>
+    <label class="label" for="base">Shelf address</label>
+    <input id="base" type="url" inputmode="url" spellcheck="false" autocomplete="off">
+    <p class="small">Saved links open in the shelf web app at this address.</p>
+    <div class="row">
+      <button id="save" class="go" type="button">Save</button>
+      <button id="reset" type="button">Use the default</button>
+      <p id="status" class="small" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+  <hr>
+  <section>
+    <h2 class="label">How to save</h2>
+    <p>Click the shelf button in the toolbar. It saves the page you are on.</p>
+    <p>Right-click a link, then choose Save to shelf. Text you selected goes with it.</p>
+    <p>Press Alt + Shift + S. On a Mac, Option + Shift + S.</p>
+  </section>
+  <hr>
+  <section>
+    <h2 class="label">Where it goes</h2>
+    <p>Your shelf is kept in this browser. It does not sync with your phone yet.</p>
+  </section>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>
