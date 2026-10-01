@@ -240,9 +240,12 @@ export function extractInstagram(html) {
 
 export const walled = (status, type, body) => isBotWall(status, /json/i.test(type || "") ? "" : body);
 
-async function tryFetch(url, ms = 12000, headers = BROWSER_HEADERS) {
+// `post` is a JSON body; with one, this is a POST. Everything else is a GET.
+async function tryFetch(url, ms = 12000, headers = BROWSER_HEADERS, post = null) {
   try {
-    const r = await fetchT(url, { headers, redirect: "follow" }, ms);
+    const r = await fetchT(url, post
+      ? { method: "POST", body: post, headers: { ...headers, "Content-Type": "application/json" }, redirect: "follow" }
+      : { headers, redirect: "follow" }, ms);
     const html = await r.text();
     // `status`/`bytes` are for `probeShare` and ignored by the resolvers. A
     // wall is NOT a fetch failure — 200 with a login page is the single most
@@ -432,14 +435,23 @@ export function extractWebPage(html, url) {
 //                             what the generic web path was reading: 137
 //                             characters of og:description and nothing else.
 //   watch page, crawler UA    200, 1.6–2.2 MB, `videoDetails` with the full
-//                             `shortDescription`. 5 videos out of 5.
+//                             `shortDescription` — 5 videos out of 5, and then,
+//                             a dozen fetches later, a 302 to google.com/sorry
+//                             for EVERY user agent. The page works and is
+//                             rationed per IP, on an IP shared with strangers.
+//   player endpoint, crawler  POST /youtubei/v1/player, client WEB: 200, 9 kB
+//                             of JSON, the same `videoDetails` — 4 out of 4
+//                             WHILE the watch page was answering /sorry. As a
+//                             browser, or with no UA: LOGIN_REQUIRED.
 //   oEmbed                    200, 745 bytes: title, channel, thumbnail. No
 //                             description at all.
 //   captionTracks             absent for the crawler. There is no transcript to
 //                             read, so there is no transcript branch.
 //
-// So: the watch page asked as a link-preview crawler, and oEmbed behind it for
-// the day that door closes. A Short is the same video under /watch.
+// So three doors, in order: the player endpoint, the watch page, oEmbed — all
+// but the last asked as a link-preview crawler, which is the whole trick. The
+// first two give the same thing by different routes with different rationing;
+// the third is thin and says so in `via`. A Short is the same video.
 
 /** watch, youtu.be, /shorts/, /live/, /embed/ → { id, kind }. Anything else: null. */
 export function parseYoutubeUrl(u) {
@@ -478,14 +490,16 @@ function jsonObjectAt(text, at) {
 }
 
 /**
- * Title, channel and the WHOLE description, from the watch page.
+ * Title, channel and the WHOLE description. One reader for both doors: the
+ * player endpoint's JSON and the watch page's HTML carry the same
+ * `"videoDetails":{…}` text, so it is found the same way in either.
  *
  * SCOPED TO THE VIDEO THAT WAS ASKED FOR — the Wicker Man rule again. A watch
  * page is two megabytes describing the video AND thirty recommended ones. Only
  * a `videoDetails` whose videoId is the one in the URL is read; if it is not
  * there, the answer is empty, never the nearest neighbour.
  */
-export function extractYoutube(html, id) {
+export function extractYoutube(html, id, via = "youtube-player") {
   const out = EMPTY();
   const key = `"videoDetails":{"videoId":"${id}"`;
   const at = String(html || "").indexOf(key);
@@ -496,7 +510,7 @@ export function extractYoutube(html, id) {
   out.authorHandle = vd.author || null;
   out.imageUrl = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
   out.outboundUrls = urlsIn(vd.shortDescription);
-  out.via = "youtube-player";
+  out.via = via;
   return out;
 }
 
@@ -513,12 +527,17 @@ export function extractYoutubeOembed(j, id) {
 
 const parseJson = (text) => { try { return JSON.parse(text); } catch (_) { return null; } };
 const ytWatch = (id) => `https://www.youtube.com/watch?v=${id}&hl=en`;
+const YT_PLAYER = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
+// ponytail: a pinned web-client version. YouTube answers old ones for a long
+// time; when it stops, the watch page is next in line and `via` will say so.
+const ytPlayerBody = (id) => JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20250925.01.00", hl: "en" } }, videoId: id });
 const ytOembed = (id) => `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`;
 
 async function viaYoutube(yt, io) {
-  const page = await io.fetchPage(ytWatch(yt.id), 15000, CRAWLER_HEADERS);
-  const got = extractYoutube(page.html, yt.id);
-  if (got.caption) return got;
+  const api = extractYoutube((await io.fetchPage(YT_PLAYER, 12000, CRAWLER_HEADERS, ytPlayerBody(yt.id))).html, yt.id);
+  if (api.caption) return api;
+  const page = extractYoutube((await io.fetchPage(ytWatch(yt.id), 15000, CRAWLER_HEADERS)).html, yt.id, "youtube-watch");
+  if (page.caption) return page;
   const thin = extractYoutubeOembed(parseJson((await io.fetchPage(ytOembed(yt.id))).html), yt.id);
   return thin.caption ? thin : null;
 }
@@ -782,9 +801,9 @@ export async function probeShare(sourceUrl) {
   let rd = ig || yt ? null : parseRedditUrl(sourceUrl);
   const steps = [];
 
-  const record = async (step, url, extract, headers) => {
+  const record = async (step, url, extract, headers, post) => {
     const t0 = Date.now();
-    const r = await tryFetch(url, 12000, headers);
+    const r = await tryFetch(url, 12000, headers, post);
     const got = extract(r.html);
     const markers = {};
     for (const [k, re] of Object.entries(MARKERS)) if (re.test(r.html)) markers[k] = true;
@@ -837,7 +856,8 @@ export async function probeShare(sourceUrl) {
       note: "off unless IG_RESOLVER_KEY and IG_RESOLVER_URL are both set",
     });
   } else if (yt) {
-    await record("youtube-player", ytWatch(yt.id), (h) => extractYoutube(h, yt.id), CRAWLER_HEADERS);
+    await record("youtube-player", YT_PLAYER, (h) => extractYoutube(h, yt.id), CRAWLER_HEADERS, ytPlayerBody(yt.id));
+    await record("youtube-watch", ytWatch(yt.id), (h) => extractYoutube(h, yt.id, "youtube-watch"), CRAWLER_HEADERS);
     await record("youtube-oembed", ytOembed(yt.id), (h) => extractYoutubeOembed(parseJson(h), yt.id));
   } else if (rd) {
     if (rd.share) {
@@ -1020,8 +1040,11 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(youtubeUrl({ id: BOOKS, kind: "short" }) === `https://www.youtube.com/shorts/${BOOKS}` && youtubeUrl({ id: BOOKS, kind: "watch" }) === `https://www.youtube.com/watch?v=${BOOKS}`,
      "one video, one url");
 
-  const yb = extractYoutube(fx("youtube/books.html"), BOOKS);
-  ok(yb.via === "youtube-player", "youtube via names its layer", yb.via);
+  const yb = extractYoutube(fx("youtube/books.html"), BOOKS, "youtube-watch");
+  ok(yb.via === "youtube-watch", "youtube via names its layer", yb.via);
+  const yp = extractYoutube(fx("youtube/player.json"), BOOKS);
+  ok(yp.via === "youtube-player" && yp.caption === yb.caption && yp.authorHandle === yb.authorHandle,
+     "the player endpoint and the watch page say the same thing, and via tells them apart", [yp.via, yp.caption.length]);
   ok(yb.caption.startsWith("The 8 Books I Read in September"), "the title is the first line", yb.caption.slice(0, 60));
   // THE POINT OF ALL THIS. og:description stops at "…the 8 books I read..." —
   // the list of books is in the part the old path never saw.
@@ -1136,19 +1159,26 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
     const run = async (url, pages, location = null) => {
       const calls = [];
       const got = await resolveShare(url, {
-        fetchPage: async (u, _ms, headers) => { calls.push({ u, crawler: headers === CRAWLER_HEADERS }); return { html: pages(u) || "" }; },
+        fetchPage: async (u, _ms, headers, post) => { calls.push({ u, crawler: headers === CRAWLER_HEADERS, post }); return { html: pages(u) || "" }; },
         shareTarget: async () => ({ http: 301, location }),
       });
       return { got, calls };
     };
 
-    const y1 = await run(`https://youtu.be/${BOOKS}`, (u) => (u.includes("/watch?") ? fx("youtube/books.html") : ""));
-    ok(y1.got.via === "youtube-player" && y1.calls.length === 1, "a youtube link is read from the watch page, in one request", y1.calls);
-    ok(y1.calls[0].u === `https://www.youtube.com/watch?v=${BOOKS}&hl=en` && y1.calls[0].crawler === true,
-       "asked AS THE CRAWLER — a browser gets the sign-in page from Render", y1.calls[0]);
-    const y2 = await run(`https://www.youtube.com/shorts/${BOOKS}`, (u) => (u.includes("/oembed") ? fx("youtube/oembed.json") : botCheck));
-    ok(y2.got.via === "youtube-oembed" && y2.got.caption.startsWith("The 8 Books"), "the sign-in page falls back to oEmbed, and says so", y2.got.via);
-    const y3 = await run(`https://www.youtube.com/watch?v=${BOOKS}`, () => botCheck);
+    const signIn = `{"playabilityStatus":{"status":"LOGIN_REQUIRED","reason":"Sign in to confirm you’re not a bot"}}`;
+    const y1 = await run(`https://youtu.be/${BOOKS}`, (u) => (u.includes("/youtubei/") ? fx("youtube/player.json") : ""));
+    ok(y1.got.via === "youtube-player" && y1.calls.length === 1, "a youtube link is read from the player endpoint, in one request", y1.calls);
+    ok(y1.calls[0].u === "https://www.youtube.com/youtubei/v1/player?prettyPrint=false" && y1.calls[0].crawler === true,
+       "asked AS THE CRAWLER — a browser gets LOGIN_REQUIRED from Render", y1.calls[0]);
+    ok(JSON.parse(y1.calls[0].post || "{}").videoId === BOOKS && JSON.parse(y1.calls[0].post || "{}").context?.client?.clientName === "WEB",
+       "a POST, for this video, as the web client", y1.calls[0].post);
+    const y1b = await run(`https://www.youtube.com/watch?v=${BOOKS}`, (u) => (u.includes("/youtubei/") ? signIn : u.includes("/watch?") ? fx("youtube/books.html") : ""));
+    ok(y1b.got.via === "youtube-watch" && y1b.got.caption.includes("- Paper Ghosts"), "the player endpoint refusing falls back to the watch page", y1b.got.via);
+    ok(y1b.calls[1]?.u === `https://www.youtube.com/watch?v=${BOOKS}&hl=en` && y1b.calls[1].crawler === true && !y1b.calls[1].post,
+       "which is a GET, also as the crawler", y1b.calls[1]);
+    const y2 = await run(`https://www.youtube.com/shorts/${BOOKS}`, (u) => (u.includes("/oembed") ? fx("youtube/oembed.json") : u.includes("/youtubei/") ? signIn : botCheck));
+    ok(y2.got.via === "youtube-oembed" && y2.got.caption.startsWith("The 8 Books") && y2.calls.length === 3, "both refusing falls back to oEmbed, and says so", y2.got.via);
+    const y3 = await run(`https://www.youtube.com/watch?v=${BOOKS}`, (u) => (u.includes("/youtubei/") ? signIn : botCheck));
     ok(y3.got.via === "none" && y3.got.caption === "", "YouTube unreadable → the empty envelope, NOT the og: tags of the sign-in page", y3.got);
 
     const r1 = await run("https://www.reddit.com/r/books/comments/1runrty/piranesi_by_susanna_clarke/", (u) => (u.startsWith("https://old.reddit.com/comments/1runrty.json") ? fx("reddit/selfpost.json") : wallPage));
