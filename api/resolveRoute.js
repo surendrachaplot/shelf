@@ -22,6 +22,7 @@ import { json, normList } from "./http.js";
 import { resolveShare, handlesIn } from "./resolve.js";
 import { classifyShare, classifyImage, verifyItems, needsCheck, summarize } from "./classify.js";
 import { extractArticle } from "./article.js";
+import { extractProduct } from "./product.js";
 import { imageBlock } from "./frames.js";
 import { enrich } from "./enrich/index.js";
 import { canonicalUrl } from "./url.js";
@@ -118,6 +119,41 @@ export function onArticlePage(items, envelope, article) {
 }
 
 /**
+ * A THING TO BUY, as an item.
+ *
+ * A shop's product page says what it is in its own markup (api/product.js), so
+ * there is nothing for a classifier to work out and no model call is made: the
+ * page's name, brand, picture and price ARE the item.
+ *
+ * WHICH SHELF depends on who is asking. The Wishlist shelf exists only in
+ * builds that have it, and a build that does not would file "wishlist" on a
+ * shelf it cannot draw — saved, and visible nowhere. So the client says which
+ * shelves it has (`shelves` in the request) and everybody else gets the item
+ * as "unsorted", which every build shows in the pile. The facts (price, brand,
+ * shop) ride on `canonical.kind === "product"` either way, so the price is on
+ * screen wherever the item stands.
+ *
+ * `price` stays a NUMBER (lists add them up) next to `price_text` (what is
+ * shown). `price_at` is when it was read: a price is true on a day.
+ */
+export function productItem(product, envelope, url, { shelves = [], now = new Date() } = {}) {
+  const item = shape({
+    title: product.name,
+    subtitle: product.brand || product.seller || "",
+    image_url: product.image,
+    confidence: 0.9,
+    enriched: true,
+    canonical: {
+      kind: "product",
+      price: product.price, currency: product.currency, price_text: product.priceText,
+      brand: product.brand, availability: product.availability, seller: product.seller,
+      shop_url: product.url || url, price_at: now.toISOString(),
+    },
+  }, envelope, url);
+  return { ...item, list: Array.isArray(shelves) && shelves.includes("wishlist") ? "wishlist" : "unsorted" };
+}
+
+/**
  * Put the article / the screenshot's text on an item's `canonical`.
  *
  * AFTER enrich(), never before: enrich() REPLACES `canonical` with the
@@ -172,7 +208,7 @@ export function summary({ url, envelope = {}, items = [], cover = null, read = [
 // What the two routes call out to. Named and passed in for ONE reason: so the
 // selftest can run a whole request — not just the helpers — with the network
 // swapped out. This file has already shipped a route that no test ever built.
-const IO = { resolveShare, imageBlock, classifyShare, classifyImage, verifyItems, enrich, articleFor };
+const IO = { resolveShare, imageBlock, classifyShare, classifyImage, verifyItems, enrich, articleFor, extractProduct };
 
 // (`_url` is the parsed request URL serve.js hands every route; unused here.)
 export async function resolveRoute(req, res, body, _url, io = IO) {
@@ -196,6 +232,19 @@ export async function resolveRoute(req, res, body, _url, io = IO) {
   // first question is whether it was a tag-list post at all, and this answers
   // it without another request.
   const handles = handlesIn(envelope.caption).filter((h) => h !== envelope.authorHandle);
+
+  // A SHOP PAGE, when the person did not pick a shelf. If they DID pick one
+  // (a novel on a bookshop's site, filed under Books) the tap wins and the
+  // page is read the ordinary way. A parser that throws costs the product and
+  // nothing else — the share falls through to the classifier.
+  if (envelope.html && list === "unsorted") {
+    let product = null;
+    try { product = io.extractProduct(envelope.html, url); } catch (_) { /* not a product, then */ }
+    if (product) {
+      const item = productItem(product, envelope, url, { shelves: body?.shelves });
+      return json(res, 200, summary({ url, envelope, items: [item], read: [], handles }));
+    }
+  }
 
   // THE PICTURE, NOT JUST THE WORDS. The scrape has always returned a
   // thumbnail URL and this endpoint has always filed it away unopened. Half
@@ -373,6 +422,31 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
       ok(onArticlePage([{ list: "books", title: "Swift", enriched: true }], env, art).length === 0,
          "whole words only: 'Swift' is not found inside 'swifts'");
       ok(onArticlePage([{ list: "unsorted", title: null }], env, art).length === 1, "a nameless item is not dropped for having no name");
+    }
+
+    // ── a thing to buy ───────────────────────────────────────────────────────
+    {
+      const prod = { name: "Wool overshirt", brand: "Northfield", price: 65, currency: "GBP", priceText: "£65.00",
+                     image: "https://shop.example/a.jpg", availability: "in_stock", seller: "Northfield", url: "https://shop.example/overshirt" };
+      const shopIo = { ...io, extractProduct: () => prod, classifyShare: async () => { throw new Error("the classifier must not run for a product page"); } };
+      const p1 = fakeRes();
+      await resolveRoute({}, p1, { url: "https://shop.example/overshirt" }, null, shopIo);
+      const it = p1.body?.items?.[0];
+      ok(p1.body?.items?.length === 1 && it.title === "Wool overshirt" && it.canonical.kind === "product"
+         && it.canonical.price === 65 && it.canonical.price_text === "£65.00" && it.canonical.shop_url === prod.url,
+         "a shop page is one item with its price, and no model call", p1.body);
+      ok(it.list === "unsorted", "a build that did not say it has a Wishlist shelf gets it in the pile, where it can be seen", it.list);
+      const p2 = fakeRes();
+      await resolveRoute({}, p2, { url: "https://shop.example/overshirt", shelves: ["books", "wishlist"] }, null, shopIo);
+      ok(p2.body?.items?.[0]?.list === "wishlist", "a build that has the shelf gets it on the shelf", p2.body?.items?.[0]?.list);
+      const p3 = fakeRes();
+      await resolveRoute({}, p3, { url: "https://shop.example/overshirt", list: "books" }, null, { ...io, extractProduct: () => prod });
+      ok(p3.body?.items?.every((i) => i.list === "books" && i.canonical.kind !== "product"),
+         "a shelf the person picked wins over the shop page", p3.body?.items?.map((i) => i.list));
+      const p4 = fakeRes();
+      await resolveRoute({}, p4, { url: "https://fieldnotes.example/x" }, null, { ...io, extractProduct: () => { throw new Error("boom"); } });
+      ok(p4.status === 200 && p4.body?.items?.length === 2, "a product parser that throws does not fail the share", p4.body);
+      ok(typeof it.canonical.price_at === "string" && !Number.isNaN(Date.parse(it.canonical.price_at)), "the price carries the day it was read");
     }
 
     const r0 = fakeRes();

@@ -56,5 +56,24 @@ ok(factsFor({ list: "quotes", title: "x", canonical: { author: "Lily Tomlin" } }
 ok(hasFacts(stJohn) && !hasFacts({ list: "books", title: "x", canonical: {} }),
    "hasFacts saves drawing a rule above nothing");
 
+// ── a thing to buy ──────────────────────────────────────────────────────────
+// The same rows wherever it stands: on a build with no Wishlist shelf it is in
+// the pile as "unsorted", and it must still say what it costs.
+const shirt = (list, extra = {}) => ({ list, title: "Wool overshirt", canonical: {
+  kind: "product", price: 65, currency: "GBP", price_text: "£65", brand: "Northfield",
+  availability: "in_stock", seller: "Northfield", shop_url: "https://shop.example/overshirt", ...extra } });
+for (const list of ["wishlist", "unsorted"]) {
+  const p = factsFor(shirt(list));
+  ok(p.rows[0]?.label === "Price" && p.rows[0]?.value === "£65", `${list}: the price is the first row`, p.rows);
+  ok(p.links.some((x) => x.label === "Open the shop" && x.url === "https://shop.example/overshirt"), `${list}: and the shop opens`, p.links);
+}
+ok(!factsFor(shirt("wishlist", { price: null, price_text: null })).rows.some((x) => x.label === "Price"),
+   "no price → no Price row, never a guess or a dash");
+ok(factsFor(shirt("wishlist", { availability: "out_of_stock" })).rows.some((x) => x.value === "Sold out"), "stock is said in plain words");
+ok(!factsFor(shirt("wishlist")).rows.some((x) => x.label === "Sold by"), "the seller is not repeated when it is the brand");
+ok(factsFor(shirt("wishlist", { seller: "Liberty" })).rows.some((x) => x.label === "Sold by" && x.value === "Liberty"), "a different seller is named");
+ok(!factsFor({ list: "books", title: "x", canonical: { price_text: "£9" } }).rows.some((x) => x.label === "Price"),
+   "a price on something that is not a product is not shown — only kind:product is a thing to buy");
+
 console.log(fail ? `facts selftest FAILED (${fail})` : "facts selftest ok");
 process.exit(fail ? 1 : 0);

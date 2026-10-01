@@ -60,6 +60,10 @@ export function mapUrl(item, platform) {
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+// Said the way a person would say it. "preorder" is not a state anybody
+// recognises on a label; "Not out yet" is.
+const STOCK = { in_stock: "In stock", out_of_stock: "Sold out", preorder: "Not out yet" };
+
 /**
  * @returns {{lede: string|null, rows: Array<{label:string,value:string}>, links: Array<{label:string,url:string}>}}
  */
@@ -73,7 +77,20 @@ export function factsFor(item, opts) {
   const row = (label, value) => { if (value) rows.push({ label, value: String(value) }); };
   const link = (label, url) => { if (url) links.push({ label, url: String(url) }); };
 
-  if (item?.list === "movies") {
+  // A THING TO BUY. Keyed on what the item IS, not on which shelf it stands
+  // on: a product is a product on the Wishlist shelf, in the pile (which is
+  // where it lands on a build that has no Wishlist shelf yet), or pinned to a
+  // list. The price comes first because it is the one fact that decides.
+  //
+  // `price_text` is the server's formatting of a number it parsed with
+  // certainty (api/product.js). No price → no row, never "Price: unknown".
+  if (c.kind === "product") {
+    row("Price", c.price_text);
+    row("Brand", c.brand);
+    row("Stock", STOCK[c.availability]);
+    row("Sold by", c.seller && c.seller !== c.brand ? c.seller : null);
+    link("Open the shop", c.shop_url);
+  } else if (item?.list === "movies") {
     lede = c.overview || null;
     row("Runtime", isNum(c.runtime_min) ? `${c.runtime_min} min` : null);
     row("Rating", isNum(c.rating) ? `${c.rating} / 10` : null);
