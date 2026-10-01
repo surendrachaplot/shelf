@@ -72,7 +72,12 @@ Tags, Tag open (with the links fragment), Boards, Serendipity A (strip on
 home), Serendipity B (own screen), Export. Read back with `get_tree_summary`.
 **Boards is designed and NOT built** — it is Phase 3. Serendipity **A** is
 what shipped; B is the alternative, still his call.
-One new type step came out of it: `type.read` (17/25), derived from the ratio.
+**`type.read` (17/25) is on Paper and NOT in the code.** `design.js` and
+`theme.ts` cannot change over the air — the share extension renders both from
+a bundle only a BUILD replaces, and `update-safety.mjs` refuses the publish.
+So the reader sets its text in `body` (15/22) for now. With the next build:
+add `read: mkType("read", step(0.75), "400")` to `design.js`, `t.read` and
+`t.title` to `theme.ts`, and use them in `Reader.tsx` and `Profile.tsx`.
 
 ### Open — the blockers, in order
 

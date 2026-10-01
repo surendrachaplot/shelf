@@ -19,6 +19,7 @@ import { countsOf, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
 import { exportHtml, exportJson, exportFilename } from "./export.js";
 import { saveFile } from "./saveFile";
+import * as D from "./design.js";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
 import { scrollKeyboardProps } from "./KeyboardSafe";
@@ -343,7 +344,10 @@ const styles = (c: Palette) => StyleSheet.create({
   body: { ...t.meta, color: c.inkSoft, marginTop: sp.sm },
   h2: { ...t.section, color: c.ink },
   copyLabel: { marginTop: sp.lg },
-  copyHead: { ...t.title, color: c.ink, marginTop: sp.md },
+  copyHead: {
+    ...t.itemTitle, fontSize: D.type.title.fontSize, lineHeight: D.type.title.lineHeight,
+    letterSpacing: D.type.title.letterSpacing, color: c.ink, marginTop: sp.md,
+  },
   copyBody: { ...t.body, color: c.inkSoft, marginTop: sp.md },
 
   spread: { flexDirection: "row", gap: 2, marginTop: sp.xxl },

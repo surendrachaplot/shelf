@@ -13,6 +13,7 @@ import type { Item } from "./store";
 import { Press } from "./Press";
 import { Screen } from "./Screen";
 import { listOn, numberOf, RULE, sp, t, TOUCH_MIN, useTheme, type Palette } from "./theme";
+import * as D from "./design.js";
 
 export type Article = {
   byline?: string | null; siteName?: string | null; text?: string | null;
@@ -108,7 +109,13 @@ const styles = (c: Palette) => StyleSheet.create({
   rule: { height: RULE, backgroundColor: c.ink },
 
   scroll: { paddingHorizontal: sp.lg, paddingTop: sp.xl, paddingBottom: sp.huge },
-  title: { ...t.title, color: c.ink },
+  // design.js's `title` step, applied here: theme.ts has no `t.title`, and
+  // neither file can change over the air (the share extension renders both
+  // from a bundle that only a BUILD replaces — see native-rules.mjs).
+  title: {
+    ...t.itemTitle, fontSize: D.type.title.fontSize, lineHeight: D.type.title.lineHeight,
+    letterSpacing: D.type.title.letterSpacing, color: c.ink,
+  },
   meta: { ...t.micro, color: c.inkSoft, marginTop: sp.md },
   summary: {
     marginTop: sp.lg, padding: sp.lg, gap: sp.sm,
@@ -116,7 +123,10 @@ const styles = (c: Palette) => StyleSheet.create({
   },
   summaryText: { ...t.body, color: c.ink },
   body: { marginTop: sp.xl, gap: sp.lg },
-  para: { ...t.read, color: c.ink },
+  // ponytail: body (15/22) for now. Paper sets reading text at 17/25 — a new
+  // `type.read` step — and a new step means editing design.js, which needs a
+  // build. Add the step and use it here with the next build.
+  para: { ...t.body, color: c.ink },
 
   foot: {
     paddingHorizontal: sp.lg, paddingTop: sp.md, paddingBottom: sp.lg, gap: sp.md,
