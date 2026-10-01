@@ -72,7 +72,9 @@ ok(await page.getByText("shelf", { exact: true }).first().isVisible(), "the word
 // shelf name lives in the accessible label, which is also the only thing a
 // screen reader gets. Asserting on visible text looked right and was checking
 // for words that are deliberately not on screen.
-for (const shelf of ["Books", "Restaurants", "Movies", "Recipes", "Quotes", "Places"]) {
+// Every shelf, from the one list of them. Typed out here it stopped at six.
+const { LIST_KEYS } = await import("../src/design.js");
+for (const shelf of LIST_KEYS.filter((k) => k !== "unsorted").map((k) => k[0].toUpperCase() + k.slice(1))) {
   ok((await page.getByLabel(shelf, { exact: false }).count()) > 0, `${shelf} is there`);
 }
 
