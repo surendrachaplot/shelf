@@ -20,7 +20,118 @@ resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
 
-## Where it stands (2026-08-16)
+## START HERE — the laptop session, 2026-10-01
+
+**You are picking up mid-stride. Nothing is half-written in the repo: the
+working tree is clean and pushed at `772ad61`. What follows is where to begin
+and why.**
+
+### What happened since the last dated section
+
+- **2026-09-01: the iOS build SUCCEEDED** (run `33490510738`, 4m49s, profile
+  and channel `preview`, runtime `f60ddf7bcf0fec95891ebfc4adf43890a6cdbd6a`,
+  commit `f8fc9a9`). The Expo free-plan quota had reset that morning. The
+  install page is `expo.dev/accounts/surendrachaplot/projects/shelf/builds`,
+  newest at the top; the build id is
+  `c99762d9-2b36-45c1-9317-0830ac0dd4a5`.
+- **Whether it was installed is UNKNOWN.** Suren deleted the app on 2026-08-22,
+  so the phone may have nothing on it. **Check this before anything else** —
+  most of the list below is unverifiable on a device with no app.
+- **21 items are still recoverable** from the legacy server table — 14 books,
+  3 movies, 4 restaurants (Actions → Diagnose → `recover`, counts only; the
+  repo is public so titles are never printed). App.tsx pulls them
+  automatically on first launch **when the shelf is empty**, so a fresh install
+  restores them with no action.
+- **`PRODUCT-PLAN.md` was written** (2026-10-01): shelf vs mymind, what to
+  build to be worth paying for. Read it before planning anything — it holds
+  the positioning argument, the feature-by-feature map and the pricing.
+
+### The build session that was starting when this was written
+
+Suren asked for an intensive build session and then moved it to the laptop.
+**Phase 2 of PRODUCT-PLAN.md was the agreed scope** — the user-visible half —
+explicitly NOT sync/accounts/billing, because those need a database URL and
+Stripe keys that a cloud session does not have and the laptop does.
+
+Nothing was written. Start at the top of this list:
+
+1. **`api/article.js` — readable text + a snapshot that survives link rot.**
+   *This is the single highest-value thing in the plan:* mymind charges
+   **$12.99/mo** for reading mode and article backup, and its own reviewers
+   call that gating its best feature. Pure functions over HTML →
+   `{title, byline, siteName, text, readingMinutes, excerpt, hero}`.
+   Readability-lite: score blocks by text density, strip nav/footer/script/
+   style. **No new runtime dependency** — this service has exactly two (`pg`,
+   the Anthropic SDK) and that is worth keeping. `resolve.js` already has
+   `parseLd`, `metaTag`, `stripTags`, `extractWebPage` to build on. Needs a
+   `--selftest` over saved HTML fixtures, same as `resolve.js`.
+2. **Summaries** — extend `classify.js` with a summary for long text. One
+   model call, same structured-output discipline as the rest of that file.
+3. **`app/src/tags.js` — real tags from resolved entities.** Pure, no imports,
+   like `facts.js`, so the app, the selftest and `api/page.js` all read one
+   definition. The reviewers' complaint about mymind is that its tags are *too
+   broad for specialists*; ours come from facts already on the item — author,
+   year, city, cuisine, director — not from a guess.
+4. **`find.js` indexes tags, article text and OCR text.** It already ranks over
+   title/subtitle/facts/note/caption; this is three more fields and the
+   selftest pattern is established.
+5. **`app/src/links.js`** — automatic connections (same author, same city,
+   same director). Pure + selftest. mymind's linking is manual; ours is free
+   because the entities are resolved.
+6. **`app/src/serendipity.js`** — "a year ago", forgotten items. Pure +
+   selftest. Make it ACTIONABLE where possible (near you, open now) — that is
+   the thing a memory app without resolution cannot do.
+7. **Export — JSON + a readable HTML archive.** Needed before anyone is
+   charged: never hold somebody's shelf hostage.
+
+Every one of those is local-first and needs no account, which is why they come
+before sync.
+
+### What the laptop can do that the cloud session could not
+
+- **Paper.** `mcp__paper__*` does not exist in a cloud session and
+  `127.0.0.1:29979` is unreachable from it, so NO design work happened. On the
+  Mac, Paper connects when a session STARTS — open Paper first, then start
+  Claude. Per CLAUDE.md every screen goes on Paper, as named layers, with
+  variants, before any pixels. Suren asked for a **new Paper file for shelf**.
+  The screens that need one: the article reader, a tag view, boards, the
+  Serendipity surface, and the export screen.
+- **Builds.** `eas build --local` on this Mac fails at PREPARE_CREDENTIALS
+  (*"Distribution certificate … hasn't been imported successfully"* — macOS
+  refusing the temporary keychain eas-cli makes; a known local-build problem on
+  macOS 26, nothing to do with the account). `npx expo run:ios --device
+  --configuration Release` is the path that works, after setting the Team on
+  **both** targets (`shelf` AND `shelfShareExtension`) once in
+  `ios/shelf.xcworkspace`. The cloud build also works now that the quota reset.
+- **The device.** Everything in "Open" below that says "nobody has looked at
+  this on a phone" can finally be closed.
+
+### The repo on that Mac
+
+`~/gitrepo/shelf` (cloned 2026-08-22). `git pull` first — this session pushed
+four commits after that clone.
+
+### Eventually, in rough priority order
+
+- Install the 2026-09-01 build and confirm: screenshot share, camera-roll
+  import, Find, and that the 21 legacy items came back.
+- **The repo is still public and its Actions logs have carried item titles.**
+  Close it before any of this is shown to anybody.
+- `SHELF_APP_KEY` unset — anybody with the URL can spend the Claude budget.
+  Order matters: build, install, THEN set it on Render.
+- The Android build still fails `EAS_BUILD_UNKNOWN_GRADLE_ERROR`, never read.
+  The log link is fixed now, so the next run prints a reason that opens.
+- A paid Expo plan. Two weeks of this project went to build quota.
+- Sync + accounts (E2E) and billing — PRODUCT-PLAN.md §1. The decision is
+  made on paper and nothing is built.
+- Sentry. A crash on a stranger's phone is currently invisible.
+- City filter, `GOOGLE_PLACES_KEY`, the legacy wipe (only after the phone is
+  confirmed to hold those 21 items), end-to-end publish/revoke against real
+  Postgres.
+
+---
+
+## Where it stood (2026-08-16)
 
 **On a phone, resolving real reels, updating itself over the air.** The
 local-first rewrite shipped and was published OTA; quotes and places shipped
