@@ -83,6 +83,40 @@ export async function articleFor(envelope, url, { extract = extractArticle, summ
   }
 }
 
+const foldText = (t) => String(t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+// "Piranesi: A Novel" is on a page that says "Piranesi". Compare the main title.
+const mainOf = (t) => foldText(String(t || "").split(/\s*[:(\u2013\u2014]\s*|\s+-\s+/)[0]);
+
+/**
+ * ON A PAGE WITH AN ARTICLE BODY, THE PAGE IS THE EVIDENCE.
+ *
+ * Measured on the live service, 2026-10-01: an essay titled "How to Do Great
+ * Work" came back as the BOOK "Hackers & Painters" — a real book, by the same
+ * author, with an ISBN and a rating, that the essay never mentions. The
+ * classifier called the essay a book and the catalogue handed back its
+ * nearest neighbour. Same failure as the wrong bookshop (see nameFound in
+ * enrich): confident, well-formed, and not the thing that was saved.
+ *
+ * A reel gives us a caption and little else, so this cannot be checked there.
+ * An article gives us the whole text, so it can:
+ *
+ *   1. A named thing whose title appears nowhere on the page is not from the
+ *      page. Dropped. (A "10 best books" list names every one of its books.)
+ *   2. A thing that is just the page's own headline, with no catalogue match,
+ *      IS the article. It goes on the pile as itself, not onto a shelf as a
+ *      book that does not exist.
+ *
+ * No article → items untouched. Pure, so the selftest drives it.
+ */
+export function onArticlePage(items, envelope, article) {
+  if (!article) return items;
+  const headline = foldText(String(envelope?.caption || "").split("\n")[0]);
+  const page = " " + foldText(`${envelope?.caption || ""} ${article.text || ""}`) + " ";
+  return items
+    .filter((it) => { const m = mainOf(it.title); return !m || page.includes(" " + m + " "); })
+    .map((it) => (!it.enriched && headline && foldText(it.title) === headline ? { ...it, list: "unsorted" } : it));
+}
+
 /**
  * Put the article / the screenshot's text on an item's `canonical`.
  *
@@ -189,14 +223,14 @@ export async function resolveRoute(req, res, body, _url, io = IO) {
 
   const homeCity = String(body?.home_city || "").slice(0, 80) || null;
   const article = await reading;
-  const items = [];
+  const shaped = [];
   for (const it of checked) {
-    // ONE COPY. A "10 best books" page is ten items and one article; carrying
-    // 60,000 characters on each of them is 600 kB in a file the phone rewrites
-    // on every save. The first item holds it and the rest share its source_url.
-    items.push(carry(shape(await io.enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url),
-      { article: items.length === 0 ? article : null }));
+    shaped.push(shape(await io.enrich(it, { outboundUrls: envelope.outboundUrls, homeCity }), envelope, url));
   }
+  // ONE COPY. A "10 best books" page is ten items and one article; carrying
+  // 60,000 characters on each of them is 600 kB in a file the phone rewrites
+  // on every save. The first item holds it and the rest share its source_url.
+  const items = onArticlePage(shaped, envelope, article).map((it, i) => carry(it, { article: i === 0 ? article : null }));
 
   // AN ARTICLE THAT IS NOT A BOOK, A FILM OR A PLACE IS STILL WORTH KEEPING.
   // The classifier names things for six shelves; an essay names none of them,
@@ -265,7 +299,9 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   {
     const p = "A sentence long enough to count as a real paragraph of prose, written out in full to be sure. ";
     const page = `<html><head><meta property="og:site_name" content="Field Notes"></head><body><article>${`<p>${p}</p>`.repeat(8)}</article></body></html>`;
-    const web = { caption: "t", via: "web-og", html: page, outboundUrls: [] };
+    // The caption NAMES both books: on an article page, an item the page never
+    // mentions is dropped (onArticlePage), so the fixture has to mention them.
+    const web = { caption: "Two books: One and Two", via: "web-og", html: page, outboundUrls: [] };
 
     const a = await articleFor(web, "https://fieldnotes.example/x", { summarise: async () => "It says this." });
     ok(Object.keys(a || {}).join() === "byline,siteName,text,readingMinutes,excerpt,hero,summary",
@@ -321,6 +357,23 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
     ok(r1.body?.items?.[0]?.canonical?.isbn === "978", "next to what the catalogue said, not instead of it");
     ok(r1.body?.article_chars > 0 && !("html" in (r1.body || {})) && !JSON.stringify(r1.body).includes("<article>"),
        "and the page's HTML does not leak into the response");
+
+    // ── the page is the evidence ─────────────────────────────────────────────
+    {
+      const env = { caption: "How to Do Great Work\n\nJuly 2023", via: "web-og" };
+      const art = { text: "If you collected lists of techniques for doing great work, what would the intersection look like? The swifts were late. Piranesi is the best book I read this year." };
+      const wrong = { list: "books", title: "Hackers & painters", enriched: true };
+      const named = { list: "books", title: "Piranesi: A Novel", enriched: true };
+      const self = { list: "books", title: "How to Do Great Work", enriched: false };
+      ok(onArticlePage([wrong, named], env, art).map((i) => i.title).join() === "Piranesi: A Novel",
+         "a catalogue match the page never mentions is dropped; one it names is kept, subtitle and all");
+      ok(onArticlePage([self], env, art)[0].list === "unsorted", "an unmatched item that is just the headline is the article, not a book");
+      ok(onArticlePage([{ ...self, enriched: true }], env, art)[0].list === "books", "a headline the catalogue DID match stays on its shelf");
+      ok(onArticlePage([wrong], env, null).length === 1, "no article, no evidence: a reel's items are left alone");
+      ok(onArticlePage([{ list: "books", title: "Swift", enriched: true }], env, art).length === 0,
+         "whole words only: 'Swift' is not found inside 'swifts'");
+      ok(onArticlePage([{ list: "unsorted", title: null }], env, art).length === 1, "a nameless item is not dropped for having no name");
+    }
 
     const r0 = fakeRes();
     await resolveRoute({}, r0, { url: "https://fieldnotes.example/x" }, null, { ...io, classifyShare: async () => [] });

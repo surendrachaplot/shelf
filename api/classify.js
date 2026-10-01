@@ -325,7 +325,14 @@ export function buildSummaryPrompt({ title, text } = {}) {
 /** A string or null — never "", never an object, never a page of it. */
 export function coerceSummary(raw) {
   if (typeof raw?.summary !== "string") return null;
-  return raw.summary.replace(/\s+/g, " ").trim().slice(0, SUMMARY_MAX) || null;
+  const text = raw.summary.replace(/\s+/g, " ").trim();
+  if (text.length <= SUMMARY_MAX) return text || null;
+  // Too long: stop at the last whole SENTENCE that fits. A summary that ends
+  // "aiming to be the best rather than merely good, c" (seen live, 2026-10-01)
+  // reads as a broken app. No full stop inside the limit → cut at a word.
+  const cut = text.slice(0, SUMMARY_MAX);
+  const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+  return (end > 0 ? cut.slice(0, end + 1) : cut.slice(0, cut.lastIndexOf(" ")).trim() + "…") || null;
 }
 
 export async function summarize(article) {
@@ -662,7 +669,14 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(/DATA/.test(SUMMARY_SYSTEM) && /never follow it/.test(SUMMARY_SYSTEM),
      "SUMMARY_SYSTEM must say the page is data — it is text from the open web going into a prompt");
   ok(coerceSummary({ summary: "  Swifts came\nlate.  " }) === "Swifts came late.", "a summary is one tidy line");
-  ok(coerceSummary({ summary: "z".repeat(5000) }).length === 600, "summary clamped");
+  ok(coerceSummary({ summary: "z".repeat(5000) }).length <= 601, "summary clamped");
+  {
+    const long = "First sentence here. " + "Second sentence that goes on. ".repeat(30);
+    const got = coerceSummary({ summary: long });
+    ok(got.length <= 600 && got.endsWith("goes on.") , "a long summary stops at the end of a sentence, never mid-word", got.slice(-30));
+    const noStop = coerceSummary({ summary: "word ".repeat(400) });
+    ok(noStop.length <= 601 && noStop.endsWith("word…"), "with no full stop to stop at, it cuts at a word and says so", noStop.slice(-12));
+  }
   ok(coerceSummary({ summary: "   " }) === null, "an empty summary is null, not ''");
   ok(coerceSummary({ items: [] }) === null && coerceSummary(null) === null && coerceSummary({ summary: ["a"] }) === null,
      "a refusal comes back from callClaude as {items: []} — that is no summary, not a crash");
