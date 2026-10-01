@@ -88,6 +88,7 @@ const SHOTS = [
   { name: "app-links-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: ["Restaurants,", "St. John"], scroll: 700 },
   { name: "app-export-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 1400 },
   { name: "app-export-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Your card", scroll: 1400 },
+  { name: "app-version-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card", scroll: 900 },
   { name: "app-import-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Import screenshots" },
   { name: "app-import-375-dark", q: "", w: 375, h: 980, scheme: "dark", clickLabel: "Import screenshots" },
   { name: "app-profile-375-light", q: "", w: 375, h: 980, scheme: "light", clickLabel: "Your card" },

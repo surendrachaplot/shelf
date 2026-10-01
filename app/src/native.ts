@@ -60,3 +60,10 @@ export const imageManipulator = once<typeof import("expo-image-manipulator")>(
 
 /** Can this build bring pictures in from the photo library at all? */
 export const canPickPhotos = () => imagePicker() !== null;
+
+/**
+ * Over-the-air updates. In every binary since the first, but fetched through
+ * here anyway: the render harness and the web build have no such module, and
+ * "which bundle am I running" must never be the thing that takes the app down.
+ */
+export const updates = once<typeof import("expo-updates")>(() => require("expo-updates"));

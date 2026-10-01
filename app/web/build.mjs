@@ -45,6 +45,7 @@ const swap = {
     b.onResolve({ filter: /^expo-secure-store$|^expo-share-extension$|^expo-share-intent$|^expo-linear-gradient$/ },
       () => ({ path: here("./native.js") }));
     b.onResolve({ filter: /^expo-image-picker$|^expo-image-manipulator$/ }, () => ({ path: here("./picker.js") }));
+    b.onResolve({ filter: /^expo-updates$/ }, () => ({ path: here("./noUpdates.js") }));
     b.onResolve({ filter: /assets-registry/ }, () => ({ path: here("../preview/assetStub.js") }));
   },
 };

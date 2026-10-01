@@ -36,3 +36,12 @@ export const deleteItemAsync = async () => {};
 import React from "react";
 import { View } from "react-native";
 export const LinearGradient = ({ style, children }) => React.createElement(View, { style }, children);
+
+// ── expo-updates ─────────────────────────────────────────────────────────────
+// A FIXED date, so the Version block on the card has something to draw and
+// the screenshot does not change every time it is taken.
+export const isEmbeddedLaunch = false;
+export const createdAt = new Date("2026-10-01T22:22:00");
+export const checkForUpdateAsync = async () => ({ isAvailable: false });
+export const fetchUpdateAsync = async () => ({});
+export const reloadAsync = async () => {};

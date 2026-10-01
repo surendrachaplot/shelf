@@ -19,6 +19,7 @@ import { countsOf, type Link, type Shelf } from "./store";
 import { ExLibris } from "./ExLibris";
 import { exportHtml, exportJson, exportFilename } from "./export.js";
 import { saveFile } from "./saveFile";
+import { updates } from "./native";
 import * as D from "./design.js";
 import { Press } from "./Press";
 import { Reveal } from "./Reveal";
@@ -82,6 +83,28 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
       setCopy(ok ? { state: "saved" } : { state: "idle" });
     } catch (e) {
       setCopy({ state: "failed", note: (e as Error).message });
+    }
+  }
+
+  // WHICH VERSION IS THIS. Reported from a phone as "the app is not updating",
+  // and there was no way to answer: an update arrives silently, applies on a
+  // LATER launch, and nothing on screen says which bundle is running. Now the
+  // card says it, and one button asks for the newest one and restarts into it.
+  const U = updates();
+  const running = !U ? null : U.isEmbeddedLaunch || !U.createdAt
+    ? "the version this build came with"
+    : `the update from ${U.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}, ${U.createdAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+  const [upd, setUpd] = useState<{ state: "idle" | "busy" | "none" | "failed"; note?: string }>({ state: "idle" });
+  async function getUpdate() {
+    if (!U) return;
+    setUpd({ state: "busy" });
+    try {
+      const found = await U.checkForUpdateAsync();
+      if (!found.isAvailable) { setUpd({ state: "none" }); return; }
+      await U.fetchUpdateAsync();
+      await U.reloadAsync();   // the app restarts here, into the new version
+    } catch (e) {
+      setUpd({ state: "failed", note: (e as Error).message });
     }
   }
 
@@ -241,6 +264,24 @@ export function Profile({ shelf, onClose, onChange, onShare }: {
             </>
           )}
         </View>
+
+        {/* Paper: "Export — in Your card" → "version" block. Only where the
+            module exists — a browser has no updates to fetch. */}
+        {running ? (
+          <View style={[s.inset, s.linksWrap]}>
+            <Text style={s.h2}>Version</Text>
+            <Text style={s.body}>This phone is running {running}.</Text>
+            <View style={s.actions}>
+              <Press onPress={getUpdate} disabled={upd.state === "busy"} style={s.btnGhost} size={TOUCH_MIN} label="Get the newest version">
+                {upd.state === "busy" ? <ActivityIndicator color={c.ink} /> : <Text style={s.micro}>Get the newest →</Text>}
+              </Press>
+            </View>
+            {upd.state === "none" ? <Fact ok good="This is the newest version." bad="" s={s} c={c} /> : null}
+            {upd.state === "failed" ? (
+              <Fact ok={false} good="" bad={`Could not get the update. ${upd.note ?? ""}`.trim()} s={s} c={c} />
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Paper: "Export — in Your card". Never hold a shelf hostage: this
             ships BEFORE anything is charged for. */}
