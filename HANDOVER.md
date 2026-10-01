@@ -102,6 +102,31 @@ one evening, live on the server, the web app and over the air:
 - `Lists.tsx` is named `ListsScreen.tsx` for the same reason `TagIndex.tsx`
   is: next to `lists.js` on a case-insensitive Mac the names collide.
 
+### THE OLD SHELF WAS BEING HANDED TO STRANGERS (found and closed 2026-10-02)
+
+The web app runs the same one-time legacy import the phone does, and
+`GET /api/legacy/export` answered anybody. So every new visitor to `/app` was
+given Suren's 21 old items and told they had been "moved onto this phone" —
+found by the extension work, the day the landing page started sending people
+there. Closed two ways: the web build no longer asks (`App.tsx`), and the
+server refuses a browser (`fromBrowser` in `api/legacy.js`, selftested; live
+check: a browser UA gets 403, the app's UA still gets 21).
+
+**It is still not secure**: curl with a plain user agent gets the rows, and
+the path is in a public repo. The end of it is the same as before — confirm
+the phone has the 21 items, then run the wipe (`POST /api/legacy/wipe` with
+`ADMIN_SECRET`).
+
+### The browser extension (2026-10-02)
+
+`extension/` — one source in `extension/src/`, built to `chrome/` and
+`firefox/` by `node extension/build.mjs`. Toolbar button, right-click on a
+link, a shortcut: each opens the web app at `/app/?url=…`, where one more tap
+files it. Permissions: `activeTab`, `contextMenus`, `storage`. Proven in a
+real Chromium (`extension/e2e.mjs`, 34 checks). Firefox and Safari never
+loaded. `EXTENSION-PLAN.md` has the stores, the limits and what only Suren
+can do. `/privacy` answers 404 and the Chrome store needs a privacy URL.
+
 ### The website (2026-10-01, evening)
 
 `GET /` is a landing page now (`api/landing.js`, `node landing.js --selftest`).

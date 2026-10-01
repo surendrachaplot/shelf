@@ -23,7 +23,7 @@ mymind's feature list was read off mymind.com on 2026-10-01.
 | Serendipity | `serendipity.js`, home strip | DONE; near/open-now needs a build | `serendipity-selftest.mjs` |
 | Text recognition in pictures | `canonical.ocr_text` | BUILT, not proven live | share a screenshot, search a word in it |
 | Export | JSON + HTML | DONE | `preview/phase2.mjs` |
-| Browser extension | `extension/` | BUILDING (2026-10-01) | `extension/e2e.mjs` |
+| Browser extension | `extension/` (Chrome, Edge, Brave, Arc; a Firefox build never loaded) | BUILT, loads unpacked, not in any store | `node extension/selftest.mjs`, `node extension/e2e.mjs` |
 | **Products with prices (wishlist)** | price on the item, in rows, in a list's total. Lands in "Not shelved" until the build | DONE (the pink Wishlist SHELF needs the build) | `preview/phase2.mjs` |
 | **Save pictures** | Add pictures on any list (`pictures.ts`), kept as files | DONE on web; **not yet tried on a phone** | `preview/phase2.mjs` (web) |
 | **Collections / Spaces ("lists")** | `lists.js`, `ListsScreen.tsx`; Find → Your lists | DONE (a saved search can be stored but there is no screen to set one yet) | `lists-selftest.mjs`, `preview/phase2.mjs` |
