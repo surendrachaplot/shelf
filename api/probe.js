@@ -28,7 +28,7 @@ import { fetchT, BROWSER_HEADERS, CRAWLER_HEADERS } from "./net.js";
  * Those two sites only — this must not become "fetch anything and show me".
  * Counts and a 160-character head, never a body.
  */
-const RAW_HOSTS = /^https:\/\/(?:[a-z0-9-]+\.)?(?:youtube\.com|youtu\.be|reddit\.com|redd\.it)\//i;
+const RAW_HOSTS = /^https:\/\/(?:[a-z0-9-]+\.)?(?:youtube\.com|youtu\.be|youtubei\.googleapis\.com|reddit\.com|redd\.it)\//i;
 const RAW_UA = {
   browser: BROWSER_HEADERS,
   crawler: CRAWLER_HEADERS,
@@ -36,10 +36,12 @@ const RAW_UA = {
   plain: { "User-Agent": "shelf-link-preview/1.0" },
 };
 export const rawAllowed = (u) => RAW_HOSTS.test(String(u || ""));
-export async function probeRaw(target, ua = "browser", needles = []) {
+// `post` is a JSON body: YouTube's player endpoint is a POST.
+export async function probeRaw(target, ua = "browser", needles = [], post = null) {
   const t0 = Date.now();
   try {
-    const r = await fetchT(target, { headers: RAW_UA[ua] || RAW_UA.browser, redirect: "manual" }, 15000);
+    const headers = { ...(RAW_UA[ua] || RAW_UA.browser), ...(post ? { "Content-Type": "application/json" } : {}) };
+    const r = await fetchT(target, { headers, redirect: "manual", ...(post ? { method: "POST", body: post } : {}) }, 15000);
     const body = await r.text();
     const found = {};
     for (const n of needles.slice(0, 12)) found[n] = body.split(n).length - 1;
@@ -88,7 +90,7 @@ export async function probeRoute(req, res, url) {
   if (url.searchParams.get("ua")) {
     if (!rawAllowed(target)) return json(res, 400, { ok: false, error: "raw probe is for youtube and reddit urls only" });
     const needles = (url.searchParams.get("needles") || "").split(",").filter(Boolean);
-    return json(res, 200, { ok: true, ...(await probeRaw(target, url.searchParams.get("ua"), needles)) });
+    return json(res, 200, { ok: true, ...(await probeRaw(target, url.searchParams.get("ua"), needles, url.searchParams.get("post"))) });
   }
   const handle = profileHandleIn(target);
   if (handle) return json(res, 200, { ok: true, ...(await probeProfile(handle)) });
@@ -109,7 +111,7 @@ if (isMain(import.meta.url) && process.argv.includes("--selftest")) {
   ok(profileHandleIn("https://example.com/someone/") === null, "another site is not a profile");
 
   // The raw probe fetches on the server's behalf. Two sites, https, nothing else.
-  ok(rawAllowed("https://old.reddit.com/comments/abc.json") && rawAllowed("https://www.youtube.com/watch?v=x") && rawAllowed("https://youtu.be/x") && rawAllowed("https://redd.it/x"),
+  ok(rawAllowed("https://old.reddit.com/comments/abc.json") && rawAllowed("https://www.youtube.com/watch?v=x") && rawAllowed("https://youtu.be/x") && rawAllowed("https://redd.it/x") && rawAllowed("https://youtubei.googleapis.com/youtubei/v1/player"),
      "the raw probe reaches youtube and reddit");
   ok(!rawAllowed("http://169.254.169.254/latest/") && !rawAllowed("https://example.com/reddit.com/") && !rawAllowed("https://notreddit.com/x") && !rawAllowed("https://reddit.com.evil.example/x"),
      "and nowhere else: not an internal address, not a lookalike host");
