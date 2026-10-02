@@ -1,0 +1,6 @@
+shelf.xcodeproj
+build/
+DerivedData/
+Core/.build/
+.swiftpm/
+*.xcuserstate
