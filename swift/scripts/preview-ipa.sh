@@ -57,4 +57,8 @@ codesign -f -s "$ID" --entitlements $OUT/app.entitlements --generate-entitlement
 codesign --verify --deep --strict $APP
 codesign -d --entitlements - $APP | head -20
 (cd $OUT && zip -qry shelf.ipa Payload)
+# EAS's upload step looks for the path from the REPOSITORY root, not from this
+# folder: the first signed build was made and then not found. A copy in both
+# places means the same path works wherever the step looks.
+mkdir -p ../build/preview && cp $OUT/shelf.ipa ../build/preview/shelf.ipa
 echo "✓ $OUT/shelf.ipa"
