@@ -1,0 +1,10 @@
+{
+  "cli": { "version": ">= 16.0.0", "appVersionSource": "local" },
+  "build": {
+    "ios-preview": {
+      "distribution": "internal",
+      "config": "ios-preview.yml",
+      "ios": { "image": "latest" }
+    }
+  }
+}

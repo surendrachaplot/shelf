@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "shelf",
+    "slug": "shelf",
+    "owner": "surendrachaplot",
+    "version": "1.0.0",
+    "ios": { "bundleIdentifier": "com.surendrachaplot.shelf", "buildNumber": "1" },
+    "extra": { "eas": { "projectId": "fbcc18b2-4a0a-47ba-ac6b-bd331cd8dc92" } }
+  }
+}

@@ -5,3 +5,9 @@ Core/.build/
 .swiftpm/
 *.xcuserstate
 shots/
+shots-mac/
+build/
+build-device/
+.build/
+.eas-shim/
+node_modules/
