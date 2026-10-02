@@ -130,8 +130,13 @@ private struct ListsBody: View {
         // they are first met, most first, five at the most.
         var order: [String] = [], count: [String: Int] = [:]
         for it in mine { if count[it.list] == nil { order.append(it.list) }; count[it.list, default: 0] += 1 }
-        let mix = order.enumerated().map { (at: $0.offset, list: $0.element, n: count[$0.element] ?? 0) }
-            .sorted { $0.n != $1.n ? $0.n > $1.n : $0.at < $1.at }.prefix(5)
+        // Spelled out step by step: as one chain this line took the compiler
+        // on the build server longer than it allows, and the build failed.
+        struct Share { let at: Int; let list: String; let n: Int }
+        var shares: [Share] = []
+        for (at, list) in order.enumerated() { shares.append(Share(at: at, list: list, n: count[list] ?? 0)) }
+        shares.sort { (a: Share, b: Share) -> Bool in a.n != b.n ? a.n > b.n : a.at < b.at }
+        let mix: [Share] = Array(shares.prefix(5))
 
         return Press("\(b.name), \(mine.count) things", size: Tokens.touchMin + 40, action: { open = b.id }) {
             VStack(spacing: 0) {

@@ -59,10 +59,14 @@ struct FindScreen: View {
         let matched = Set(all.hits.map(\.item.id))
         var order: [String] = []
         for it in model.items where matched.contains(it.id) && !order.contains(it.list) { order.append(it.list) }
-        let chips = order.enumerated()
-            .map { (at: $0.offset, list: $0.element, n: all.counts[$0.element] ?? 0) }
-            .sorted { $0.n != $1.n ? $0.n > $1.n : $0.at < $1.at }
-            .map { (list: $0.list, n: $0.n) }
+        // Step by step, with the types written out: as one chain this took the
+        // compiler over a second, and the build server gives up before that.
+        struct Chip { let at: Int; let list: String; let n: Int }
+        var ranked: [Chip] = []
+        for (at, list) in order.enumerated() { ranked.append(Chip(at: at, list: list, n: all.counts[list] ?? 0)) }
+        ranked.sort { (a: Chip, b: Chip) -> Bool in a.n != b.n ? a.n > b.n : a.at < b.at }
+        var chips: [(list: String, n: Int)] = []
+        for c in ranked { chips.append((list: c.list, n: c.n)) }
         let kept = only == nil ? all.hits : all.hits.filter { $0.item.list == only }
         return Mine(hits: Array(kept.prefix(60)), chips: chips, total: kept.count)
     }
