@@ -22,6 +22,26 @@ resolver — you send it a URL, it tells you what that URL is, and stores
 nothing. The only thing it keeps is a snapshot you deliberately publish by
 tapping Share, which you can revoke (a DELETE, not a flag).
 
+## TESTFLIGHT, NO EXPO (2026-10-02) — Suren: "out of expo and directly on testflight"
+
+The Swift app ships with `swift/scripts/testflight.sh`: archive on this Mac,
+sign for the App Store, upload. No EAS. `NO_UPLOAD=1` stops before the upload.
+
+- PROVEN: archive + App Store export of `777ae24` (signed "Apple Distribution",
+  app + share extension, App Group, `beta-reports-active`).
+- NOT DONE: the upload. App Store Connect has NO app record for
+  `com.surendrachaplot.shelf`, and Apple's API cannot make one. Suren makes it
+  by hand (My Apps → + → New App → iOS, bundle id `com.surendrachaplot.shelf`).
+  Then run `swift/scripts/testflight.sh` once.
+- Signing is manual at export, because the API key gets "Cloud signing
+  permission error". Profiles "shelf App Store" and "shelf share App Store"
+  were made with the API (`~/gitrepo/tools/asc.mjs`), copies in `~/keys/`.
+- RULE (said again 2026-10-02): ONE build a day at most. Five EAS builds were
+  made on 2026-10-02; that was wrong. `swift/scripts/preview-eas.sh` stays only
+  as a fallback; do not run it without being asked.
+- The Release bundle still carries `Resources/Debug/shelf.json` (the fixture).
+  Release ignores it; take it out of the target before the store release.
+
 ## THE v1-build BRANCH (2026-10-02) — one build's worth of work, waiting
 
 **`main` does not have this. A phone does not have this.** Everything that
