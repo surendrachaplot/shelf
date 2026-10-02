@@ -1,0 +1,23 @@
+# EAS custom build: the Swift app, signed ad hoc for the phones already on the
+# Expo app's profile. Same bundle id, same EAS project, same credentials — so
+# it installs OVER the Expo app and opens its shelf.json.
+#   scripts/preview-eas.sh
+build:
+  name: shelf (Swift) iOS preview, ad hoc
+  steps:
+    - eas/checkout
+    - run:
+        name: Generate the Xcode project
+        command: |
+          brew install xcodegen
+          xcodegen generate
+          # eas/configure_ios_credentials looks for ios/*.xcodeproj; ours is at the root.
+          mkdir -p .eas-shim && ln -sfn .. .eas-shim/ios
+    - eas/configure_ios_credentials:
+        working_directory: .eas-shim
+    - run:
+        name: Build and sign the preview .ipa
+        command: scripts/preview-ipa.sh
+    - eas/upload_artifact:
+        inputs:
+          path: build/preview/shelf.ipa

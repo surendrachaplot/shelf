@@ -1,12 +1,11 @@
 shelf.xcodeproj
-build/
+/build/
 DerivedData/
 Core/.build/
 .swiftpm/
 *.xcuserstate
 shots/
 shots-mac/
-build/
 build-device/
 .build/
 .eas-shim/
