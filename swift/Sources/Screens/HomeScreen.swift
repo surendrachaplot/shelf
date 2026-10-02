@@ -14,8 +14,8 @@ struct HomeScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(Nav.self) private var nav
     @Environment(\.openURL) private var openURL
-    /// The scroll view's own size: the columns are solved from its width, the
-    /// empty boards from its height.
+    /// The columns are solved from the width of the scroll's content, the
+    /// empty boards from the height of the scroll view.
     @State private var viewport: CGSize = .zero
 
     // Values the Expo `styles` hold as plain numbers (no token names them).
@@ -43,6 +43,10 @@ struct HomeScreen: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    // The width the CONTENT is given, measured where the
+                    // jackets are laid out and not on the scroll view around it.
+                    Color.clear.frame(height: 0)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport.width = $0 }
                     if let flash = model.flash {
                         Text(flash).lineBox(T.meta).foregroundStyle(theme.accent)
                             .fixedSize(horizontal: false, vertical: true)
@@ -71,7 +75,7 @@ struct HomeScreen: View {
             // pull still takes what the share extension has left.
             .refreshable { await model.refresh() }
             .tint(theme.inkFaint)
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { viewport = $0 }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewport.height = $0 }
         }
         .background(theme.bg)
     }
@@ -115,8 +119,10 @@ struct HomeScreen: View {
     private func tool(_ title: String, _ label: String, _ route: Route, _ compact: Bool) -> some View {
         Press(label, size: Tokens.touchMin, action: { nav.screen = route }) {
             Text(title).lineBox(T.micro).foregroundStyle(theme.inkFaint).fixedSize()
-                .padding(.horizontal, compact ? Tokens.Space.xs : Tokens.Space.sm)
-                .frame(minWidth: compact ? Tokens.touchMin : nil, minHeight: Tokens.touchMin)
+                // Compact: 7pt each side is what makes the shortest word, ADD,
+                // a 44pt box.
+                .padding(.horizontal, compact ? Tokens.Space.sm - 1 : Tokens.Space.sm)
+                .frame(minHeight: Tokens.touchMin)
         }
     }
 

@@ -18,6 +18,10 @@ extension View {
         if #available(iOS 26.0, *) {
             self.font(s.font).tracking(s.resolvedTracking).textCase(s.uppercase ? .uppercase : nil)
                 .lineHeight(.exact(points: s.resolvedLine))
+                // `.exact` stands the baseline one font size below the top of
+                // the line (measured). React Native centres the face in the
+                // line, so the glyphs are moved to where it puts them.
+                .offset(y: s.resolvedLine / 2 - s.resolvedSize * (1 - LineBox.middle))
         } else {
             // ponytail: before iOS 26 there is no line height to set. One line
             // is exact; a wrapped title set tighter than the face stays at the
@@ -25,6 +29,15 @@ extension View {
             self.style(s).padding(.vertical, (s.resolvedLine - s.resolvedSize * 1.19) / 2)
         }
     }
+}
+
+enum LineBox {
+    /// How far the middle of the face (half way from descender to ascender)
+    /// sits above the baseline, per point of size. Read off the face itself.
+    static let middle: CGFloat = {
+        let face = CTFontCreateWithName("HelveticaNeue" as CFString, 100, nil)
+        return (CTFontGetAscent(face) - CTFontGetDescent(face)) / 200
+    }()
 }
 
 struct Jacket: View {

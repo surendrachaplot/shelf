@@ -4,3 +4,4 @@ DerivedData/
 Core/.build/
 .swiftpm/
 *.xcuserstate
+shots/

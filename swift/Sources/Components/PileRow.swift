@@ -27,6 +27,9 @@ struct PileRow: View {
     /// App.tsx `pileSwatch`: a 9pt square.
     private static let swatch: CGFloat = 9
     private static let edge: CGFloat = 2
+    /// `bodyMed` asks for weight 600. Helvetica Neue has no such face and falls
+    /// to Medium; the Expo shots show it bold.
+    private static let title: TextStyle = { var s = T.bodyMed; s.weight = .bold; return s }()
 
     var body: some View {
         let pending = item.status == .pending
@@ -50,7 +53,7 @@ struct PileRow: View {
                   size: Tokens.touchMin, action: { nav.open = item }) {
                 VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                     Text(pending ? "Working it out…" : (named ? item.title! : "Couldn't read this one"))
-                        .lineBox(T.bodyMed).foregroundStyle(theme.ink).lineLimit(1)
+                        .lineBox(PileRow.title).foregroundStyle(theme.ink).lineLimit(1)
                     // The reason, in full. One line of it would be decoration.
                     if let why {
                         Text(why).lineBox(T.meta).foregroundStyle(theme.inkSoft)
