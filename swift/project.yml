@@ -43,7 +43,7 @@ targets:
   ShelfShare:
     type: app-extension
     platform: iOS
-    sources: [ShareExtension, Sources/Design, Core/Sources/ShelfCore/ShareQueue.swift]
+    sources: [ShareExtension, Sources/Design, Sources/Components/Press.swift, Core/Sources/ShelfCore/ShareQueue.swift]
     info:
       path: ShareExtension/Info.plist
       properties:
@@ -67,7 +67,7 @@ targets:
   ShelfTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests]
+    sources: [Tests, ShareExtension/ShareLogic.swift]
     dependencies:
       - target: shelf
     settings:
