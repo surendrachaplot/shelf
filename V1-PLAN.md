@@ -88,3 +88,19 @@ build. Batch them, then build once.
   accounts. It needs a database URL either way.
 - Chrome Web Store fee, store listings (see `EXTENSION-PLAN.md`).
 - Install the next build.
+
+## Swift app
+
+Decided 2026-10-02: the app is rewritten in Swift (`swift/`, see `swift/PLAN.md`).
+
+| Part | State | The check |
+|---|---|---|
+| Shelf file, API client, drain, pictures | DONE | `cd swift/Core && swift test` (golden files against the JS) |
+| Find, tags, links, lists, facts | DONE | same |
+| Serendipity, export, cover sizing, plate | DONE | same |
+| Share extension (eight shelves) | DONE, proven from Safari in the simulator | `swift/Tests/ShareLogicTests.swift` |
+| Every screen | WRITTEN, drawn on the Mac, NOT yet seen on iOS | `swift/tools/shots.sh` when the simulator is free |
+| A signed build | DONE (`477501ab…`) | install it |
+| Location for "near you / open now" | NOT WIRED (the logic takes `here`; nothing asks for it) | — |
+| Entrance animation on rows | NOT DONE | — |
+| Android (Kotlin) | NOT STARTED | — |

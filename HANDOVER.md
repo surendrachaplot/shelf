@@ -131,6 +131,35 @@ and a Blob download on the web. So all of this can travel over the air to the
 2026-09-01 build. `TagIndex.tsx` is not called `Tags.tsx` on purpose: next to
 `tags.js` on a case-insensitive Mac the two names collide.
 
+### THE APP IN SWIFT (started and first built 2026-10-02)
+
+Suren's call: rewrite the app in native Swift. It is in `swift/` — read
+`swift/PLAN.md` first. Same bundle id as the Expo app, so installed over it,
+it opens the same `shelf.json`.
+
+- **Logic**: `swift/Core` (a package: `cd swift/Core && swift test`, 179
+  tests, no simulator). Every module is checked against the JavaScript it
+  replaces with golden files (`swift/tools/golden/*.mjs` write them).
+- **Screens**: all written from the React Native ones (`swift/Sources`).
+  Tokens are generated from `app/src/design.js` (`node swift/tools/gen-tokens.mjs`).
+- **Share extension**: native, no network, writes to the App Group.
+- **A signed build exists**: EAS build `477501ab-76cd-4425-b237-bc91e0936626`
+  (ad hoc, both targets signed with the profiles the Expo app already had).
+  Made with `swift/scripts/preview-eas.sh`. Two things that cost a build each:
+  the builder's compiler times out on long chained expressions (check with
+  `-Xfrontend -warn-long-expression-type-checking=100`), and the upload step
+  looks for the .ipa from the REPO root.
+- **NOT YET SEEN ON AN iPHONE OR IN THE iOS SIMULATOR.** The simulator lock
+  (`~/gitrepo/tools/device.sh`) was held by another session all session. What
+  was checked instead: the real app launched as a Mac Catalyst build and
+  stayed up; all 23 screens were drawn to PNG on the Mac from the real Swift
+  views (`swift/shots-mac/`, not committed) and match the Expo shots.
+  `swift/tools/shots.sh` takes the simulator pictures when the lock is free.
+  One `simctl launch` hung for ten minutes in the only simulator attempt; it
+  was not reproduced and its cause is not known.
+- Xcode on this Mac has NO Apple account, so a phone cannot be run from Xcode
+  until one is added (Xcode → Settings → Accounts).
+
 ### v1 = everything mymind has (decided 2026-10-01, late)
 
 Suren's call. **`V1-PLAN.md` is the checklist** — read it before planning. In
