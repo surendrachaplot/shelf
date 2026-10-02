@@ -99,7 +99,7 @@ Decided 2026-10-02: the app is rewritten in Swift (`swift/`, see `swift/PLAN.md`
 | Find, tags, links, lists, facts | DONE | same |
 | Serendipity, export, cover sizing, plate | DONE | same |
 | Share extension (eight shelves) | DONE, proven from Safari in the simulator | `swift/Tests/ShareLogicTests.swift` |
-| Every screen | WRITTEN, drawn on the Mac, NOT yet seen on iOS | `swift/tools/shots.sh` when the simulator is free |
+| Every screen | DONE, seen in the iPhone 17 simulator (36 shots, 2026-10-02). One bug found and fixed there: cover titles lost their descenders | `swift/tools/shots.sh` |
 | A signed build | DONE (`477501ab…`) | install it |
 | Location for "near you / open now" | NOT WIRED (the logic takes `here`; nothing asks for it) | — |
 | Entrance animation on rows | NOT DONE | — |

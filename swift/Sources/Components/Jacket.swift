@@ -147,7 +147,18 @@ struct Jacket: View {
                     .layoutPriority(1)
             }
             box(at) {
-                Text(title).lineBox(style).foregroundStyle(mark).lineLimit(lines).multilineTextAlignment(.leading)
+                // SwiftUI cuts a text at the foot of its LAST line, and a line
+                // this tight leaves no room under the baseline: "Ganapati"
+                // lost its p (seen in the simulator). An empty line after it
+                // gives the room, and is taken back off the height. A title
+                // too long for the box falls to the plain one, which keeps
+                // its ellipsis.
+                ViewThatFits(in: .vertical) {
+                    Text(title + "\n").lineBox(style).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, -style.resolvedLine)
+                    Text(title).lineBox(style).lineLimit(lines)
+                }
+                .foregroundStyle(mark).multilineTextAlignment(.leading)
             }
             if showFoot {
                 Text(item.subtitle).lineBox(T.tag).foregroundStyle(field).lineLimit(2).multilineTextAlignment(.leading)

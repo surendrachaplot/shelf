@@ -383,7 +383,7 @@ struct ItemScreen: View {
                     act(ItemEdit(top: !item.top))
                 }
                 if let source = item.sourceURL, !source.isEmpty {
-                    ShelfButton(title: "Open reel →", on: on, field: fill, label: "Open the reel") {
+                    ShelfButton(title: source.contains("instagram.com") ? "Open reel →" : "Open link →", on: on, field: fill, label: "Open where it came from") {
                         open(source) { reelFail = $0 }
                     }
                 }
