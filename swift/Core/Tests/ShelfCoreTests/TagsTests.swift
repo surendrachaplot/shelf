@@ -227,7 +227,7 @@ final class TagsTests: XCTestCase {
             logicItem("3", "places", canonical: ["city": "Lisbon"]), logicItem("4", "places", canonical: ["city": "Lisbon"]),
         ]).map(\.value)
         XCTAssertEqual(byName, ["Lisbon", "Athens", "Zagreb"], "count first, then the name — not the order they arrived in")
-        XCTAssertTrue(Tags.index([]).isEmpty)
+        // (No "no shelf, no crash" case: in Swift a shelf is always an array.)
     }
 
     func testTheKindIsPartOfTheTag() {

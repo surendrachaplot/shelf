@@ -195,10 +195,10 @@ final class ListsLogicTests: XCTestCase {
         XCTAssertEqual(ListsLogic.setQuery(L, id: "b", query: "lisbon"), L)
         XCTAssertEqual(ListsLogic.setQuery(L, id: "a", query: ""), L, "clearing a query that is not set")
         XCTAssertEqual(ListsLogic.pin(L, id: "a", itemId: "p"), L, "pinning what is already pinned")
-        XCTAssertEqual(ListsLogic.pin(L, id: "nope", itemId: "p"), L)
+        XCTAssertEqual(ListsLogic.pin(L, id: "nope", itemId: "d"), L)
         XCTAssertEqual(ListsLogic.pin(L, id: "a", itemId: ""), L, "pinning an empty id")
         XCTAssertEqual(ListsLogic.unpin(L, id: "a", itemId: "d"), L, "unpinning what is not pinned")
-        XCTAssertEqual(ListsLogic.togglePin(L, id: "nope", itemId: "p"), L)
+        XCTAssertEqual(ListsLogic.togglePin(L, id: "nope", itemId: "d"), L)
         XCTAssertEqual(ListsLogic.movePin(L, id: "a", itemId: "p", toIndex: 1), L, "moving a pin to where it is")
         XCTAssertEqual(ListsLogic.movePin(L, id: "a", itemId: "g", toIndex: -5), L, "moving the first pin before the start")
         XCTAssertEqual(ListsLogic.movePin(L, id: "a", itemId: "s", toIndex: 99), L, "moving the last pin past the end")
@@ -320,7 +320,7 @@ final class ListsLogicTests: XCTestCase {
         let whole = ListsLogic.shelfTotal(shelf, locale: gb)
         XCTAssertEqual(whole.priced, 4)
         XCTAssertEqual(whole.unpriced, shelf.count - 4, "everything is either priced or unpriced")
-        XCTAssertEqual(ListsLogic.shelfTotal([], locale: gb), ListsLogic.Total(), "the total of no shelf is no lines and two zeros")
+        // (The total of an empty run is a golden case: `runs.none`.)
     }
 
     func testAListsTotalIsItsOwnThings() {

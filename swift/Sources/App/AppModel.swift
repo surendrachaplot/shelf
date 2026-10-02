@@ -45,6 +45,28 @@ final class Nav {
     var writing = false
     var writingFor: String?
 
+    // Set by DebugLaunch from launch arguments, applied once the shelf is read.
+    var pendingOpen: String?
+    var pendingRead: String?
+    var pendingAdding: String?
+    var pendingShare: String?
+
+    func applyPending(_ model: AppModel) {
+        if let id = pendingOpen { open = model.item(id) }
+        if let id = pendingRead { reading = model.item(id) }
+        if let id = pendingAdding { listAdding = model.item(id) }
+        if let s = pendingShare {
+            let parts = s.split(separator: ":", maxSplits: 1).map(String.init)
+            switch parts.first {
+            case "shelf": sharing = Sharing(kind: .shelf, list: parts.last, title: "Your \(Lists.info(parts.last).label.lowercased()) shelf")
+            case "item": if let it = model.item(parts.last ?? "") { sharing = Sharing(kind: .item, item: it, list: it.list, title: it.title ?? "This one") }
+            case "profile": sharing = Sharing(kind: .profile, title: "Your whole card")
+            default: break
+            }
+        }
+        pendingOpen = nil; pendingRead = nil; pendingAdding = nil; pendingShare = nil
+    }
+
     func close() { screen = .home }
 
     /// Open an item from an overlay: the overlay closes first, because it is
