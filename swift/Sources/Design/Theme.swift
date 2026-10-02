@@ -79,7 +79,11 @@ struct TextStyle: Sendable {
     var tracking: CGFloat? = nil
     var uppercase = false
 
-    var font: Font { .custom("HelveticaNeue", fixedSize: size ?? step.size).weight(weight ?? step.weight) }
+    /// Helvetica Neue has no semibold: asked for 600 it falls to Medium, which
+    /// is visibly lighter than the design (the reference renders 600 as bold,
+    /// as every Expo screenshot shows). So 600 is drawn bold here.
+    var resolvedWeight: Font.Weight { let w = weight ?? step.weight; return w == .semibold ? .bold : w }
+    var font: Font { .custom("HelveticaNeue", fixedSize: size ?? step.size).weight(resolvedWeight) }
     var resolvedSize: CGFloat { size ?? step.size }
     var resolvedLine: CGFloat { lineHeight ?? step.lineHeight }
     var resolvedTracking: CGFloat { tracking ?? step.tracking }

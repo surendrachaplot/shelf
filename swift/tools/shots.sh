@@ -12,12 +12,14 @@ cd "$(dirname "$0")/.."
 OUT="$PWD/shots"; mkdir -p "$OUT"; rm -f "$OUT"/*.png
 DEVICE="${DEVICE:-iPhone 17}"
 ID=com.surendrachaplot.shelf
-~/gitrepo/tools/device.sh ios "$DEVICE" || exit 1
+# HAVE_LOCK=1 when this shell already holds the lock (a run that was cut short).
+[ -n "${HAVE_LOCK:-}" ] && ~/gitrepo/tools/device.sh touch >/dev/null || ~/gitrepo/tools/device.sh ios "$DEVICE" || exit 1
 trap '~/gitrepo/tools/device.sh release >/dev/null 2>&1' EXIT
 
 xcodegen generate >/dev/null
 xcodebuild -project shelf.xcodeproj -scheme shelf -destination "platform=iOS Simulator,name=$DEVICE" \
   -derivedDataPath build build CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|BUILD" | head -5
+xcrun simctl uninstall booted "$ID" >/dev/null 2>&1
 xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/shelf.app || exit 1
 xcrun simctl status_bar booted override --time "15:48" --batteryState charged --batteryLevel 100 >/dev/null 2>&1
 
@@ -25,7 +27,12 @@ shot() { # name, appearance, launch args…
   local name="$1" look="$2"; shift 2
   xcrun simctl ui booted appearance "$look" >/dev/null 2>&1
   xcrun simctl terminate booted "$ID" >/dev/null 2>&1
-  xcrun simctl launch booted "$ID" -ShelfFixture 1 "$@" >/dev/null 2>&1
+  # A launch that hangs must not hold the one simulator for ten minutes (it
+  # did, once): give it 25 seconds, then say so and move on.
+  xcrun simctl launch booted "$ID" -ShelfFixture 1 "$@" >/dev/null 2>&1 & local lp=$!
+  ( sleep 25; kill "$lp" 2>/dev/null ) & local wp=$!
+  if ! wait "$lp"; then echo "HANG $name (launch did not return)"; fi
+  kill "$wp" 2>/dev/null
   sleep 3
   xcrun simctl io booted screenshot "$OUT/$name.png" >/dev/null 2>&1 && echo "ok   $name" || echo "FAIL $name"
 }
