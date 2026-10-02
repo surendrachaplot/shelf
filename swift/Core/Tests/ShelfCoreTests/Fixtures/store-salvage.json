@@ -1,0 +1,148 @@
+[
+ {
+  "label": "whole",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"d\",\"canonical\":{\"nested\":{\"deep\":[{\"x\":1},{\"y\":\"}\"}]}}},{\"id\":\"e\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"東京 📚\"},{\"id\":\"f\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"f\"}],\"profile\":{},\"links\":[]}",
+  "ids": [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f"
+  ]
+ },
+ {
+  "label": "cut 20 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"d\",\"canonical\":{\"nested\":{\"deep\":[{\"x\":1},{\"y\":\"}\"}]}}},{\"id\":\"e\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"東京 📚\"},{\"id\":\"f\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"f\"}],\"pro",
+  "ids": [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f"
+  ]
+ },
+ {
+  "label": "cut 60 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"d\",\"canonical\":{\"nested\":{\"deep\":[{\"x\":1},{\"y\":\"}\"}]}}},{\"id\":\"e\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"東京 📚\"},{\"id\":\"f\",\"list\":\"bo",
+  "ids": [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ]
+ },
+ {
+  "label": "cut 100 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"d\",\"canonical\":{\"nested\":{\"deep\":[{\"x\":1},{\"y\":\"}\"}]}}},{\"id\":\"e\",\"list\":\"books\",\"status\":\"file",
+  "ids": [
+   "a",
+   "b",
+   "c",
+   "d"
+  ]
+ },
+ {
+  "label": "cut 150 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"d\",\"canonical\":{\"nested\":{\"deep\":[{\"x\":1},{\"y",
+  "ids": [
+   "a",
+   "b",
+   "c"
+  ]
+ },
+ {
+  "label": "cut 200 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ] bracket \\\\\"},{\"id\":\"d\",\"list\":\"books\",\"status\":\"filed\",\"tit",
+  "ids": [
+   "a",
+   "b",
+   "c"
+  ]
+ },
+ {
+  "label": "cut 260 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the title\"},{\"id\":\"c\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a \\\"quoted\\\" ]",
+  "ids": [
+   "a",
+   "b"
+  ]
+ },
+ {
+  "label": "cut 330 from the end",
+  "raw": "{\"version\":1,\"items\":[{\"id\":\"a\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"a\"},{\"id\":\"b\",\"list\":\"books\",\"status\":\"filed\",\"title\":\"A } brace { in the tit",
+  "ids": [
+   "a"
+  ]
+ },
+ {
+  "label": "not json",
+  "raw": "not json at all",
+  "ids": []
+ },
+ {
+  "label": "empty",
+  "raw": "",
+  "ids": []
+ },
+ {
+  "label": "items never opens",
+  "raw": "{\"version\":1,\"items\":",
+  "ids": []
+ },
+ {
+  "label": "an item with no id is not an item",
+  "raw": "{\"items\":[{\"title\":\"x\"},{\"id\":\"ok\"},{\"id\":\"\"},{\"id\":0},null,7,\"s\"]}",
+  "ids": [
+   "ok"
+  ]
+ },
+ {
+  "label": "a nested id does not count",
+  "raw": "{\"items\":[{\"canonical\":{\"id\":\"inner\"}},{\"id\":\"outer\",\"canonical\":{\"id\":\"inner\"}}]}",
+  "ids": [
+   "outer"
+  ]
+ },
+ {
+  "label": "stops at the end of the array",
+  "raw": "{\"items\":[{\"id\":\"in\"}],\"boards\":[{\"id\":\"board\"}]}",
+  "ids": [
+   "in"
+  ]
+ },
+ {
+  "label": "one bad item is one item",
+  "raw": "{\"items\":[{\"id\":\"a\"},{\"id\":\"b\",,},{\"id\":\"c\"}]}",
+  "ids": [
+   "a",
+   "c"
+  ]
+ },
+ {
+  "label": "the word items inside a string first",
+  "raw": "{\"note\":\"my \\\"items\\\" [\",\"items\":[{\"id\":\"real\"}]}",
+  "ids": [
+   "real"
+  ]
+ },
+ {
+  "label": "pretty printed",
+  "raw": "{\n  \"items\": [\n    {\n      \"id\": \"p1\",\n      \"list\": \"books\",\n      \"status\": \"filed\",\n      \"title\": \"p1\"\n    },\n    {\n      \"id\": \"p2\",\n      \"list\": \"books\",\n      \"status\": \"filed\",\n      \"title\": \"p2\"\n    }\n  ]\n}",
+  "ids": [
+   "p1",
+   "p2"
+  ]
+ },
+ {
+  "label": "a brace after an escaped quote",
+  "raw": "{\"items\":[{\"id\":\"a\",\"title\":\"x \\\" } y\"},{\"id\":\"b\",\"title\":\"ends in a backslash \\\\\"},{\"id\":\"c\"}]}",
+  "ids": [
+   "a",
+   "b",
+   "c"
+  ]
+ }
+]

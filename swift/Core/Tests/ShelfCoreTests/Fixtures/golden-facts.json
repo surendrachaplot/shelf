@@ -1,0 +1,7170 @@
+{
+ "items": [
+  {
+   "id": "b1",
+   "list": "books",
+   "status": "filed",
+   "title": "Piranesi",
+   "subtitle": "Susanna Clarke · 2020",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Susanna Clarke",
+    "first_sentence": "When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.",
+    "isbn": "9781635575637",
+    "key": "books:/works/OL1W",
+    "openlibrary_key": "/works/OL1W",
+    "pages": 245,
+    "rating": 4.3,
+    "read_url": "https://openlibrary.org/works/OL1W",
+    "subjects": [
+     "Fantasy",
+     "Labyrinths"
+    ],
+    "year": 2020
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2025-10-02T08:00:00.000Z",
+   "resolved_at": "2025-10-02T08:00:05.000Z"
+  },
+  {
+   "id": "b2",
+   "list": "books",
+   "status": "filed",
+   "title": "Jonathan Strange & Mr Norrell",
+   "subtitle": "Susanna Clarke · 2004",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "susanna  CLARKE.",
+    "currency": "GBP",
+    "pages": 782,
+    "price": 9.99,
+    "subjects": [
+     "Fantasy"
+    ],
+    "year": 2004
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b3",
+   "list": "books",
+   "status": "filed",
+   "title": "Babel",
+   "subtitle": "R. F. Kuang · 2022",
+   "note": "Borrowed from Maya — give it back.",
+   "image_url": null,
+   "canonical": {
+    "author": "R. F. Kuang",
+    "rating": 4.1,
+    "read_url": "https://openlibrary.org/works/OL2W",
+    "subjects": [
+     "Fantasy",
+     "Dark academia",
+     "fantasy"
+    ],
+    "year": 2022
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b4",
+   "list": "books",
+   "status": "filed",
+   "title": "ノルウェイの森",
+   "subtitle": "村上春樹 · 1987",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "村上春樹",
+    "pages": 296,
+    "year": 1987
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b5",
+   "list": "books",
+   "status": "filed",
+   "title": "Harry Potter and the Goblet of Fire",
+   "subtitle": "J.K. Rowling · 2000",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "J.K. Rowling",
+    "year": 2000
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b6",
+   "list": "books",
+   "status": "filed",
+   "title": "Cien años de soledad",
+   "subtitle": "Gabriel García Márquez · 1967",
+   "note": "Read it in the café on Rua Augusta 🙂🙂 with María — the yellow butterflies chapter is the one to reread.",
+   "image_url": null,
+   "canonical": {
+    "author": "Gabriel García Márquez",
+    "pages": 417,
+    "subjects": [
+     "Magical realism"
+    ],
+    "year": 1967
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00+01:00",
+   "resolved_at": null
+  },
+  {
+   "id": "b7",
+   "list": "books",
+   "status": "filed",
+   "title": "Upstream",
+   "subtitle": "Mary Oliver · 2016",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Mary Oliver",
+    "year": 2016
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-04-01",
+   "resolved_at": null
+  },
+  {
+   "id": "r1",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "St. John",
+   "subtitle": "British · Farringdon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "26 St John Street, Farringdon, London EC1M 4AY",
+    "area": "Farringdon",
+    "cuisine": [
+     "british"
+    ],
+    "lat": 51.5203,
+    "lng": -0.1027,
+    "map_url": "geo:51.5203,-0.1027?q=St.%20John",
+    "opening_hours": "Mo-Sa 12:00-23:00",
+    "osm_id": 42,
+    "osm_type": "node",
+    "osm_url": "https://www.openstreetmap.org/node/42",
+    "phone": "+44 20 7251 0848",
+    "source": "openstreetmap",
+    "website": "https://stjohnrestaurant.com"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r2",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Ganapati",
+   "subtitle": "South indian · Peckham",
+   "note": "Go early on a Saturday, the dosa sells out by two.",
+   "image_url": null,
+   "canonical": {
+    "address": "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF",
+    "area": "Peckham",
+    "cuisine": [
+     "South indian",
+     "Indian"
+    ],
+    "lat": 51.47,
+    "lng": -0.07,
+    "map_url": "geo:51.47,-0.07?q=Ganapati",
+    "osm_id": 43,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r3",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Café de Flore",
+   "subtitle": "French · Paris",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "172 Boulevard Saint-Germain, 75006 Paris",
+    "area": "Saint-Germain-des-Prés",
+    "city": "Paris",
+    "cuisine": [
+     "french"
+    ],
+    "lat": 48.854,
+    "lng": 2.3326,
+    "website": "https://cafedeflore.fr"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r4",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Brutto",
+   "subtitle": "Italian · Farringdon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "35-37 Greenhill Rents, London EC1M 6BN",
+    "area": "Farringdon",
+    "cuisine": [
+     "italian"
+    ],
+    "lat": 51.5205,
+    "lng": -0.1016,
+    "osm_id": 44,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r5",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Tom's Kitchen & Bar, Chelsea",
+   "subtitle": "Chelsea",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Chelsea",
+    "city": "London",
+    "cuisine": []
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r6",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Mangal II",
+   "subtitle": "38 Holly Grove",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.42,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m1",
+   "list": "movies",
+   "status": "filed",
+   "title": "Sinners",
+   "subtitle": "Ryan Coogler · 2025",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cast": [
+     "Michael B. Jordan",
+     "Hailee Steinfeld",
+     "Delroy Lindo",
+     "Jack O'Connell"
+    ],
+    "director": "Ryan Coogler",
+    "genres": [
+     "Horror",
+     "Thriller"
+    ],
+    "media_type": "movie",
+    "overview": "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    "rating": 7.6,
+    "region": "GB",
+    "runtime_min": 137,
+    "streaming": [
+     "Mubi",
+     "Netflix"
+    ],
+    "tmdb_id": 7,
+    "trailer_url": "https://www.youtube.com/watch?v=x",
+    "watch_url": "https://www.themoviedb.org/movie/7/watch",
+    "year": "2025"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m2",
+   "list": "movies",
+   "status": "filed",
+   "title": "Creed",
+   "subtitle": "Ryan Coogler · 2015",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cast": [
+     "Michael B. Jordan",
+     "Sylvester Stallone"
+    ],
+    "director": "Ryan Coogler",
+    "genres": [
+     "Drama"
+    ],
+    "runtime_min": 133,
+    "streaming": [],
+    "tmdb_id": 8,
+    "watch_url": "https://www.themoviedb.org/movie/8/watch",
+    "year": "2015"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m3",
+   "list": "movies",
+   "status": "filed",
+   "title": "La Chimera",
+   "subtitle": "Alice Rohrwacher · 2023",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "director": "Alice Rohrwacher",
+    "genres": [
+     "Drama",
+     "Fantasy"
+    ],
+    "rating": 7,
+    "year": "2023"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m4",
+   "list": "movies",
+   "status": "filed",
+   "title": "Anatomy of a Fall",
+   "subtitle": "2023",
+   "note": "reminded me of Piranesi",
+   "image_url": null,
+   "canonical": {
+    "year": "2023"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m5",
+   "list": "movies",
+   "status": "filed",
+   "title": "Untitled",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "",
+    "author": "",
+    "cast": [],
+    "city": "  ",
+    "cuisine": [
+     ""
+    ],
+    "director": null,
+    "genres": [],
+    "overview": "",
+    "runtime_min": null,
+    "year": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c1",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Lemon dal",
+   "subtitle": "45 min · 4 servings",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "byline": "Words by Jay Rayner",
+     "excerpt": "Rinse the pulses",
+     "hero": "https://cdn/d.jpg",
+     "readingMinutes": 4,
+     "siteName": "The Guardian",
+     "summary": "Sour first, then sweet: a weeknight supper.",
+     "text": "Rinse the pulses until the water runs clear. Simmer with turmeric for half an hour, then stir through tamarind and a spoon of jaggery. The party trick is to start the tempering late. Mustard seeds, curry leaves and dried chilli go in at the very end. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Serve with rice, a spoon of yoghurt and whatever pickle is open. Café-style crème fraîche is not traditional but nobody has complained."
+    },
+    "author": "Meera Sodha",
+    "calories": "320 kcal",
+    "cuisine": "Indian",
+    "ingredients": [
+     "1 cup toor dal",
+     "2 lemons",
+     "curry leaves"
+    ],
+    "rating": 4.6,
+    "recipe_url": "https://food.example/dal",
+    "serves": "4 servings",
+    "steps": 6,
+    "total_time": "45 min"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c2",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Cacio e pepe",
+   "subtitle": "20 min",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "siteName": "The Guardian"
+    },
+    "author": "Felicity Cloake",
+    "cuisine": "Italian",
+    "ingredients": [],
+    "recipe_url": "https://food.example/cacio",
+    "serves": 2,
+    "steps": 0,
+    "total_time": "20 min"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c3",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Aubergine curry",
+   "subtitle": "1 hr",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "siteName": "the guardian"
+    },
+    "author": "Meera Sodha",
+    "cuisine": "Indian",
+    "total_time": "1 hr"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q1",
+   "list": "quotes",
+   "status": "filed",
+   "title": "“Attention is the beginning of devotion.”",
+   "subtitle": "Mary Oliver",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "caption": "mary oliver, upstream #poetry #quotes",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q2",
+   "list": "quotes",
+   "status": "filed",
+   "title": "We tell ourselves stories in order to live. We look for the sermon in the suicide, for the social or moral lesson in the murder of five. We interpret what we see, select the most workable of the multiple choices, and we live entirely by the imposition of a narrative line upon disparate images.",
+   "subtitle": "Joan Didion",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Joan Didion",
+    "source": "The White Album"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q3",
+   "list": "quotes",
+   "status": "filed",
+   "title": "Attention is the rarest and purest form of generosity.",
+   "subtitle": "Simone Weil",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p1",
+   "list": "places",
+   "status": "filed",
+   "title": "Miradouro da Senhora do Monte",
+   "subtitle": "Graça · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Largo Monte, 1170-107 Lisboa",
+    "area": "Graça",
+    "city": "Lisbon",
+    "lat": 38.72,
+    "lng": -9.13,
+    "located": true,
+    "map_url": "geo:38.72,-9.13?q=Miradouro",
+    "osm_url": "https://www.openstreetmap.org/node/1",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p2",
+   "list": "places",
+   "status": "filed",
+   "title": "Time Out Market",
+   "subtitle": "Cais do Sodré · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Av. 24 de Julho 49, Lisboa",
+    "area": "Cais do Sodré",
+    "city": "Lisbon",
+    "located": true,
+    "map_url": "geo:38.70,-9.14?q=Time%20Out",
+    "opening_hours": "Su-We 10:00-24:00",
+    "source": "openstreetmap",
+    "website": "https://timeoutmarket.com"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p3",
+   "list": "places",
+   "status": "filed",
+   "title": "Belém",
+   "subtitle": "Belém · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Belém",
+    "city": "Lisbon",
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p4",
+   "list": "places",
+   "status": "filed",
+   "title": "Praia da Ursa",
+   "subtitle": "Sintra",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Sintra",
+    "located": false,
+    "map_url": "geo:0,0?q=Praia%20da%20Ursa%2C%20Sintra",
+    "source": "search"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p5",
+   "list": "places",
+   "status": "filed",
+   "title": "Book Bar",
+   "subtitle": "Bounds Green · London",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Book Bar, Bounds Green, London",
+    "area": "Bounds Green",
+    "city": "London",
+    "cuisine": [],
+    "lat": 51.6,
+    "lng": -0.12,
+    "located": true,
+    "osm_id": 9,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p6",
+   "list": "places",
+   "status": "filed",
+   "title": "London Fields",
+   "subtitle": "London",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "London",
+    "city": "London",
+    "lat": 51.5422,
+    "lng": -0.0613,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p7",
+   "list": "places",
+   "status": "filed",
+   "title": "東京タワー",
+   "subtitle": "東京",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "東京",
+    "lat": 35.6586,
+    "lng": 139.7454,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p8",
+   "list": "places",
+   "status": "filed",
+   "title": "São Paulo Museum of Art",
+   "subtitle": "São Paulo",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "São Paulo",
+    "lat": -23.5614,
+    "lng": -46.6559,
+    "located": true,
+    "website": "https://masp.org.br"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p9",
+   "list": "places",
+   "status": "filed",
+   "title": "광장시장",
+   "subtitle": "서울",
+   "note": "빈대떡 먹기 mung bean pancake 마약김밥 그리고 육회 then walk to Cheonggyecheon stream after dark 그리고 집에 가기 before the last train leaves",
+   "image_url": null,
+   "canonical": {
+    "city": "Seoul",
+    "lat": 37.57,
+    "lng": 126.9996,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w1",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Wool overshirt, olive",
+   "subtitle": "Northfield",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Northfield",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 65,
+    "price_at": "2026-10-01T09:00:00Z",
+    "price_text": "£65.00",
+    "seller": "Northfield",
+    "shop_url": "https://shop.example/overshirt"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://shop.example/overshirt",
+   "resolver": "web-og",
+   "created_at": "2026-09-20T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w2",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Lip tint, Rosewood",
+   "subtitle": "Petal",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Petal",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 18,
+    "price_text": "£18.00",
+    "shop_url": "https://shop.example/tint"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-21T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w3",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Linen trousers, ecru",
+   "subtitle": "Marlow & Co",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": "Marlow & Co",
+    "currency": null,
+    "kind": "product",
+    "price": null,
+    "price_text": null,
+    "shop_url": "https://shop.example/linen"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-22T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w4",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Bentwood chair",
+   "subtitle": "Thonet",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "out_of_stock",
+    "brand": "Thonet",
+    "currency": "EUR",
+    "kind": "product",
+    "price": 349.5,
+    "price_text": "€349.50",
+    "seller": "Liberty",
+    "shop_url": "https://shop.example/chair"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w5",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Petty knife",
+   "subtitle": "Tadafusa",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "preorder",
+    "brand": "Tadafusa",
+    "currency": "JPY",
+    "kind": "product",
+    "price": 12000,
+    "price_text": "¥12,000",
+    "shop_url": "https://shop.example/knife"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w6",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Desk lamp",
+   "subtitle": "Maker",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "discontinued",
+    "brand": "Maker",
+    "currency": "USD",
+    "kind": "product",
+    "price": 20,
+    "price_text": "$20 to $35",
+    "shop_url": "https://shop.example/lamp"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w7",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Laptop, 14 inch",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "currency": "eur",
+    "kind": "product",
+    "price": 1299,
+    "price_text": "€1,299.00",
+    "seller": "Big Shop",
+    "shop_url": "https://shop.example/laptop"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w8",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Sticker sheet",
+   "subtitle": "Petal",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": "Petal",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 0,
+    "price_text": "Free"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w9",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Candle",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "currency": null,
+    "kind": "product",
+    "price": null,
+    "price_text": "From £9"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w10",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Scarf, lambswool",
+   "subtitle": "Northfield",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Northfield",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 65.5,
+    "price_text": "£65.50",
+    "seller": "Northfield"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n1",
+   "list": "notes",
+   "status": "filed",
+   "title": "Brown boots, not black.",
+   "subtitle": "",
+   "note": "Brown boots, not black. Ask Maya about the scarf.",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-09-23T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n2",
+   "list": "notes",
+   "status": "filed",
+   "title": "Gift ideas",
+   "subtitle": "",
+   "note": "Gift ideas",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n3",
+   "list": "notes",
+   "status": "filed",
+   "title": "Things to ask the landlord.",
+   "subtitle": "",
+   "note": "Things to ask the landlord.\nDoes the boiler get serviced, and who pays for it? Is the deposit in a scheme, and which one? Can we put shelves up in the back room? Who do we call when the lift stops, because it stopped twice in the week we looked round. And is the bike store locked at night.",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u1",
+   "list": "unsorted",
+   "status": "pending",
+   "title": null,
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Susanna Clarke",
+    "city": "London"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/y",
+   "resolver": "crawler-embed-html",
+   "created_at": "",
+   "resolved_at": null
+  },
+  {
+   "id": "u2",
+   "list": "unsorted",
+   "status": "unread",
+   "title": null,
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://www.instagram.com/reel/DAbCdEf/",
+   "resolver": "none",
+   "caption": "piranesi lisbon dosa",
+   "created_at": "not a date",
+   "resolved_at": null
+  },
+  {
+   "id": "u3",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "The dosa counter that does not take bookings",
+   "subtitle": "Field Notes",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "byline": "R. Okafor",
+     "excerpt": "There is no sign outside. You find it by the queue.",
+     "hero": null,
+     "readingMinutes": 6,
+     "siteName": "Field Notes",
+     "summary": "A twelve-seat counter on Holly Grove serves one thing well. Go before seven. Order the ghee roast and the filter coffee. We landed in Lisbon the week after.",
+     "text": "There is no sign outside. You find it by the queue, which starts at half past five and is gone by seven, because by seven the batter is gone too.\n\nInside are twelve stools, one flat-top and a man who has made the same dosa for nineteen years. He does not hurry and he does not talk while he pours.\n\nThe ghee roast comes first. It is as long as your forearm and it breaks like glass.\n\nThen the sambar, which is thinner than you expect and better for it. Then the coffee, poured from a height into a steel tumbler, and then somebody is standing behind you waiting for the stool.\n\nNobody has written the recipe down. He says the batter knows what day it is, and that is all he will say about it."
+    }
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://fieldnotes.example/dosa-counter",
+   "resolver": "web-og",
+   "created_at": "2026-09-12T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u4",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Screenshot",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "ocr_text": "MENÚ DEL DÍA\nCroquetas de jamón 9€\nPulpo a la gallega 14€"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u5",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Enamel mug",
+   "subtitle": "Falcon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Falcon",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 12.5,
+    "price_text": "£12.50",
+    "seller": "Falcon",
+    "shop_url": "https://shop.example/mug"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u6",
+   "list": "unsorted",
+   "status": "filed",
+   "title": null,
+   "subtitle": "",
+   "note": "the one with the yellow cover",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u7",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "🍕🍕 Pizza night 🍕",
+   "subtitle": "",
+   "note": "🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕margherita🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 and then tiramisù 🍰",
+   "image_url": null,
+   "canonical": {
+    "ocr_text": "🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 FORNO A LEGNA 🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "caption": "#pizza #napoli 🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 best slice in town 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u8",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Odd one",
+   "subtitle": "odds",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "2": "two",
+    "10": "ten",
+    "Alpha": "capital first",
+    "HREF2": "upper",
+    "Source": "openstreetmap",
+    "arr": [
+     1,
+     "two",
+     [
+      "three"
+     ],
+     {
+      "four": "4",
+      "url": "https://no"
+     },
+     null,
+     false
+    ],
+    "big": 1e+21,
+    "coordinates": "noisy too",
+    "count": 3.5,
+    "data": "DATA:abc",
+    "emoji": "🍕 slice",
+    "exact80": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "flag": true,
+    "geo": "geo:1,2",
+    "href": "/x",
+    "huge": 123456789012345680000,
+    "image_url": "https://covers/x.jpg",
+    "key": "books:/works/X",
+    "long": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "neg": -0.5,
+    "nested": {
+     "a": {
+      "b": {
+       "c": {
+        "d": "deep"
+       }
+      }
+     }
+    },
+    "nothing": null,
+    "path": "/works/1",
+    "place_id": "ChIJabc123",
+    "plain": "http and more",
+    "shallow": {
+     "a": {
+      "b": {
+       "c": "kept"
+      }
+     }
+    },
+    "slug": "odd-one",
+    "small": 0.000001,
+    "thumbs": "noisy by key",
+    "tiny": 1e-7,
+    "web": "HTTPS://x",
+    "zeta": "last"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f1",
+   "list": "places",
+   "status": "filed",
+   "title": "A/B?C#D=E+F%G",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Köln"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f2",
+   "list": "places",
+   "status": "filed",
+   "title": "naïve ~ (test) *star* !bang_under-dash.dot",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Zürich",
+    "located": false
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f3",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "🍕 Pizza Pilgrims",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "lat": 51.5,
+    "lng": 0,
+    "phone": " 020 7287\t8964 "
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f4",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f5",
+   "list": "places",
+   "status": "filed",
+   "title": null,
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Porto"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f6",
+   "list": "places",
+   "status": "filed",
+   "title": "Tiny pin",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Nowhere",
+    "city": "Nowhere",
+    "lat": 1e-7,
+    "lng": -1.5e-7
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f7",
+   "list": "places",
+   "status": "filed",
+   "title": "Half a pin",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": 7,
+    "lat": 51.5,
+    "lng": "0.1"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f8",
+   "list": "movies",
+   "status": "filed",
+   "title": "Bare film",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cast": "not a list",
+    "genres": [
+     "",
+     "Drama",
+     null,
+     7
+    ],
+    "rating": 0,
+    "runtime_min": 0,
+    "streaming": [
+     "Mubi"
+    ],
+    "trailer_url": "",
+    "watch_url": "https://w"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f9",
+   "list": "books",
+   "status": "filed",
+   "title": "Bare book",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": 12,
+    "pages": 0,
+    "rating": 5,
+    "subjects": [],
+    "year": 0
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f10",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Bare recipe",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "calories": 0,
+    "ingredients": [
+     ""
+    ],
+    "serves": 4,
+    "steps": 0,
+    "total_time": ""
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f11",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Odd product",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "nope",
+    "brand": "",
+    "kind": "product",
+    "price_text": 12,
+    "seller": "Shop",
+    "shop_url": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f12",
+   "list": "books",
+   "status": "filed",
+   "title": "A book with a price",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Someone",
+    "price_text": "£9"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f13",
+   "list": "notes",
+   "status": "filed",
+   "title": "A note",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f14",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Big numbers",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "X",
+    "lat": 123456789012345680000,
+    "lng": 1e+21
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "f15",
+   "list": "places",
+   "status": "filed",
+   "title": "Two wheres",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Alfama",
+    "city": "Lisbon",
+    "located": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  }
+ ],
+ "stock": {
+  "in_stock": "In stock",
+  "out_of_stock": "Sold out",
+  "preorder": "Not out yet"
+ },
+ "factsFor": [
+  {
+   "input": {
+    "id": "b1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": "“When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.”",
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Susanna Clarke"
+     },
+     {
+      "label": "First published",
+      "value": "2020"
+     },
+     {
+      "label": "Length",
+      "value": "245 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "4.3 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Labyrinths"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL1W"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Piranesi"
+   }
+  },
+  {
+   "input": {
+    "id": "b1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": "“When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.”",
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Susanna Clarke"
+     },
+     {
+      "label": "First published",
+      "value": "2020"
+     },
+     {
+      "label": "Length",
+      "value": "245 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "4.3 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Labyrinths"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL1W"
+     }
+    ],
+    "map": "geo:0,0?q=Piranesi"
+   }
+  },
+  {
+   "input": {
+    "id": "b1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": "“When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.”",
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Susanna Clarke"
+     },
+     {
+      "label": "First published",
+      "value": "2020"
+     },
+     {
+      "label": "Length",
+      "value": "245 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "4.3 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Labyrinths"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL1W"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Piranesi"
+   }
+  },
+  {
+   "input": {
+    "id": "b2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "susanna  CLARKE."
+     },
+     {
+      "label": "First published",
+      "value": "2004"
+     },
+     {
+      "label": "Length",
+      "value": "782 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Jonathan%20Strange%20%26%20Mr%20Norrell"
+   }
+  },
+  {
+   "input": {
+    "id": "b2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "susanna  CLARKE."
+     },
+     {
+      "label": "First published",
+      "value": "2004"
+     },
+     {
+      "label": "Length",
+      "value": "782 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Jonathan%20Strange%20%26%20Mr%20Norrell"
+   }
+  },
+  {
+   "input": {
+    "id": "b2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "susanna  CLARKE."
+     },
+     {
+      "label": "First published",
+      "value": "2004"
+     },
+     {
+      "label": "Length",
+      "value": "782 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Jonathan%20Strange%20%26%20Mr%20Norrell"
+   }
+  },
+  {
+   "input": {
+    "id": "b3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "R. F. Kuang"
+     },
+     {
+      "label": "First published",
+      "value": "2022"
+     },
+     {
+      "label": "Rating",
+      "value": "4.1 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Dark academia · fantasy"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL2W"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Babel"
+   }
+  },
+  {
+   "input": {
+    "id": "b3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "R. F. Kuang"
+     },
+     {
+      "label": "First published",
+      "value": "2022"
+     },
+     {
+      "label": "Rating",
+      "value": "4.1 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Dark academia · fantasy"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL2W"
+     }
+    ],
+    "map": "geo:0,0?q=Babel"
+   }
+  },
+  {
+   "input": {
+    "id": "b3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "R. F. Kuang"
+     },
+     {
+      "label": "First published",
+      "value": "2022"
+     },
+     {
+      "label": "Rating",
+      "value": "4.1 / 5"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Fantasy · Dark academia · fantasy"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open Library",
+      "url": "https://openlibrary.org/works/OL2W"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Babel"
+   }
+  },
+  {
+   "input": {
+    "id": "b4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "村上春樹"
+     },
+     {
+      "label": "First published",
+      "value": "1987"
+     },
+     {
+      "label": "Length",
+      "value": "296 pages"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=%E3%83%8E%E3%83%AB%E3%82%A6%E3%82%A7%E3%82%A4%E3%81%AE%E6%A3%AE"
+   }
+  },
+  {
+   "input": {
+    "id": "b4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "村上春樹"
+     },
+     {
+      "label": "First published",
+      "value": "1987"
+     },
+     {
+      "label": "Length",
+      "value": "296 pages"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=%E3%83%8E%E3%83%AB%E3%82%A6%E3%82%A7%E3%82%A4%E3%81%AE%E6%A3%AE"
+   }
+  },
+  {
+   "input": {
+    "id": "b4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "村上春樹"
+     },
+     {
+      "label": "First published",
+      "value": "1987"
+     },
+     {
+      "label": "Length",
+      "value": "296 pages"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=%E3%83%8E%E3%83%AB%E3%82%A6%E3%82%A7%E3%82%A4%E3%81%AE%E6%A3%AE"
+   }
+  },
+  {
+   "input": {
+    "id": "b5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "J.K. Rowling"
+     },
+     {
+      "label": "First published",
+      "value": "2000"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Harry%20Potter%20and%20the%20Goblet%20of%20Fire"
+   }
+  },
+  {
+   "input": {
+    "id": "b5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "J.K. Rowling"
+     },
+     {
+      "label": "First published",
+      "value": "2000"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Harry%20Potter%20and%20the%20Goblet%20of%20Fire"
+   }
+  },
+  {
+   "input": {
+    "id": "b5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "J.K. Rowling"
+     },
+     {
+      "label": "First published",
+      "value": "2000"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Harry%20Potter%20and%20the%20Goblet%20of%20Fire"
+   }
+  },
+  {
+   "input": {
+    "id": "b6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Gabriel García Márquez"
+     },
+     {
+      "label": "First published",
+      "value": "1967"
+     },
+     {
+      "label": "Length",
+      "value": "417 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Magical realism"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Cien%20a%C3%B1os%20de%20soledad"
+   }
+  },
+  {
+   "input": {
+    "id": "b6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Gabriel García Márquez"
+     },
+     {
+      "label": "First published",
+      "value": "1967"
+     },
+     {
+      "label": "Length",
+      "value": "417 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Magical realism"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Cien%20a%C3%B1os%20de%20soledad"
+   }
+  },
+  {
+   "input": {
+    "id": "b6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Gabriel García Márquez"
+     },
+     {
+      "label": "First published",
+      "value": "1967"
+     },
+     {
+      "label": "Length",
+      "value": "417 pages"
+     },
+     {
+      "label": "Shelved as",
+      "value": "Magical realism"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Cien%20a%C3%B1os%20de%20soledad"
+   }
+  },
+  {
+   "input": {
+    "id": "b7",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Mary Oliver"
+     },
+     {
+      "label": "First published",
+      "value": "2016"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Upstream"
+   }
+  },
+  {
+   "input": {
+    "id": "b7",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Mary Oliver"
+     },
+     {
+      "label": "First published",
+      "value": "2016"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Upstream"
+   }
+  },
+  {
+   "input": {
+    "id": "b7",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Mary Oliver"
+     },
+     {
+      "label": "First published",
+      "value": "2016"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Upstream"
+   }
+  },
+  {
+   "input": {
+    "id": "r1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "26 St John Street, Farringdon, London EC1M 4AY"
+     },
+     {
+      "label": "Open",
+      "value": "Mo-Sa 12:00-23:00"
+     },
+     {
+      "label": "Serves",
+      "value": "british"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.5203,-0.1027&q=St.%20John"
+     },
+     {
+      "label": "Website",
+      "url": "https://stjohnrestaurant.com"
+     },
+     {
+      "label": "Call",
+      "url": "tel:+442072510848"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.5203,-0.1027&q=St.%20John"
+   }
+  },
+  {
+   "input": {
+    "id": "r1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "26 St John Street, Farringdon, London EC1M 4AY"
+     },
+     {
+      "label": "Open",
+      "value": "Mo-Sa 12:00-23:00"
+     },
+     {
+      "label": "Serves",
+      "value": "british"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.5203,-0.1027?q=St.%20John"
+     },
+     {
+      "label": "Website",
+      "url": "https://stjohnrestaurant.com"
+     },
+     {
+      "label": "Call",
+      "url": "tel:+442072510848"
+     }
+    ],
+    "map": "geo:51.5203,-0.1027?q=St.%20John"
+   }
+  },
+  {
+   "input": {
+    "id": "r1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "26 St John Street, Farringdon, London EC1M 4AY"
+     },
+     {
+      "label": "Open",
+      "value": "Mo-Sa 12:00-23:00"
+     },
+     {
+      "label": "Serves",
+      "value": "british"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.5203,-0.1027"
+     },
+     {
+      "label": "Website",
+      "url": "https://stjohnrestaurant.com"
+     },
+     {
+      "label": "Call",
+      "url": "tel:+442072510848"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.5203,-0.1027"
+   }
+  },
+  {
+   "input": {
+    "id": "r2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF"
+     },
+     {
+      "label": "Serves",
+      "value": "South indian · Indian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.47,-0.07&q=Ganapati"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.47,-0.07&q=Ganapati"
+   }
+  },
+  {
+   "input": {
+    "id": "r2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF"
+     },
+     {
+      "label": "Serves",
+      "value": "South indian · Indian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.47,-0.07?q=Ganapati"
+     }
+    ],
+    "map": "geo:51.47,-0.07?q=Ganapati"
+   }
+  },
+  {
+   "input": {
+    "id": "r2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF"
+     },
+     {
+      "label": "Serves",
+      "value": "South indian · Indian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.47,-0.07"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.47,-0.07"
+   }
+  },
+  {
+   "input": {
+    "id": "r3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "172 Boulevard Saint-Germain, 75006 Paris"
+     },
+     {
+      "label": "Serves",
+      "value": "french"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=48.854,2.3326&q=Caf%C3%A9%20de%20Flore"
+     },
+     {
+      "label": "Website",
+      "url": "https://cafedeflore.fr"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=48.854,2.3326&q=Caf%C3%A9%20de%20Flore"
+   }
+  },
+  {
+   "input": {
+    "id": "r3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "172 Boulevard Saint-Germain, 75006 Paris"
+     },
+     {
+      "label": "Serves",
+      "value": "french"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:48.854,2.3326?q=Caf%C3%A9%20de%20Flore"
+     },
+     {
+      "label": "Website",
+      "url": "https://cafedeflore.fr"
+     }
+    ],
+    "map": "geo:48.854,2.3326?q=Caf%C3%A9%20de%20Flore"
+   }
+  },
+  {
+   "input": {
+    "id": "r3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "172 Boulevard Saint-Germain, 75006 Paris"
+     },
+     {
+      "label": "Serves",
+      "value": "french"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=48.854,2.3326"
+     },
+     {
+      "label": "Website",
+      "url": "https://cafedeflore.fr"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=48.854,2.3326"
+   }
+  },
+  {
+   "input": {
+    "id": "r4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "35-37 Greenhill Rents, London EC1M 6BN"
+     },
+     {
+      "label": "Serves",
+      "value": "italian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.5205,-0.1016&q=Brutto"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.5205,-0.1016&q=Brutto"
+   }
+  },
+  {
+   "input": {
+    "id": "r4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "35-37 Greenhill Rents, London EC1M 6BN"
+     },
+     {
+      "label": "Serves",
+      "value": "italian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.5205,-0.1016?q=Brutto"
+     }
+    ],
+    "map": "geo:51.5205,-0.1016?q=Brutto"
+   }
+  },
+  {
+   "input": {
+    "id": "r4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Address",
+      "value": "35-37 Greenhill Rents, London EC1M 6BN"
+     },
+     {
+      "label": "Serves",
+      "value": "italian"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.5205,-0.1016"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.5205,-0.1016"
+   }
+  },
+  {
+   "input": {
+    "id": "r5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+   }
+  },
+  {
+   "input": {
+    "id": "r5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+     }
+    ],
+    "map": "geo:0,0?q=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+   }
+  },
+  {
+   "input": {
+    "id": "r5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Tom's%20Kitchen%20%26%20Bar%2C%20Chelsea%2C%20London"
+   }
+  },
+  {
+   "input": {
+    "id": "r6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Mangal%20II"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Mangal%20II"
+   }
+  },
+  {
+   "input": {
+    "id": "r6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Mangal%20II"
+     }
+    ],
+    "map": "geo:0,0?q=Mangal%20II"
+   }
+  },
+  {
+   "input": {
+    "id": "r6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Mangal%20II"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Mangal%20II"
+   }
+  },
+  {
+   "input": {
+    "id": "m1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "137 min"
+     },
+     {
+      "label": "Rating",
+      "value": "7.6 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Horror · Thriller"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Hailee Steinfeld, Delroy Lindo, Jack O'Connell"
+     }
+    ],
+    "links": [
+     {
+      "label": "Trailer",
+      "url": "https://www.youtube.com/watch?v=x"
+     },
+     {
+      "label": "On Mubi, Netflix",
+      "url": "https://www.themoviedb.org/movie/7/watch"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Sinners"
+   }
+  },
+  {
+   "input": {
+    "id": "m1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "137 min"
+     },
+     {
+      "label": "Rating",
+      "value": "7.6 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Horror · Thriller"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Hailee Steinfeld, Delroy Lindo, Jack O'Connell"
+     }
+    ],
+    "links": [
+     {
+      "label": "Trailer",
+      "url": "https://www.youtube.com/watch?v=x"
+     },
+     {
+      "label": "On Mubi, Netflix",
+      "url": "https://www.themoviedb.org/movie/7/watch"
+     }
+    ],
+    "map": "geo:0,0?q=Sinners"
+   }
+  },
+  {
+   "input": {
+    "id": "m1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "137 min"
+     },
+     {
+      "label": "Rating",
+      "value": "7.6 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Horror · Thriller"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Hailee Steinfeld, Delroy Lindo, Jack O'Connell"
+     }
+    ],
+    "links": [
+     {
+      "label": "Trailer",
+      "url": "https://www.youtube.com/watch?v=x"
+     },
+     {
+      "label": "On Mubi, Netflix",
+      "url": "https://www.themoviedb.org/movie/7/watch"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Sinners"
+   }
+  },
+  {
+   "input": {
+    "id": "m2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "133 min"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Sylvester Stallone"
+     }
+    ],
+    "links": [
+     {
+      "label": "Where to watch",
+      "url": "https://www.themoviedb.org/movie/8/watch"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Creed"
+   }
+  },
+  {
+   "input": {
+    "id": "m2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "133 min"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Sylvester Stallone"
+     }
+    ],
+    "links": [
+     {
+      "label": "Where to watch",
+      "url": "https://www.themoviedb.org/movie/8/watch"
+     }
+    ],
+    "map": "geo:0,0?q=Creed"
+   }
+  },
+  {
+   "input": {
+    "id": "m2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "133 min"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama"
+     },
+     {
+      "label": "With",
+      "value": "Michael B. Jordan, Sylvester Stallone"
+     }
+    ],
+    "links": [
+     {
+      "label": "Where to watch",
+      "url": "https://www.themoviedb.org/movie/8/watch"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Creed"
+   }
+  },
+  {
+   "input": {
+    "id": "m3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Rating",
+      "value": "7 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=La%20Chimera"
+   }
+  },
+  {
+   "input": {
+    "id": "m3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Rating",
+      "value": "7 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=La%20Chimera"
+   }
+  },
+  {
+   "input": {
+    "id": "m3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Rating",
+      "value": "7 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · Fantasy"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=La%20Chimera"
+   }
+  },
+  {
+   "input": {
+    "id": "m4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Anatomy%20of%20a%20Fall"
+   }
+  },
+  {
+   "input": {
+    "id": "m4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Anatomy%20of%20a%20Fall"
+   }
+  },
+  {
+   "input": {
+    "id": "m4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Anatomy%20of%20a%20Fall"
+   }
+  },
+  {
+   "input": {
+    "id": "m5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Untitled%2C%20%20%20"
+   }
+  },
+  {
+   "input": {
+    "id": "m5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Untitled%2C%20%20%20"
+   }
+  },
+  {
+   "input": {
+    "id": "m5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Untitled%2C%20%20%20"
+   }
+  },
+  {
+   "input": {
+    "id": "c1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "45 min"
+     },
+     {
+      "label": "Serves",
+      "value": "4 servings"
+     },
+     {
+      "label": "Steps",
+      "value": "6"
+     },
+     {
+      "label": "Ingredients",
+      "value": "3"
+     },
+     {
+      "label": "Per serving",
+      "value": "320 kcal"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/dal"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Lemon%20dal"
+   }
+  },
+  {
+   "input": {
+    "id": "c1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "45 min"
+     },
+     {
+      "label": "Serves",
+      "value": "4 servings"
+     },
+     {
+      "label": "Steps",
+      "value": "6"
+     },
+     {
+      "label": "Ingredients",
+      "value": "3"
+     },
+     {
+      "label": "Per serving",
+      "value": "320 kcal"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/dal"
+     }
+    ],
+    "map": "geo:0,0?q=Lemon%20dal"
+   }
+  },
+  {
+   "input": {
+    "id": "c1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "45 min"
+     },
+     {
+      "label": "Serves",
+      "value": "4 servings"
+     },
+     {
+      "label": "Steps",
+      "value": "6"
+     },
+     {
+      "label": "Ingredients",
+      "value": "3"
+     },
+     {
+      "label": "Per serving",
+      "value": "320 kcal"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/dal"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Lemon%20dal"
+   }
+  },
+  {
+   "input": {
+    "id": "c2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "20 min"
+     },
+     {
+      "label": "Serves",
+      "value": "2"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     },
+     {
+      "label": "By",
+      "value": "Felicity Cloake"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/cacio"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Cacio%20e%20pepe"
+   }
+  },
+  {
+   "input": {
+    "id": "c2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "20 min"
+     },
+     {
+      "label": "Serves",
+      "value": "2"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     },
+     {
+      "label": "By",
+      "value": "Felicity Cloake"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/cacio"
+     }
+    ],
+    "map": "geo:0,0?q=Cacio%20e%20pepe"
+   }
+  },
+  {
+   "input": {
+    "id": "c2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "20 min"
+     },
+     {
+      "label": "Serves",
+      "value": "2"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     },
+     {
+      "label": "By",
+      "value": "Felicity Cloake"
+     }
+    ],
+    "links": [
+     {
+      "label": "Full recipe",
+      "url": "https://food.example/cacio"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Cacio%20e%20pepe"
+   }
+  },
+  {
+   "input": {
+    "id": "c3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "1 hr"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Aubergine%20curry"
+   }
+  },
+  {
+   "input": {
+    "id": "c3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "1 hr"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Aubergine%20curry"
+   }
+  },
+  {
+   "input": {
+    "id": "c3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Takes",
+      "value": "1 hr"
+     },
+     {
+      "label": "By",
+      "value": "Meera Sodha"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Aubergine%20curry"
+   }
+  },
+  {
+   "input": {
+    "id": "q1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=%E2%80%9CAttention%20is%20the%20beginning%20of%20devotion.%E2%80%9D"
+   }
+  },
+  {
+   "input": {
+    "id": "q1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=%E2%80%9CAttention%20is%20the%20beginning%20of%20devotion.%E2%80%9D"
+   }
+  },
+  {
+   "input": {
+    "id": "q1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=%E2%80%9CAttention%20is%20the%20beginning%20of%20devotion.%E2%80%9D"
+   }
+  },
+  {
+   "input": {
+    "id": "q2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Said by",
+      "value": "Joan Didion"
+     },
+     {
+      "label": "From",
+      "value": "The White Album"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=We%20tell%20ourselves%20stories%20in%20order%20to%20live.%20We%20look%20for%20the%20sermon%20in%20the%20suicide%2C%20for%20the%20social%20or%20moral%20lesson%20in%20the%20murder%20of%20five.%20We%20interpret%20what%20we%20see%2C%20select%20the%20most%20workable%20of%20the%20multiple%20choices%2C%20and%20we%20live%20entirely%20by%20the%20imposition%20of%20a%20narrative%20line%20upon%20disparate%20images."
+   }
+  },
+  {
+   "input": {
+    "id": "q2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Said by",
+      "value": "Joan Didion"
+     },
+     {
+      "label": "From",
+      "value": "The White Album"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=We%20tell%20ourselves%20stories%20in%20order%20to%20live.%20We%20look%20for%20the%20sermon%20in%20the%20suicide%2C%20for%20the%20social%20or%20moral%20lesson%20in%20the%20murder%20of%20five.%20We%20interpret%20what%20we%20see%2C%20select%20the%20most%20workable%20of%20the%20multiple%20choices%2C%20and%20we%20live%20entirely%20by%20the%20imposition%20of%20a%20narrative%20line%20upon%20disparate%20images."
+   }
+  },
+  {
+   "input": {
+    "id": "q2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Said by",
+      "value": "Joan Didion"
+     },
+     {
+      "label": "From",
+      "value": "The White Album"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=We%20tell%20ourselves%20stories%20in%20order%20to%20live.%20We%20look%20for%20the%20sermon%20in%20the%20suicide%2C%20for%20the%20social%20or%20moral%20lesson%20in%20the%20murder%20of%20five.%20We%20interpret%20what%20we%20see%2C%20select%20the%20most%20workable%20of%20the%20multiple%20choices%2C%20and%20we%20live%20entirely%20by%20the%20imposition%20of%20a%20narrative%20line%20upon%20disparate%20images."
+   }
+  },
+  {
+   "input": {
+    "id": "q3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Attention%20is%20the%20rarest%20and%20purest%20form%20of%20generosity."
+   }
+  },
+  {
+   "input": {
+    "id": "q3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Attention%20is%20the%20rarest%20and%20purest%20form%20of%20generosity."
+   }
+  },
+  {
+   "input": {
+    "id": "q3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Attention%20is%20the%20rarest%20and%20purest%20form%20of%20generosity."
+   }
+  },
+  {
+   "input": {
+    "id": "p1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Graça · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Largo Monte, 1170-107 Lisboa"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=38.72,-9.13&q=Miradouro%20da%20Senhora%20do%20Monte"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=38.72,-9.13&q=Miradouro%20da%20Senhora%20do%20Monte"
+   }
+  },
+  {
+   "input": {
+    "id": "p1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Graça · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Largo Monte, 1170-107 Lisboa"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:38.72,-9.13?q=Miradouro%20da%20Senhora%20do%20Monte"
+     }
+    ],
+    "map": "geo:38.72,-9.13?q=Miradouro%20da%20Senhora%20do%20Monte"
+   }
+  },
+  {
+   "input": {
+    "id": "p1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Graça · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Largo Monte, 1170-107 Lisboa"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=38.72,-9.13"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=38.72,-9.13"
+   }
+  },
+  {
+   "input": {
+    "id": "p2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Cais do Sodré · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Av. 24 de Julho 49, Lisboa"
+     },
+     {
+      "label": "Open",
+      "value": "Su-We 10:00-24:00"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Time%20Out%20Market%2C%20Lisbon"
+     },
+     {
+      "label": "Website",
+      "url": "https://timeoutmarket.com"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Time%20Out%20Market%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Cais do Sodré · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Av. 24 de Julho 49, Lisboa"
+     },
+     {
+      "label": "Open",
+      "value": "Su-We 10:00-24:00"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Time%20Out%20Market%2C%20Lisbon"
+     },
+     {
+      "label": "Website",
+      "url": "https://timeoutmarket.com"
+     }
+    ],
+    "map": "geo:0,0?q=Time%20Out%20Market%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Cais do Sodré · Lisbon"
+     },
+     {
+      "label": "Address",
+      "value": "Av. 24 de Julho 49, Lisboa"
+     },
+     {
+      "label": "Open",
+      "value": "Su-We 10:00-24:00"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Time%20Out%20Market%2C%20Lisbon"
+     },
+     {
+      "label": "Website",
+      "url": "https://timeoutmarket.com"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Time%20Out%20Market%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Belém · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Bel%C3%A9m%2C%20Lisbon"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Bel%C3%A9m%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Belém · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Bel%C3%A9m%2C%20Lisbon"
+     }
+    ],
+    "map": "geo:0,0?q=Bel%C3%A9m%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Belém · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Bel%C3%A9m%2C%20Lisbon"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bel%C3%A9m%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "p4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Sintra"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "https://maps.apple.com/?q=Praia%20da%20Ursa%2C%20Sintra"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Praia%20da%20Ursa%2C%20Sintra"
+   }
+  },
+  {
+   "input": {
+    "id": "p4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Sintra"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "geo:0,0?q=Praia%20da%20Ursa%2C%20Sintra"
+     }
+    ],
+    "map": "geo:0,0?q=Praia%20da%20Ursa%2C%20Sintra"
+   }
+  },
+  {
+   "input": {
+    "id": "p4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Sintra"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Praia%20da%20Ursa%2C%20Sintra"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Praia%20da%20Ursa%2C%20Sintra"
+   }
+  },
+  {
+   "input": {
+    "id": "p5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Bounds Green · London"
+     },
+     {
+      "label": "Address",
+      "value": "Book Bar, Bounds Green, London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.6,-0.12&q=Book%20Bar"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.6,-0.12&q=Book%20Bar"
+   }
+  },
+  {
+   "input": {
+    "id": "p5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Bounds Green · London"
+     },
+     {
+      "label": "Address",
+      "value": "Book Bar, Bounds Green, London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.6,-0.12?q=Book%20Bar"
+     }
+    ],
+    "map": "geo:51.6,-0.12?q=Book%20Bar"
+   }
+  },
+  {
+   "input": {
+    "id": "p5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Bounds Green · London"
+     },
+     {
+      "label": "Address",
+      "value": "Book Bar, Bounds Green, London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.6,-0.12"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.6,-0.12"
+   }
+  },
+  {
+   "input": {
+    "id": "p6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.5422,-0.0613&q=London%20Fields"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.5422,-0.0613&q=London%20Fields"
+   }
+  },
+  {
+   "input": {
+    "id": "p6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.5422,-0.0613?q=London%20Fields"
+     }
+    ],
+    "map": "geo:51.5422,-0.0613?q=London%20Fields"
+   }
+  },
+  {
+   "input": {
+    "id": "p6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "London"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.5422,-0.0613"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.5422,-0.0613"
+   }
+  },
+  {
+   "input": {
+    "id": "p7",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "東京"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=35.6586,139.7454&q=%E6%9D%B1%E4%BA%AC%E3%82%BF%E3%83%AF%E3%83%BC"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=35.6586,139.7454&q=%E6%9D%B1%E4%BA%AC%E3%82%BF%E3%83%AF%E3%83%BC"
+   }
+  },
+  {
+   "input": {
+    "id": "p7",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "東京"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:35.6586,139.7454?q=%E6%9D%B1%E4%BA%AC%E3%82%BF%E3%83%AF%E3%83%BC"
+     }
+    ],
+    "map": "geo:35.6586,139.7454?q=%E6%9D%B1%E4%BA%AC%E3%82%BF%E3%83%AF%E3%83%BC"
+   }
+  },
+  {
+   "input": {
+    "id": "p7",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "東京"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=35.6586,139.7454"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=35.6586,139.7454"
+   }
+  },
+  {
+   "input": {
+    "id": "p8",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "São Paulo"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=-23.5614,-46.6559&q=S%C3%A3o%20Paulo%20Museum%20of%20Art"
+     },
+     {
+      "label": "Website",
+      "url": "https://masp.org.br"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=-23.5614,-46.6559&q=S%C3%A3o%20Paulo%20Museum%20of%20Art"
+   }
+  },
+  {
+   "input": {
+    "id": "p8",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "São Paulo"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:-23.5614,-46.6559?q=S%C3%A3o%20Paulo%20Museum%20of%20Art"
+     },
+     {
+      "label": "Website",
+      "url": "https://masp.org.br"
+     }
+    ],
+    "map": "geo:-23.5614,-46.6559?q=S%C3%A3o%20Paulo%20Museum%20of%20Art"
+   }
+  },
+  {
+   "input": {
+    "id": "p8",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "São Paulo"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=-23.5614,-46.6559"
+     },
+     {
+      "label": "Website",
+      "url": "https://masp.org.br"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=-23.5614,-46.6559"
+   }
+  },
+  {
+   "input": {
+    "id": "p9",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Seoul"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=37.57,126.9996&q=%EA%B4%91%EC%9E%A5%EC%8B%9C%EC%9E%A5"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=37.57,126.9996&q=%EA%B4%91%EC%9E%A5%EC%8B%9C%EC%9E%A5"
+   }
+  },
+  {
+   "input": {
+    "id": "p9",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Seoul"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:37.57,126.9996?q=%EA%B4%91%EC%9E%A5%EC%8B%9C%EC%9E%A5"
+     }
+    ],
+    "map": "geo:37.57,126.9996?q=%EA%B4%91%EC%9E%A5%EC%8B%9C%EC%9E%A5"
+   }
+  },
+  {
+   "input": {
+    "id": "p9",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Seoul"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=37.57,126.9996"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=37.57,126.9996"
+   }
+  },
+  {
+   "input": {
+    "id": "w1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/overshirt"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Wool%20overshirt%2C%20olive"
+   }
+  },
+  {
+   "input": {
+    "id": "w1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/overshirt"
+     }
+    ],
+    "map": "geo:0,0?q=Wool%20overshirt%2C%20olive"
+   }
+  },
+  {
+   "input": {
+    "id": "w1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/overshirt"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Wool%20overshirt%2C%20olive"
+   }
+  },
+  {
+   "input": {
+    "id": "w1",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/overshirt"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Wool%20overshirt%2C%20olive"
+   }
+  },
+  {
+   "input": {
+    "id": "w2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£18.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/tint"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Lip%20tint%2C%20Rosewood"
+   }
+  },
+  {
+   "input": {
+    "id": "w2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£18.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/tint"
+     }
+    ],
+    "map": "geo:0,0?q=Lip%20tint%2C%20Rosewood"
+   }
+  },
+  {
+   "input": {
+    "id": "w2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£18.00"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/tint"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Lip%20tint%2C%20Rosewood"
+   }
+  },
+  {
+   "input": {
+    "id": "w2",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Petal"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/tint"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Lip%20tint%2C%20Rosewood"
+   }
+  },
+  {
+   "input": {
+    "id": "w3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Marlow & Co"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/linen"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Linen%20trousers%2C%20ecru"
+   }
+  },
+  {
+   "input": {
+    "id": "w3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Marlow & Co"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/linen"
+     }
+    ],
+    "map": "geo:0,0?q=Linen%20trousers%2C%20ecru"
+   }
+  },
+  {
+   "input": {
+    "id": "w3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Marlow & Co"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/linen"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Linen%20trousers%2C%20ecru"
+   }
+  },
+  {
+   "input": {
+    "id": "w3",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Marlow & Co"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/linen"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Linen%20trousers%2C%20ecru"
+   }
+  },
+  {
+   "input": {
+    "id": "w4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€349.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Thonet"
+     },
+     {
+      "label": "Stock",
+      "value": "Sold out"
+     },
+     {
+      "label": "Sold by",
+      "value": "Liberty"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/chair"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Bentwood%20chair"
+   }
+  },
+  {
+   "input": {
+    "id": "w4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€349.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Thonet"
+     },
+     {
+      "label": "Stock",
+      "value": "Sold out"
+     },
+     {
+      "label": "Sold by",
+      "value": "Liberty"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/chair"
+     }
+    ],
+    "map": "geo:0,0?q=Bentwood%20chair"
+   }
+  },
+  {
+   "input": {
+    "id": "w4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€349.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Thonet"
+     },
+     {
+      "label": "Stock",
+      "value": "Sold out"
+     },
+     {
+      "label": "Sold by",
+      "value": "Liberty"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/chair"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bentwood%20chair"
+   }
+  },
+  {
+   "input": {
+    "id": "w4",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Thonet"
+     },
+     {
+      "label": "Stock",
+      "value": "Sold out"
+     },
+     {
+      "label": "Sold by",
+      "value": "Liberty"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/chair"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bentwood%20chair"
+   }
+  },
+  {
+   "input": {
+    "id": "w5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "¥12,000"
+     },
+     {
+      "label": "Brand",
+      "value": "Tadafusa"
+     },
+     {
+      "label": "Stock",
+      "value": "Not out yet"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/knife"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Petty%20knife"
+   }
+  },
+  {
+   "input": {
+    "id": "w5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "¥12,000"
+     },
+     {
+      "label": "Brand",
+      "value": "Tadafusa"
+     },
+     {
+      "label": "Stock",
+      "value": "Not out yet"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/knife"
+     }
+    ],
+    "map": "geo:0,0?q=Petty%20knife"
+   }
+  },
+  {
+   "input": {
+    "id": "w5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "¥12,000"
+     },
+     {
+      "label": "Brand",
+      "value": "Tadafusa"
+     },
+     {
+      "label": "Stock",
+      "value": "Not out yet"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/knife"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Petty%20knife"
+   }
+  },
+  {
+   "input": {
+    "id": "w5",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Tadafusa"
+     },
+     {
+      "label": "Stock",
+      "value": "Not out yet"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/knife"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Petty%20knife"
+   }
+  },
+  {
+   "input": {
+    "id": "w6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "$20 to $35"
+     },
+     {
+      "label": "Brand",
+      "value": "Maker"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/lamp"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Desk%20lamp"
+   }
+  },
+  {
+   "input": {
+    "id": "w6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "$20 to $35"
+     },
+     {
+      "label": "Brand",
+      "value": "Maker"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/lamp"
+     }
+    ],
+    "map": "geo:0,0?q=Desk%20lamp"
+   }
+  },
+  {
+   "input": {
+    "id": "w6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "$20 to $35"
+     },
+     {
+      "label": "Brand",
+      "value": "Maker"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/lamp"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Desk%20lamp"
+   }
+  },
+  {
+   "input": {
+    "id": "w6",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Maker"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/lamp"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Desk%20lamp"
+   }
+  },
+  {
+   "input": {
+    "id": "w7",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€1,299.00"
+     },
+     {
+      "label": "Sold by",
+      "value": "Big Shop"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/laptop"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Laptop%2C%2014%20inch"
+   }
+  },
+  {
+   "input": {
+    "id": "w7",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€1,299.00"
+     },
+     {
+      "label": "Sold by",
+      "value": "Big Shop"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/laptop"
+     }
+    ],
+    "map": "geo:0,0?q=Laptop%2C%2014%20inch"
+   }
+  },
+  {
+   "input": {
+    "id": "w7",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "€1,299.00"
+     },
+     {
+      "label": "Sold by",
+      "value": "Big Shop"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/laptop"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Laptop%2C%2014%20inch"
+   }
+  },
+  {
+   "input": {
+    "id": "w7",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Sold by",
+      "value": "Big Shop"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/laptop"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Laptop%2C%2014%20inch"
+   }
+  },
+  {
+   "input": {
+    "id": "w8",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "Free"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Sticker%20sheet"
+   }
+  },
+  {
+   "input": {
+    "id": "w8",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "Free"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Sticker%20sheet"
+   }
+  },
+  {
+   "input": {
+    "id": "w8",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "Free"
+     },
+     {
+      "label": "Brand",
+      "value": "Petal"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Sticker%20sheet"
+   }
+  },
+  {
+   "input": {
+    "id": "w8",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Petal"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Sticker%20sheet"
+   }
+  },
+  {
+   "input": {
+    "id": "w9",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "From £9"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Candle"
+   }
+  },
+  {
+   "input": {
+    "id": "w9",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "From £9"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Candle"
+   }
+  },
+  {
+   "input": {
+    "id": "w9",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "From £9"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Candle"
+   }
+  },
+  {
+   "input": {
+    "id": "w9",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Candle"
+   }
+  },
+  {
+   "input": {
+    "id": "w10",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Scarf%2C%20lambswool"
+   }
+  },
+  {
+   "input": {
+    "id": "w10",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Scarf%2C%20lambswool"
+   }
+  },
+  {
+   "input": {
+    "id": "w10",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£65.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Scarf%2C%20lambswool"
+   }
+  },
+  {
+   "input": {
+    "id": "w10",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Northfield"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Scarf%2C%20lambswool"
+   }
+  },
+  {
+   "input": {
+    "id": "n1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Brown%20boots%2C%20not%20black."
+   }
+  },
+  {
+   "input": {
+    "id": "n1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Brown%20boots%2C%20not%20black."
+   }
+  },
+  {
+   "input": {
+    "id": "n1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Brown%20boots%2C%20not%20black."
+   }
+  },
+  {
+   "input": {
+    "id": "n2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Gift%20ideas"
+   }
+  },
+  {
+   "input": {
+    "id": "n2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Gift%20ideas"
+   }
+  },
+  {
+   "input": {
+    "id": "n2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Gift%20ideas"
+   }
+  },
+  {
+   "input": {
+    "id": "n3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Things%20to%20ask%20the%20landlord."
+   }
+  },
+  {
+   "input": {
+    "id": "n3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Things%20to%20ask%20the%20landlord."
+   }
+  },
+  {
+   "input": {
+    "id": "n3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Things%20to%20ask%20the%20landlord."
+   }
+  },
+  {
+   "input": {
+    "id": "u1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=London"
+   }
+  },
+  {
+   "input": {
+    "id": "u1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=London"
+   }
+  },
+  {
+   "input": {
+    "id": "u1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=London"
+   }
+  },
+  {
+   "input": {
+    "id": "u2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=The%20dosa%20counter%20that%20does%20not%20take%20bookings"
+   }
+  },
+  {
+   "input": {
+    "id": "u3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=The%20dosa%20counter%20that%20does%20not%20take%20bookings"
+   }
+  },
+  {
+   "input": {
+    "id": "u3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=The%20dosa%20counter%20that%20does%20not%20take%20bookings"
+   }
+  },
+  {
+   "input": {
+    "id": "u4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Screenshot"
+   }
+  },
+  {
+   "input": {
+    "id": "u4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Screenshot"
+   }
+  },
+  {
+   "input": {
+    "id": "u4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Screenshot"
+   }
+  },
+  {
+   "input": {
+    "id": "u5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£12.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Falcon"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/mug"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Enamel%20mug"
+   }
+  },
+  {
+   "input": {
+    "id": "u5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£12.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Falcon"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/mug"
+     }
+    ],
+    "map": "geo:0,0?q=Enamel%20mug"
+   }
+  },
+  {
+   "input": {
+    "id": "u5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "£12.50"
+     },
+     {
+      "label": "Brand",
+      "value": "Falcon"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/mug"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Enamel%20mug"
+   }
+  },
+  {
+   "input": {
+    "id": "u5",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Brand",
+      "value": "Falcon"
+     },
+     {
+      "label": "Stock",
+      "value": "In stock"
+     }
+    ],
+    "links": [
+     {
+      "label": "Open the shop",
+      "url": "https://shop.example/mug"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Enamel%20mug"
+   }
+  },
+  {
+   "input": {
+    "id": "u6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "u7",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=%F0%9F%8D%95%F0%9F%8D%95%20Pizza%20night%20%F0%9F%8D%95"
+   }
+  },
+  {
+   "input": {
+    "id": "u7",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=%F0%9F%8D%95%F0%9F%8D%95%20Pizza%20night%20%F0%9F%8D%95"
+   }
+  },
+  {
+   "input": {
+    "id": "u7",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=%F0%9F%8D%95%F0%9F%8D%95%20Pizza%20night%20%F0%9F%8D%95"
+   }
+  },
+  {
+   "input": {
+    "id": "u8",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Odd%20one"
+   }
+  },
+  {
+   "input": {
+    "id": "u8",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=Odd%20one"
+   }
+  },
+  {
+   "input": {
+    "id": "u8",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Odd%20one"
+   }
+  },
+  {
+   "input": {
+    "id": "f1",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Köln"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+   }
+  },
+  {
+   "input": {
+    "id": "f1",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Köln"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+     }
+    ],
+    "map": "geo:0,0?q=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+   }
+  },
+  {
+   "input": {
+    "id": "f1",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Köln"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=A%2FB%3FC%23D%3DE%2BF%25G%2C%20K%C3%B6ln"
+   }
+  },
+  {
+   "input": {
+    "id": "f2",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Zürich"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "https://maps.apple.com/?q=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+   }
+  },
+  {
+   "input": {
+    "id": "f2",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Zürich"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "geo:0,0?q=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+     }
+    ],
+    "map": "geo:0,0?q=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+   }
+  },
+  {
+   "input": {
+    "id": "f2",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Zürich"
+     }
+    ],
+    "links": [
+     {
+      "label": "Find on map",
+      "url": "https://www.google.com/maps/search/?api=1&query=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=na%C3%AFve%20~%20(test)%20*star*%20!bang_under-dash.dot%2C%20Z%C3%BCrich"
+   }
+  },
+  {
+   "input": {
+    "id": "f3",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=51.5,0&q=%F0%9F%8D%95%20Pizza%20Pilgrims"
+     },
+     {
+      "label": "Call",
+      "url": "tel:02072878964"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=51.5,0&q=%F0%9F%8D%95%20Pizza%20Pilgrims"
+   }
+  },
+  {
+   "input": {
+    "id": "f3",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:51.5,0?q=%F0%9F%8D%95%20Pizza%20Pilgrims"
+     },
+     {
+      "label": "Call",
+      "url": "tel:02072878964"
+     }
+    ],
+    "map": "geo:51.5,0?q=%F0%9F%8D%95%20Pizza%20Pilgrims"
+   }
+  },
+  {
+   "input": {
+    "id": "f3",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=51.5,0"
+     },
+     {
+      "label": "Call",
+      "url": "tel:02072878964"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=51.5,0"
+   }
+  },
+  {
+   "input": {
+    "id": "f4",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "f4",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "f4",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": null
+   }
+  },
+  {
+   "input": {
+    "id": "f5",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Porto"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Porto"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Porto"
+   }
+  },
+  {
+   "input": {
+    "id": "f5",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Porto"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Porto"
+     }
+    ],
+    "map": "geo:0,0?q=Porto"
+   }
+  },
+  {
+   "input": {
+    "id": "f5",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Porto"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Porto"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Porto"
+   }
+  },
+  {
+   "input": {
+    "id": "f6",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Nowhere"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=1e-7,-1.5e-7&q=Tiny%20pin"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=1e-7,-1.5e-7&q=Tiny%20pin"
+   }
+  },
+  {
+   "input": {
+    "id": "f6",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Nowhere"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:1e-7,-1.5e-7?q=Tiny%20pin"
+     }
+    ],
+    "map": "geo:1e-7,-1.5e-7?q=Tiny%20pin"
+   }
+  },
+  {
+   "input": {
+    "id": "f6",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Nowhere"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=1e-7,-1.5e-7"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=1e-7,-1.5e-7"
+   }
+  },
+  {
+   "input": {
+    "id": "f7",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "7"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Half%20a%20pin%2C%207"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Half%20a%20pin%2C%207"
+   }
+  },
+  {
+   "input": {
+    "id": "f7",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "7"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Half%20a%20pin%2C%207"
+     }
+    ],
+    "map": "geo:0,0?q=Half%20a%20pin%2C%207"
+   }
+  },
+  {
+   "input": {
+    "id": "f7",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "7"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Half%20a%20pin%2C%207"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Half%20a%20pin%2C%207"
+   }
+  },
+  {
+   "input": {
+    "id": "f8",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "0 min"
+     },
+     {
+      "label": "Rating",
+      "value": "0 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · 7"
+     }
+    ],
+    "links": [
+     {
+      "label": "On Mubi",
+      "url": "https://w"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Bare%20film"
+   }
+  },
+  {
+   "input": {
+    "id": "f8",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "0 min"
+     },
+     {
+      "label": "Rating",
+      "value": "0 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · 7"
+     }
+    ],
+    "links": [
+     {
+      "label": "On Mubi",
+      "url": "https://w"
+     }
+    ],
+    "map": "geo:0,0?q=Bare%20film"
+   }
+  },
+  {
+   "input": {
+    "id": "f8",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Runtime",
+      "value": "0 min"
+     },
+     {
+      "label": "Rating",
+      "value": "0 / 10"
+     },
+     {
+      "label": "Genre",
+      "value": "Drama · 7"
+     }
+    ],
+    "links": [
+     {
+      "label": "On Mubi",
+      "url": "https://w"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bare%20film"
+   }
+  },
+  {
+   "input": {
+    "id": "f9",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "12"
+     },
+     {
+      "label": "Length",
+      "value": "0 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "5 / 5"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Bare%20book"
+   }
+  },
+  {
+   "input": {
+    "id": "f9",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "12"
+     },
+     {
+      "label": "Length",
+      "value": "0 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "5 / 5"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Bare%20book"
+   }
+  },
+  {
+   "input": {
+    "id": "f9",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "12"
+     },
+     {
+      "label": "Length",
+      "value": "0 pages"
+     },
+     {
+      "label": "Rating",
+      "value": "5 / 5"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bare%20book"
+   }
+  },
+  {
+   "input": {
+    "id": "f10",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Serves",
+      "value": "4"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Bare%20recipe"
+   }
+  },
+  {
+   "input": {
+    "id": "f10",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Serves",
+      "value": "4"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Bare%20recipe"
+   }
+  },
+  {
+   "input": {
+    "id": "f10",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Serves",
+      "value": "4"
+     },
+     {
+      "label": "Steps",
+      "value": "0"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Bare%20recipe"
+   }
+  },
+  {
+   "input": {
+    "id": "f11",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "12"
+     },
+     {
+      "label": "Sold by",
+      "value": "Shop"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=Odd%20product"
+   }
+  },
+  {
+   "input": {
+    "id": "f11",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "12"
+     },
+     {
+      "label": "Sold by",
+      "value": "Shop"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=Odd%20product"
+   }
+  },
+  {
+   "input": {
+    "id": "f11",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Price",
+      "value": "12"
+     },
+     {
+      "label": "Sold by",
+      "value": "Shop"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Odd%20product"
+   }
+  },
+  {
+   "input": {
+    "id": "f11",
+    "platform": null,
+    "price": false
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Sold by",
+      "value": "Shop"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=Odd%20product"
+   }
+  },
+  {
+   "input": {
+    "id": "f12",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Someone"
+     }
+    ],
+    "links": [],
+    "map": "https://maps.apple.com/?q=A%20book%20with%20a%20price"
+   }
+  },
+  {
+   "input": {
+    "id": "f12",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Someone"
+     }
+    ],
+    "links": [],
+    "map": "geo:0,0?q=A%20book%20with%20a%20price"
+   }
+  },
+  {
+   "input": {
+    "id": "f12",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Author",
+      "value": "Someone"
+     }
+    ],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=A%20book%20with%20a%20price"
+   }
+  },
+  {
+   "input": {
+    "id": "f13",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://maps.apple.com/?q=A%20note"
+   }
+  },
+  {
+   "input": {
+    "id": "f13",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "geo:0,0?q=A%20note"
+   }
+  },
+  {
+   "input": {
+    "id": "f13",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [],
+    "map": "https://www.google.com/maps/search/?api=1&query=A%20note"
+   }
+  },
+  {
+   "input": {
+    "id": "f14",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?ll=123456789012345680000,1e+21&q=Big%20numbers"
+     }
+    ],
+    "map": "https://maps.apple.com/?ll=123456789012345680000,1e+21&q=Big%20numbers"
+   }
+  },
+  {
+   "input": {
+    "id": "f14",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:123456789012345680000,1e+21?q=Big%20numbers"
+     }
+    ],
+    "map": "geo:123456789012345680000,1e+21?q=Big%20numbers"
+   }
+  },
+  {
+   "input": {
+    "id": "f14",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=123456789012345680000,1e+21"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=123456789012345680000,1e+21"
+   }
+  },
+  {
+   "input": {
+    "id": "f15",
+    "platform": "ios",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Alfama · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://maps.apple.com/?q=Two%20wheres%2C%20Lisbon"
+     }
+    ],
+    "map": "https://maps.apple.com/?q=Two%20wheres%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "f15",
+    "platform": "android",
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Alfama · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "geo:0,0?q=Two%20wheres%2C%20Lisbon"
+     }
+    ],
+    "map": "geo:0,0?q=Two%20wheres%2C%20Lisbon"
+   }
+  },
+  {
+   "input": {
+    "id": "f15",
+    "platform": null,
+    "price": true
+   },
+   "output": {
+    "lede": null,
+    "rows": [
+     {
+      "label": "Where",
+      "value": "Alfama · Lisbon"
+     }
+    ],
+    "links": [
+     {
+      "label": "Map",
+      "url": "https://www.google.com/maps/search/?api=1&query=Two%20wheres%2C%20Lisbon"
+     }
+    ],
+    "map": "https://www.google.com/maps/search/?api=1&query=Two%20wheres%2C%20Lisbon"
+   }
+  }
+ ],
+ "hasFacts": [
+  {
+   "input": {
+    "id": "b1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b4"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b6"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "b7"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r4"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "r6"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "m1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "m2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "m3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "m4"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "m5"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "c1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "c2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "c3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "q1"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "q2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "q3"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "p1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p4"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p6"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p7"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p8"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "p9"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w4"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w6"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w7"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w8"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w9"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "w10"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "n1"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "n2"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "n3"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u1"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u2"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u3"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u4"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "u6"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u7"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "u8"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "f1"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f2"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f3"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f4"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "f5"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f6"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f7"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f8"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f9"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f10"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f11"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f12"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f13"
+   },
+   "output": false
+  },
+  {
+   "input": {
+    "id": "f14"
+   },
+   "output": true
+  },
+  {
+   "input": {
+    "id": "f15"
+   },
+   "output": true
+  }
+ ]
+}

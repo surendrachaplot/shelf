@@ -1,0 +1,5404 @@
+{
+ "items": [
+  {
+   "id": "b1",
+   "list": "books",
+   "status": "filed",
+   "title": "Piranesi",
+   "subtitle": "Susanna Clarke · 2020",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Susanna Clarke",
+    "first_sentence": "When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule.",
+    "isbn": "9781635575637",
+    "key": "books:/works/OL1W",
+    "openlibrary_key": "/works/OL1W",
+    "pages": 245,
+    "rating": 4.3,
+    "read_url": "https://openlibrary.org/works/OL1W",
+    "subjects": [
+     "Fantasy",
+     "Labyrinths"
+    ],
+    "year": 2020
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2025-10-02T08:00:00.000Z",
+   "resolved_at": "2025-10-02T08:00:05.000Z"
+  },
+  {
+   "id": "b2",
+   "list": "books",
+   "status": "filed",
+   "title": "Jonathan Strange & Mr Norrell",
+   "subtitle": "Susanna Clarke · 2004",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "susanna  CLARKE.",
+    "currency": "GBP",
+    "pages": 782,
+    "price": 9.99,
+    "subjects": [
+     "Fantasy"
+    ],
+    "year": 2004
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b3",
+   "list": "books",
+   "status": "filed",
+   "title": "Babel",
+   "subtitle": "R. F. Kuang · 2022",
+   "note": "Borrowed from Maya — give it back.",
+   "image_url": null,
+   "canonical": {
+    "author": "R. F. Kuang",
+    "rating": 4.1,
+    "read_url": "https://openlibrary.org/works/OL2W",
+    "subjects": [
+     "Fantasy",
+     "Dark academia",
+     "fantasy"
+    ],
+    "year": 2022
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b4",
+   "list": "books",
+   "status": "filed",
+   "title": "ノルウェイの森",
+   "subtitle": "村上春樹 · 1987",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "村上春樹",
+    "pages": 296,
+    "year": 1987
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b5",
+   "list": "books",
+   "status": "filed",
+   "title": "Harry Potter and the Goblet of Fire",
+   "subtitle": "J.K. Rowling · 2000",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "J.K. Rowling",
+    "year": 2000
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "b6",
+   "list": "books",
+   "status": "filed",
+   "title": "Cien años de soledad",
+   "subtitle": "Gabriel García Márquez · 1967",
+   "note": "Read it in the café on Rua Augusta 🙂🙂 with María — the yellow butterflies chapter is the one to reread.",
+   "image_url": null,
+   "canonical": {
+    "author": "Gabriel García Márquez",
+    "pages": 417,
+    "subjects": [
+     "Magical realism"
+    ],
+    "year": 1967
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00+01:00",
+   "resolved_at": null
+  },
+  {
+   "id": "b7",
+   "list": "books",
+   "status": "filed",
+   "title": "Upstream",
+   "subtitle": "Mary Oliver · 2016",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Mary Oliver",
+    "year": 2016
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-04-01",
+   "resolved_at": null
+  },
+  {
+   "id": "r1",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "St. John",
+   "subtitle": "British · Farringdon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "26 St John Street, Farringdon, London EC1M 4AY",
+    "area": "Farringdon",
+    "cuisine": [
+     "british"
+    ],
+    "lat": 51.5203,
+    "lng": -0.1027,
+    "map_url": "geo:51.5203,-0.1027?q=St.%20John",
+    "opening_hours": "Mo-Sa 12:00-23:00",
+    "osm_id": 42,
+    "osm_type": "node",
+    "osm_url": "https://www.openstreetmap.org/node/42",
+    "phone": "+44 20 7251 0848",
+    "source": "openstreetmap",
+    "website": "https://stjohnrestaurant.com"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r2",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Ganapati",
+   "subtitle": "South indian · Peckham",
+   "note": "Go early on a Saturday, the dosa sells out by two.",
+   "image_url": null,
+   "canonical": {
+    "address": "Ganapati, 38 Holly Grove, Peckham, London, SE15 5DF",
+    "area": "Peckham",
+    "cuisine": [
+     "South indian",
+     "Indian"
+    ],
+    "lat": 51.47,
+    "lng": -0.07,
+    "map_url": "geo:51.47,-0.07?q=Ganapati",
+    "osm_id": 43,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r3",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Café de Flore",
+   "subtitle": "French · Paris",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "172 Boulevard Saint-Germain, 75006 Paris",
+    "area": "Saint-Germain-des-Prés",
+    "city": "Paris",
+    "cuisine": [
+     "french"
+    ],
+    "lat": 48.854,
+    "lng": 2.3326,
+    "website": "https://cafedeflore.fr"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r4",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Brutto",
+   "subtitle": "Italian · Farringdon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "35-37 Greenhill Rents, London EC1M 6BN",
+    "area": "Farringdon",
+    "cuisine": [
+     "italian"
+    ],
+    "lat": 51.5205,
+    "lng": -0.1016,
+    "osm_id": 44,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r5",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Tom's Kitchen & Bar, Chelsea",
+   "subtitle": "Chelsea",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Chelsea",
+    "city": "London",
+    "cuisine": []
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "r6",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "Mangal II",
+   "subtitle": "38 Holly Grove",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.42,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m1",
+   "list": "movies",
+   "status": "filed",
+   "title": "Sinners",
+   "subtitle": "Ryan Coogler · 2025",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cast": [
+     "Michael B. Jordan",
+     "Hailee Steinfeld",
+     "Delroy Lindo",
+     "Jack O'Connell"
+    ],
+    "director": "Ryan Coogler",
+    "genres": [
+     "Horror",
+     "Thriller"
+    ],
+    "media_type": "movie",
+    "overview": "Two brothers return to their home town to start again, and find something far older waiting for them.",
+    "rating": 7.6,
+    "region": "GB",
+    "runtime_min": 137,
+    "streaming": [
+     "Mubi",
+     "Netflix"
+    ],
+    "tmdb_id": 7,
+    "trailer_url": "https://www.youtube.com/watch?v=x",
+    "watch_url": "https://www.themoviedb.org/movie/7/watch",
+    "year": "2025"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m2",
+   "list": "movies",
+   "status": "filed",
+   "title": "Creed",
+   "subtitle": "Ryan Coogler · 2015",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cast": [
+     "Michael B. Jordan",
+     "Sylvester Stallone"
+    ],
+    "director": "Ryan Coogler",
+    "genres": [
+     "Drama"
+    ],
+    "runtime_min": 133,
+    "streaming": [],
+    "tmdb_id": 8,
+    "watch_url": "https://www.themoviedb.org/movie/8/watch",
+    "year": "2015"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m3",
+   "list": "movies",
+   "status": "filed",
+   "title": "La Chimera",
+   "subtitle": "Alice Rohrwacher · 2023",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "director": "Alice Rohrwacher",
+    "genres": [
+     "Drama",
+     "Fantasy"
+    ],
+    "rating": 7,
+    "year": "2023"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m4",
+   "list": "movies",
+   "status": "filed",
+   "title": "Anatomy of a Fall",
+   "subtitle": "2023",
+   "note": "reminded me of Piranesi",
+   "image_url": null,
+   "canonical": {
+    "year": "2023"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "m5",
+   "list": "movies",
+   "status": "filed",
+   "title": "Untitled",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "",
+    "author": "",
+    "cast": [],
+    "city": "  ",
+    "cuisine": [
+     ""
+    ],
+    "director": null,
+    "genres": [],
+    "overview": "",
+    "runtime_min": null,
+    "year": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c1",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Lemon dal",
+   "subtitle": "45 min · 4 servings",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "byline": "Words by Jay Rayner",
+     "excerpt": "Rinse the pulses",
+     "hero": "https://cdn/d.jpg",
+     "readingMinutes": 4,
+     "siteName": "The Guardian",
+     "summary": "Sour first, then sweet: a weeknight supper.",
+     "text": "Rinse the pulses until the water runs clear. Simmer with turmeric for half an hour, then stir through tamarind and a spoon of jaggery. The party trick is to start the tempering late. Mustard seeds, curry leaves and dried chilli go in at the very end. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Taste, and add salt before the lemon and never after it; the lemon goes in off the heat. Serve with rice, a spoon of yoghurt and whatever pickle is open. Café-style crème fraîche is not traditional but nobody has complained."
+    },
+    "author": "Meera Sodha",
+    "calories": "320 kcal",
+    "cuisine": "Indian",
+    "ingredients": [
+     "1 cup toor dal",
+     "2 lemons",
+     "curry leaves"
+    ],
+    "rating": 4.6,
+    "recipe_url": "https://food.example/dal",
+    "serves": "4 servings",
+    "steps": 6,
+    "total_time": "45 min"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c2",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Cacio e pepe",
+   "subtitle": "20 min",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "siteName": "The Guardian"
+    },
+    "author": "Felicity Cloake",
+    "cuisine": "Italian",
+    "ingredients": [],
+    "recipe_url": "https://food.example/cacio",
+    "serves": 2,
+    "steps": 0,
+    "total_time": "20 min"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "c3",
+   "list": "recipes",
+   "status": "filed",
+   "title": "Aubergine curry",
+   "subtitle": "1 hr",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "siteName": "the guardian"
+    },
+    "author": "Meera Sodha",
+    "cuisine": "Indian",
+    "total_time": "1 hr"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q1",
+   "list": "quotes",
+   "status": "filed",
+   "title": "“Attention is the beginning of devotion.”",
+   "subtitle": "Mary Oliver",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "caption": "mary oliver, upstream #poetry #quotes",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q2",
+   "list": "quotes",
+   "status": "filed",
+   "title": "We tell ourselves stories in order to live. We look for the sermon in the suicide, for the social or moral lesson in the murder of five. We interpret what we see, select the most workable of the multiple choices, and we live entirely by the imposition of a narrative line upon disparate images.",
+   "subtitle": "Joan Didion",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Joan Didion",
+    "source": "The White Album"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "q3",
+   "list": "quotes",
+   "status": "filed",
+   "title": "Attention is the rarest and purest form of generosity.",
+   "subtitle": "Simone Weil",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": null
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p1",
+   "list": "places",
+   "status": "filed",
+   "title": "Miradouro da Senhora do Monte",
+   "subtitle": "Graça · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Largo Monte, 1170-107 Lisboa",
+    "area": "Graça",
+    "city": "Lisbon",
+    "lat": 38.72,
+    "lng": -9.13,
+    "located": true,
+    "map_url": "geo:38.72,-9.13?q=Miradouro",
+    "osm_url": "https://www.openstreetmap.org/node/1",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p2",
+   "list": "places",
+   "status": "filed",
+   "title": "Time Out Market",
+   "subtitle": "Cais do Sodré · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Av. 24 de Julho 49, Lisboa",
+    "area": "Cais do Sodré",
+    "city": "Lisbon",
+    "located": true,
+    "map_url": "geo:38.70,-9.14?q=Time%20Out",
+    "opening_hours": "Su-We 10:00-24:00",
+    "source": "openstreetmap",
+    "website": "https://timeoutmarket.com"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p3",
+   "list": "places",
+   "status": "filed",
+   "title": "Belém",
+   "subtitle": "Belém · Lisbon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "Belém",
+    "city": "Lisbon",
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-02-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p4",
+   "list": "places",
+   "status": "filed",
+   "title": "Praia da Ursa",
+   "subtitle": "Sintra",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Sintra",
+    "located": false,
+    "map_url": "geo:0,0?q=Praia%20da%20Ursa%2C%20Sintra",
+    "source": "search"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p5",
+   "list": "places",
+   "status": "filed",
+   "title": "Book Bar",
+   "subtitle": "Bounds Green · London",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "address": "Book Bar, Bounds Green, London",
+    "area": "Bounds Green",
+    "city": "London",
+    "cuisine": [],
+    "lat": 51.6,
+    "lng": -0.12,
+    "located": true,
+    "osm_id": 9,
+    "osm_type": "node",
+    "source": "openstreetmap"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p6",
+   "list": "places",
+   "status": "filed",
+   "title": "London Fields",
+   "subtitle": "London",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "London",
+    "city": "London",
+    "lat": 51.5422,
+    "lng": -0.0613,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p7",
+   "list": "places",
+   "status": "filed",
+   "title": "東京タワー",
+   "subtitle": "東京",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "東京",
+    "lat": 35.6586,
+    "lng": 139.7454,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p8",
+   "list": "places",
+   "status": "filed",
+   "title": "São Paulo Museum of Art",
+   "subtitle": "São Paulo",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "São Paulo",
+    "lat": -23.5614,
+    "lng": -46.6559,
+    "located": true,
+    "website": "https://masp.org.br"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "p9",
+   "list": "places",
+   "status": "filed",
+   "title": "광장시장",
+   "subtitle": "서울",
+   "note": "빈대떡 먹기 mung bean pancake 마약김밥 그리고 육회 then walk to Cheonggyecheon stream after dark 그리고 집에 가기 before the last train leaves",
+   "image_url": null,
+   "canonical": {
+    "city": "Seoul",
+    "lat": 37.57,
+    "lng": 126.9996,
+    "located": true
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w1",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Wool overshirt, olive",
+   "subtitle": "Northfield",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Northfield",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 65,
+    "price_at": "2026-10-01T09:00:00Z",
+    "price_text": "£65.00",
+    "seller": "Northfield",
+    "shop_url": "https://shop.example/overshirt"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://shop.example/overshirt",
+   "resolver": "web-og",
+   "created_at": "2026-09-20T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w2",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Lip tint, Rosewood",
+   "subtitle": "Petal",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Petal",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 18,
+    "price_text": "£18.00",
+    "shop_url": "https://shop.example/tint"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-21T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w3",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Linen trousers, ecru",
+   "subtitle": "Marlow & Co",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": "Marlow & Co",
+    "currency": null,
+    "kind": "product",
+    "price": null,
+    "price_text": null,
+    "shop_url": "https://shop.example/linen"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-09-22T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w4",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Bentwood chair",
+   "subtitle": "Thonet",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "out_of_stock",
+    "brand": "Thonet",
+    "currency": "EUR",
+    "kind": "product",
+    "price": 349.5,
+    "price_text": "€349.50",
+    "seller": "Liberty",
+    "shop_url": "https://shop.example/chair"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w5",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Petty knife",
+   "subtitle": "Tadafusa",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "preorder",
+    "brand": "Tadafusa",
+    "currency": "JPY",
+    "kind": "product",
+    "price": 12000,
+    "price_text": "¥12,000",
+    "shop_url": "https://shop.example/knife"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w6",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Desk lamp",
+   "subtitle": "Maker",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "discontinued",
+    "brand": "Maker",
+    "currency": "USD",
+    "kind": "product",
+    "price": 20,
+    "price_text": "$20 to $35",
+    "shop_url": "https://shop.example/lamp"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w7",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Laptop, 14 inch",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "currency": "eur",
+    "kind": "product",
+    "price": 1299,
+    "price_text": "€1,299.00",
+    "seller": "Big Shop",
+    "shop_url": "https://shop.example/laptop"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w8",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Sticker sheet",
+   "subtitle": "Petal",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": "Petal",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 0,
+    "price_text": "Free"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w9",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Candle",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "currency": null,
+    "kind": "product",
+    "price": null,
+    "price_text": "From £9"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "w10",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "Scarf, lambswool",
+   "subtitle": "Northfield",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Northfield",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 65.5,
+    "price_text": "£65.50",
+    "seller": "Northfield"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n1",
+   "list": "notes",
+   "status": "filed",
+   "title": "Brown boots, not black.",
+   "subtitle": "",
+   "note": "Brown boots, not black. Ask Maya about the scarf.",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-09-23T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n2",
+   "list": "notes",
+   "status": "filed",
+   "title": "Gift ideas",
+   "subtitle": "",
+   "note": "Gift ideas",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "n3",
+   "list": "notes",
+   "status": "filed",
+   "title": "Things to ask the landlord.",
+   "subtitle": "",
+   "note": "Things to ask the landlord.\nDoes the boiler get serviced, and who pays for it? Is the deposit in a scheme, and which one? Can we put shelves up in the back room? Who do we call when the lift stops, because it stopped twice in the week we looked round. And is the bike store locked at night.",
+   "image_url": null,
+   "canonical": {
+    "kind": "note"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/x",
+   "resolver": "note",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u1",
+   "list": "unsorted",
+   "status": "pending",
+   "title": null,
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "Susanna Clarke",
+    "city": "London"
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://insta/y",
+   "resolver": "crawler-embed-html",
+   "created_at": "",
+   "resolved_at": null
+  },
+  {
+   "id": "u2",
+   "list": "unsorted",
+   "status": "unread",
+   "title": null,
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://www.instagram.com/reel/DAbCdEf/",
+   "resolver": "none",
+   "caption": "piranesi lisbon dosa",
+   "created_at": "not a date",
+   "resolved_at": null
+  },
+  {
+   "id": "u3",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "The dosa counter that does not take bookings",
+   "subtitle": "Field Notes",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": {
+     "byline": "R. Okafor",
+     "excerpt": "There is no sign outside. You find it by the queue.",
+     "hero": null,
+     "readingMinutes": 6,
+     "siteName": "Field Notes",
+     "summary": "A twelve-seat counter on Holly Grove serves one thing well. Go before seven. Order the ghee roast and the filter coffee. We landed in Lisbon the week after.",
+     "text": "There is no sign outside. You find it by the queue, which starts at half past five and is gone by seven, because by seven the batter is gone too.\n\nInside are twelve stools, one flat-top and a man who has made the same dosa for nineteen years. He does not hurry and he does not talk while he pours.\n\nThe ghee roast comes first. It is as long as your forearm and it breaks like glass.\n\nThen the sambar, which is thinner than you expect and better for it. Then the coffee, poured from a height into a steel tumbler, and then somebody is standing behind you waiting for the stool.\n\nNobody has written the recipe down. He says the batter knows what day it is, and that is all he will say about it."
+    }
+   },
+   "confidence": 0.9,
+   "enriched": false,
+   "source_url": "https://fieldnotes.example/dosa-counter",
+   "resolver": "web-og",
+   "created_at": "2026-09-12T09:00:00Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u4",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Screenshot",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "ocr_text": "MENÚ DEL DÍA\nCroquetas de jamón 9€\nPulpo a la gallega 14€"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-03-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u5",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Enamel mug",
+   "subtitle": "Falcon",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "availability": "in_stock",
+    "brand": "Falcon",
+    "currency": "GBP",
+    "kind": "product",
+    "price": 12.5,
+    "price_text": "£12.50",
+    "seller": "Falcon",
+    "shop_url": "https://shop.example/mug"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u6",
+   "list": "unsorted",
+   "status": "filed",
+   "title": null,
+   "subtitle": "",
+   "note": "the one with the yellow cover",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u7",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "🍕🍕 Pizza night 🍕",
+   "subtitle": "",
+   "note": "🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕margherita🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 and then tiramisù 🍰",
+   "image_url": null,
+   "canonical": {
+    "ocr_text": "🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 FORNO A LEGNA 🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "caption": "#pizza #napoli 🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕🍕 best slice in town 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "u8",
+   "list": "unsorted",
+   "status": "filed",
+   "title": "Odd one",
+   "subtitle": "odds",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "2": "two",
+    "10": "ten",
+    "Alpha": "capital first",
+    "HREF2": "upper",
+    "Source": "openstreetmap",
+    "arr": [
+     1,
+     "two",
+     [
+      "three"
+     ],
+     {
+      "four": "4",
+      "url": "https://no"
+     },
+     null,
+     false
+    ],
+    "big": 1e+21,
+    "coordinates": "noisy too",
+    "count": 3.5,
+    "data": "DATA:abc",
+    "emoji": "🍕 slice",
+    "exact80": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "flag": true,
+    "geo": "geo:1,2",
+    "href": "/x",
+    "huge": 123456789012345680000,
+    "image_url": "https://covers/x.jpg",
+    "key": "books:/works/X",
+    "long": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "neg": -0.5,
+    "nested": {
+     "a": {
+      "b": {
+       "c": {
+        "d": "deep"
+       }
+      }
+     }
+    },
+    "nothing": null,
+    "path": "/works/1",
+    "place_id": "ChIJabc123",
+    "plain": "http and more",
+    "shallow": {
+     "a": {
+      "b": {
+       "c": "kept"
+      }
+     }
+    },
+    "slug": "odd-one",
+    "small": 0.000001,
+    "thumbs": "noisy by key",
+    "tiny": 1e-7,
+    "web": "HTTPS://x",
+    "zeta": "last"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x1",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": "Penguin"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x2",
+   "list": "movies",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "year": ""
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x3",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "year": 20
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x4",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "year": 1962
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x5",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "year": " 1999 "
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x6",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "year": 2100
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x7",
+   "list": "recipes",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "By the test kitchen team, who made this eleven times before it worked properly"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x8",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": {
+     "name": "Someone"
+    },
+    "genres": [
+     {
+      "name": "Horror"
+     },
+     7,
+     true,
+     null,
+     2.5
+    ]
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x9",
+   "list": "restaurants",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "cuisine": [
+     "Indian",
+     "indian",
+     "INDIAN ",
+     " in\tdian"
+    ]
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x10",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "genres": [
+     "Fantasy"
+    ],
+    "subjects": [
+     "fantasy",
+     "Gothic"
+    ]
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x11",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "Susanna Clarke · 2020",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x12",
+   "list": "quotes",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "  Lily   Tomlin. ",
+   "note": "",
+   "image_url": null,
+   "canonical": {},
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x13",
+   "list": "recipes",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": 0
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x14",
+   "list": "recipes",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "article": "a string",
+    "author": 7
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x15",
+   "list": "places",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": "São Paulo",
+    "city": "Sao  Paulo."
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x16",
+   "list": "places",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "area": [
+     "Soho",
+     "Fitzrovia"
+    ],
+    "city": "London"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x17",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": [
+     "Ann",
+     "Bob"
+    ],
+    "year": 1499
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x18",
+   "list": "wishlist",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "brand": [
+     "Acme",
+     "ACME"
+    ],
+    "kind": "product"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x19",
+   "list": "books",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "author": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "director": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x20",
+   "list": "places",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Zagreb"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x21",
+   "list": "places",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "city": "Athens"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  },
+  {
+   "id": "x22",
+   "list": "movies",
+   "status": "filed",
+   "title": "x",
+   "subtitle": "",
+   "note": "",
+   "image_url": null,
+   "canonical": {
+    "director": "Susanna Clarke",
+    "year": "2020"
+   },
+   "confidence": 0.9,
+   "enriched": true,
+   "source_url": "https://insta/x",
+   "resolver": "crawler-embed-html",
+   "created_at": "2026-08-01T00:00:00.000Z",
+   "resolved_at": null
+  }
+ ],
+ "mainCount": 54,
+ "fold": [
+  {
+   "input": {
+    "s": "Café de Flore",
+    "useNormalize": true
+   },
+   "output": "cafe de flore"
+  },
+  {
+   "input": {
+    "s": "Café de Flore",
+    "useNormalize": false
+   },
+   "output": "cafe de flore"
+  },
+  {
+   "input": {
+    "s": "MØRK Ø",
+    "useNormalize": true
+   },
+   "output": "mørk ø"
+  },
+  {
+   "input": {
+    "s": "MØRK Ø",
+    "useNormalize": false
+   },
+   "output": "mork o"
+  },
+  {
+   "input": {
+    "s": "Ganapati’s",
+    "useNormalize": true
+   },
+   "output": "ganapati’s"
+  },
+  {
+   "input": {
+    "s": "Ganapati’s",
+    "useNormalize": false
+   },
+   "output": "ganapati’s"
+  },
+  {
+   "input": {
+    "s": "São Paulo",
+    "useNormalize": true
+   },
+   "output": "sao paulo"
+  },
+  {
+   "input": {
+    "s": "São Paulo",
+    "useNormalize": false
+   },
+   "output": "sao paulo"
+  },
+  {
+   "input": {
+    "s": "ÀÉÎÕÜ ñ ç ß æ œ ÿ",
+    "useNormalize": true
+   },
+   "output": "aeiou n c ß æ œ y"
+  },
+  {
+   "input": {
+    "s": "ÀÉÎÕÜ ñ ç ß æ œ ÿ",
+    "useNormalize": false
+   },
+   "output": "aeiou n c ss ae oe y"
+  },
+  {
+   "input": {
+    "s": "café",
+    "useNormalize": true
+   },
+   "output": "cafe"
+  },
+  {
+   "input": {
+    "s": "café",
+    "useNormalize": false
+   },
+   "output": "café"
+  },
+  {
+   "input": {
+    "s": "İstanbul",
+    "useNormalize": true
+   },
+   "output": "istanbul"
+  },
+  {
+   "input": {
+    "s": "İstanbul",
+    "useNormalize": false
+   },
+   "output": "i̇stanbul"
+  },
+  {
+   "input": {
+    "s": "ΟΔΟΣ ΣΟΦΟΣ",
+    "useNormalize": true
+   },
+   "output": "οδος σοφος"
+  },
+  {
+   "input": {
+    "s": "ΟΔΟΣ ΣΟΦΟΣ",
+    "useNormalize": false
+   },
+   "output": "οδος σοφος"
+  },
+  {
+   "input": {
+    "s": "村上春樹",
+    "useNormalize": true
+   },
+   "output": "村上春樹"
+  },
+  {
+   "input": {
+    "s": "村上春樹",
+    "useNormalize": false
+   },
+   "output": "村上春樹"
+  },
+  {
+   "input": {
+    "s": "Straße",
+    "useNormalize": true
+   },
+   "output": "straße"
+  },
+  {
+   "input": {
+    "s": "Straße",
+    "useNormalize": false
+   },
+   "output": "strasse"
+  },
+  {
+   "input": {
+    "s": "🍕 Pizza",
+    "useNormalize": true
+   },
+   "output": "🍕 pizza"
+  },
+  {
+   "input": {
+    "s": "🍕 Pizza",
+    "useNormalize": false
+   },
+   "output": "🍕 pizza"
+  },
+  {
+   "input": {
+    "s": "",
+    "useNormalize": true
+   },
+   "output": ""
+  },
+  {
+   "input": {
+    "s": "",
+    "useNormalize": false
+   },
+   "output": ""
+  },
+  {
+   "input": {
+    "s": "ǅungla",
+    "useNormalize": true
+   },
+   "output": "ǆungla"
+  },
+  {
+   "input": {
+    "s": "ǅungla",
+    "useNormalize": false
+   },
+   "output": "ǆungla"
+  },
+  {
+   "input": {
+    "s": "Ǻngström",
+    "useNormalize": true
+   },
+   "output": "angstrom"
+  },
+  {
+   "input": {
+    "s": "Ǻngström",
+    "useNormalize": false
+   },
+   "output": "ǻngstrom"
+  },
+  {
+   "input": {
+    "s": "ﬁn",
+    "useNormalize": true
+   },
+   "output": "ﬁn"
+  },
+  {
+   "input": {
+    "s": "ﬁn",
+    "useNormalize": false
+   },
+   "output": "ﬁn"
+  },
+  {
+   "input": {
+    "s": "DÉJÀ VU",
+    "useNormalize": true
+   },
+   "output": "deja vu"
+  },
+  {
+   "input": {
+    "s": "DÉJÀ VU",
+    "useNormalize": false
+   },
+   "output": "deja vu"
+  }
+ ],
+ "tagKey": [
+  {
+   "input": {
+    "kind": "author",
+    "value": "Susanna Clarke"
+   },
+   "output": "author:susanna clarke"
+  },
+  {
+   "input": {
+    "kind": "author",
+    "value": "susanna  CLARKE."
+   },
+   "output": "author:susanna clarke"
+  },
+  {
+   "input": {
+    "kind": "city",
+    "value": "São Paulo"
+   },
+   "output": "city:sao paulo"
+  },
+  {
+   "input": {
+    "kind": "author",
+    "value": "村上春樹"
+   },
+   "output": "author:村上春樹"
+  },
+  {
+   "input": {
+    "kind": "author",
+    "value": " . "
+   },
+   "output": ""
+  },
+  {
+   "input": {
+    "kind": "author",
+    "value": ""
+   },
+   "output": ""
+  },
+  {
+   "input": {
+    "kind": "cast",
+    "value": "Michael B. Jordan"
+   },
+   "output": "cast:michael b jordan"
+  },
+  {
+   "input": {
+    "kind": "cast",
+    "value": "Jack O'Connell"
+   },
+   "output": "cast:jack o connell"
+  },
+  {
+   "input": {
+    "kind": "x",
+    "value": "(a)[b]/c_d-e;f:g!h?i“j”k‘l’m\"n"
+   },
+   "output": "x:a b c d e f g h i j k l m n"
+  },
+  {
+   "input": {
+    "kind": "genre",
+    "value": "Rock & Roll"
+   },
+   "output": "genre:rock & roll"
+  },
+  {
+   "input": {
+    "kind": "x",
+    "value": "a b\tc\n d"
+   },
+   "output": "x:a b c d"
+  },
+  {
+   "input": {
+    "kind": "x",
+    "value": "–dash—"
+   },
+   "output": "x:–dash—"
+  }
+ ],
+ "tagsFor": [
+  {
+   "input": {
+    "id": "b1"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Susanna Clarke",
+     "key": "author:susanna clarke"
+    },
+    {
+     "kind": "genre",
+     "value": "Fantasy",
+     "key": "genre:fantasy"
+    },
+    {
+     "kind": "genre",
+     "value": "Labyrinths",
+     "key": "genre:labyrinths"
+    },
+    {
+     "kind": "year",
+     "value": "2020",
+     "key": "year:2020"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b2"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "susanna CLARKE.",
+     "key": "author:susanna clarke"
+    },
+    {
+     "kind": "genre",
+     "value": "Fantasy",
+     "key": "genre:fantasy"
+    },
+    {
+     "kind": "year",
+     "value": "2004",
+     "key": "year:2004"
+    },
+    {
+     "kind": "decade",
+     "value": "2000s",
+     "key": "decade:2000s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b3"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "R. F. Kuang",
+     "key": "author:r f kuang"
+    },
+    {
+     "kind": "genre",
+     "value": "Fantasy",
+     "key": "genre:fantasy"
+    },
+    {
+     "kind": "genre",
+     "value": "Dark academia",
+     "key": "genre:dark academia"
+    },
+    {
+     "kind": "year",
+     "value": "2022",
+     "key": "year:2022"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b4"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "村上春樹",
+     "key": "author:村上春樹"
+    },
+    {
+     "kind": "year",
+     "value": "1987",
+     "key": "year:1987"
+    },
+    {
+     "kind": "decade",
+     "value": "1980s",
+     "key": "decade:1980s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b5"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "J.K. Rowling",
+     "key": "author:j k rowling"
+    },
+    {
+     "kind": "year",
+     "value": "2000",
+     "key": "year:2000"
+    },
+    {
+     "kind": "decade",
+     "value": "2000s",
+     "key": "decade:2000s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b6"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Gabriel García Márquez",
+     "key": "author:gabriel garcia marquez"
+    },
+    {
+     "kind": "genre",
+     "value": "Magical realism",
+     "key": "genre:magical realism"
+    },
+    {
+     "kind": "year",
+     "value": "1967",
+     "key": "year:1967"
+    },
+    {
+     "kind": "decade",
+     "value": "1960s",
+     "key": "decade:1960s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "b7"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Mary Oliver",
+     "key": "author:mary oliver"
+    },
+    {
+     "kind": "year",
+     "value": "2016",
+     "key": "year:2016"
+    },
+    {
+     "kind": "decade",
+     "value": "2010s",
+     "key": "decade:2010s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r1"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Farringdon",
+     "key": "area:farringdon"
+    },
+    {
+     "kind": "cuisine",
+     "value": "british",
+     "key": "cuisine:british"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r2"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Peckham",
+     "key": "area:peckham"
+    },
+    {
+     "kind": "cuisine",
+     "value": "South indian",
+     "key": "cuisine:south indian"
+    },
+    {
+     "kind": "cuisine",
+     "value": "Indian",
+     "key": "cuisine:indian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r3"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Saint-Germain-des-Prés",
+     "key": "area:saint germain des pres"
+    },
+    {
+     "kind": "city",
+     "value": "Paris",
+     "key": "city:paris"
+    },
+    {
+     "kind": "cuisine",
+     "value": "french",
+     "key": "cuisine:french"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r4"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Farringdon",
+     "key": "area:farringdon"
+    },
+    {
+     "kind": "cuisine",
+     "value": "italian",
+     "key": "cuisine:italian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r5"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Chelsea",
+     "key": "area:chelsea"
+    },
+    {
+     "kind": "city",
+     "value": "London",
+     "key": "city:london"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "r6"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "m1"
+   },
+   "output": [
+    {
+     "kind": "director",
+     "value": "Ryan Coogler",
+     "key": "director:ryan coogler"
+    },
+    {
+     "kind": "genre",
+     "value": "Horror",
+     "key": "genre:horror"
+    },
+    {
+     "kind": "genre",
+     "value": "Thriller",
+     "key": "genre:thriller"
+    },
+    {
+     "kind": "cast",
+     "value": "Michael B. Jordan",
+     "key": "cast:michael b jordan"
+    },
+    {
+     "kind": "cast",
+     "value": "Hailee Steinfeld",
+     "key": "cast:hailee steinfeld"
+    },
+    {
+     "kind": "cast",
+     "value": "Delroy Lindo",
+     "key": "cast:delroy lindo"
+    },
+    {
+     "kind": "cast",
+     "value": "Jack O'Connell",
+     "key": "cast:jack o connell"
+    },
+    {
+     "kind": "year",
+     "value": "2025",
+     "key": "year:2025"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "m2"
+   },
+   "output": [
+    {
+     "kind": "director",
+     "value": "Ryan Coogler",
+     "key": "director:ryan coogler"
+    },
+    {
+     "kind": "genre",
+     "value": "Drama",
+     "key": "genre:drama"
+    },
+    {
+     "kind": "cast",
+     "value": "Michael B. Jordan",
+     "key": "cast:michael b jordan"
+    },
+    {
+     "kind": "cast",
+     "value": "Sylvester Stallone",
+     "key": "cast:sylvester stallone"
+    },
+    {
+     "kind": "year",
+     "value": "2015",
+     "key": "year:2015"
+    },
+    {
+     "kind": "decade",
+     "value": "2010s",
+     "key": "decade:2010s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "m3"
+   },
+   "output": [
+    {
+     "kind": "director",
+     "value": "Alice Rohrwacher",
+     "key": "director:alice rohrwacher"
+    },
+    {
+     "kind": "genre",
+     "value": "Drama",
+     "key": "genre:drama"
+    },
+    {
+     "kind": "genre",
+     "value": "Fantasy",
+     "key": "genre:fantasy"
+    },
+    {
+     "kind": "year",
+     "value": "2023",
+     "key": "year:2023"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "m4"
+   },
+   "output": [
+    {
+     "kind": "year",
+     "value": "2023",
+     "key": "year:2023"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "m5"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "c1"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Meera Sodha",
+     "key": "author:meera sodha"
+    },
+    {
+     "kind": "cuisine",
+     "value": "Indian",
+     "key": "cuisine:indian"
+    },
+    {
+     "kind": "site",
+     "value": "The Guardian",
+     "key": "site:the guardian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "c2"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Felicity Cloake",
+     "key": "author:felicity cloake"
+    },
+    {
+     "kind": "cuisine",
+     "value": "Italian",
+     "key": "cuisine:italian"
+    },
+    {
+     "kind": "site",
+     "value": "The Guardian",
+     "key": "site:the guardian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "c3"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Meera Sodha",
+     "key": "author:meera sodha"
+    },
+    {
+     "kind": "cuisine",
+     "value": "Indian",
+     "key": "cuisine:indian"
+    },
+    {
+     "kind": "site",
+     "value": "the guardian",
+     "key": "site:the guardian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "q1"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Mary Oliver",
+     "key": "author:mary oliver"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "q2"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Joan Didion",
+     "key": "author:joan didion"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "q3"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Simone Weil",
+     "key": "author:simone weil"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p1"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Graça",
+     "key": "area:graca"
+    },
+    {
+     "kind": "city",
+     "value": "Lisbon",
+     "key": "city:lisbon"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p2"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Cais do Sodré",
+     "key": "area:cais do sodre"
+    },
+    {
+     "kind": "city",
+     "value": "Lisbon",
+     "key": "city:lisbon"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p3"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Belém",
+     "key": "area:belem"
+    },
+    {
+     "kind": "city",
+     "value": "Lisbon",
+     "key": "city:lisbon"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p4"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "Sintra",
+     "key": "city:sintra"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p5"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Bounds Green",
+     "key": "area:bounds green"
+    },
+    {
+     "kind": "city",
+     "value": "London",
+     "key": "city:london"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p6"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "London",
+     "key": "city:london"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p7"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "東京",
+     "key": "city:東京"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p8"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "São Paulo",
+     "key": "city:sao paulo"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "p9"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "Seoul",
+     "key": "city:seoul"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w1"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Northfield",
+     "key": "brand:northfield"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w2"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Petal",
+     "key": "brand:petal"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w3"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Marlow & Co",
+     "key": "brand:marlow & co"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w4"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Thonet",
+     "key": "brand:thonet"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w5"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Tadafusa",
+     "key": "brand:tadafusa"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w6"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Maker",
+     "key": "brand:maker"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w7"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "w8"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Petal",
+     "key": "brand:petal"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "w9"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "w10"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Northfield",
+     "key": "brand:northfield"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "n1"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "n2"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "n3"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u1"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u2"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u3"
+   },
+   "output": [
+    {
+     "kind": "site",
+     "value": "Field Notes",
+     "key": "site:field notes"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "u4"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u5"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Falcon",
+     "key": "brand:falcon"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "u6"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u7"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "u8"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x1"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x2"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x3"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x4"
+   },
+   "output": [
+    {
+     "kind": "year",
+     "value": "1962",
+     "key": "year:1962"
+    },
+    {
+     "kind": "decade",
+     "value": "1960s",
+     "key": "decade:1960s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x5"
+   },
+   "output": [
+    {
+     "kind": "year",
+     "value": "1999",
+     "key": "year:1999"
+    },
+    {
+     "kind": "decade",
+     "value": "1990s",
+     "key": "decade:1990s"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x6"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x7"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x8"
+   },
+   "output": [
+    {
+     "kind": "genre",
+     "value": "7",
+     "key": "genre:7"
+    },
+    {
+     "kind": "genre",
+     "value": "2.5",
+     "key": "genre:2 5"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x9"
+   },
+   "output": [
+    {
+     "kind": "cuisine",
+     "value": "Indian",
+     "key": "cuisine:indian"
+    },
+    {
+     "kind": "cuisine",
+     "value": "in dian",
+     "key": "cuisine:in dian"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x10"
+   },
+   "output": [
+    {
+     "kind": "genre",
+     "value": "Fantasy",
+     "key": "genre:fantasy"
+    },
+    {
+     "kind": "genre",
+     "value": "Gothic",
+     "key": "genre:gothic"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x11"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "id": "x12"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Lily Tomlin.",
+     "key": "author:lily tomlin"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x13"
+   },
+   "output": [
+    {
+     "kind": "site",
+     "value": "0",
+     "key": "site:0"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x14"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "7",
+     "key": "author:7"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x15"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "Sao Paulo.",
+     "key": "city:sao paulo"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x16"
+   },
+   "output": [
+    {
+     "kind": "area",
+     "value": "Soho",
+     "key": "area:soho"
+    },
+    {
+     "kind": "area",
+     "value": "Fitzrovia",
+     "key": "area:fitzrovia"
+    },
+    {
+     "kind": "city",
+     "value": "London",
+     "key": "city:london"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x17"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "Ann",
+     "key": "author:ann"
+    },
+    {
+     "kind": "author",
+     "value": "Bob",
+     "key": "author:bob"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x18"
+   },
+   "output": [
+    {
+     "kind": "brand",
+     "value": "Acme",
+     "key": "brand:acme"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x19"
+   },
+   "output": [
+    {
+     "kind": "author",
+     "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "key": "author:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x20"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "Zagreb",
+     "key": "city:zagreb"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x21"
+   },
+   "output": [
+    {
+     "kind": "city",
+     "value": "Athens",
+     "key": "city:athens"
+    }
+   ]
+  },
+  {
+   "input": {
+    "id": "x22"
+   },
+   "output": [
+    {
+     "kind": "director",
+     "value": "Susanna Clarke",
+     "key": "director:susanna clarke"
+    },
+    {
+     "kind": "year",
+     "value": "2020",
+     "key": "year:2020"
+    },
+    {
+     "kind": "decade",
+     "value": "2020s",
+     "key": "decade:2020s"
+    }
+   ]
+  }
+ ],
+ "tagIndex": [
+  {
+   "input": {
+    "count": 54
+   },
+   "output": [
+    {
+     "key": "decade:2020s",
+     "kind": "decade",
+     "value": "2020s",
+     "count": 5,
+     "ids": [
+      "b1",
+      "b3",
+      "m1",
+      "m3",
+      "m4"
+     ]
+    },
+    {
+     "key": "genre:fantasy",
+     "kind": "genre",
+     "value": "Fantasy",
+     "count": 4,
+     "ids": [
+      "b1",
+      "b2",
+      "b3",
+      "m3"
+     ]
+    },
+    {
+     "key": "cuisine:indian",
+     "kind": "cuisine",
+     "value": "Indian",
+     "count": 3,
+     "ids": [
+      "r2",
+      "c1",
+      "c3"
+     ]
+    },
+    {
+     "key": "city:lisbon",
+     "kind": "city",
+     "value": "Lisbon",
+     "count": 3,
+     "ids": [
+      "p1",
+      "p2",
+      "p3"
+     ]
+    },
+    {
+     "key": "city:london",
+     "kind": "city",
+     "value": "London",
+     "count": 3,
+     "ids": [
+      "r5",
+      "p5",
+      "p6"
+     ]
+    },
+    {
+     "key": "site:the guardian",
+     "kind": "site",
+     "value": "The Guardian",
+     "count": 3,
+     "ids": [
+      "c1",
+      "c2",
+      "c3"
+     ]
+    },
+    {
+     "key": "decade:2000s",
+     "kind": "decade",
+     "value": "2000s",
+     "count": 2,
+     "ids": [
+      "b2",
+      "b5"
+     ]
+    },
+    {
+     "key": "decade:2010s",
+     "kind": "decade",
+     "value": "2010s",
+     "count": 2,
+     "ids": [
+      "b7",
+      "m2"
+     ]
+    },
+    {
+     "key": "year:2023",
+     "kind": "year",
+     "value": "2023",
+     "count": 2,
+     "ids": [
+      "m3",
+      "m4"
+     ]
+    },
+    {
+     "key": "genre:drama",
+     "kind": "genre",
+     "value": "Drama",
+     "count": 2,
+     "ids": [
+      "m2",
+      "m3"
+     ]
+    },
+    {
+     "key": "area:farringdon",
+     "kind": "area",
+     "value": "Farringdon",
+     "count": 2,
+     "ids": [
+      "r1",
+      "r4"
+     ]
+    },
+    {
+     "key": "cuisine:italian",
+     "kind": "cuisine",
+     "value": "italian",
+     "count": 2,
+     "ids": [
+      "r4",
+      "c2"
+     ]
+    },
+    {
+     "key": "author:mary oliver",
+     "kind": "author",
+     "value": "Mary Oliver",
+     "count": 2,
+     "ids": [
+      "b7",
+      "q1"
+     ]
+    },
+    {
+     "key": "author:meera sodha",
+     "kind": "author",
+     "value": "Meera Sodha",
+     "count": 2,
+     "ids": [
+      "c1",
+      "c3"
+     ]
+    },
+    {
+     "key": "cast:michael b jordan",
+     "kind": "cast",
+     "value": "Michael B. Jordan",
+     "count": 2,
+     "ids": [
+      "m1",
+      "m2"
+     ]
+    },
+    {
+     "key": "brand:northfield",
+     "kind": "brand",
+     "value": "Northfield",
+     "count": 2,
+     "ids": [
+      "w1",
+      "w10"
+     ]
+    },
+    {
+     "key": "brand:petal",
+     "kind": "brand",
+     "value": "Petal",
+     "count": 2,
+     "ids": [
+      "w2",
+      "w8"
+     ]
+    },
+    {
+     "key": "director:ryan coogler",
+     "kind": "director",
+     "value": "Ryan Coogler",
+     "count": 2,
+     "ids": [
+      "m1",
+      "m2"
+     ]
+    },
+    {
+     "key": "author:susanna clarke",
+     "kind": "author",
+     "value": "Susanna Clarke",
+     "count": 2,
+     "ids": [
+      "b1",
+      "b2"
+     ]
+    },
+    {
+     "key": "decade:1960s",
+     "kind": "decade",
+     "value": "1960s",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "year:1967",
+     "kind": "year",
+     "value": "1967",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "decade:1980s",
+     "kind": "decade",
+     "value": "1980s",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "year:1987",
+     "kind": "year",
+     "value": "1987",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "year:2000",
+     "kind": "year",
+     "value": "2000",
+     "count": 1,
+     "ids": [
+      "b5"
+     ]
+    },
+    {
+     "key": "year:2004",
+     "kind": "year",
+     "value": "2004",
+     "count": 1,
+     "ids": [
+      "b2"
+     ]
+    },
+    {
+     "key": "year:2015",
+     "kind": "year",
+     "value": "2015",
+     "count": 1,
+     "ids": [
+      "m2"
+     ]
+    },
+    {
+     "key": "year:2016",
+     "kind": "year",
+     "value": "2016",
+     "count": 1,
+     "ids": [
+      "b7"
+     ]
+    },
+    {
+     "key": "year:2020",
+     "kind": "year",
+     "value": "2020",
+     "count": 1,
+     "ids": [
+      "b1"
+     ]
+    },
+    {
+     "key": "year:2022",
+     "kind": "year",
+     "value": "2022",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "year:2025",
+     "kind": "year",
+     "value": "2025",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "director:alice rohrwacher",
+     "kind": "director",
+     "value": "Alice Rohrwacher",
+     "count": 1,
+     "ids": [
+      "m3"
+     ]
+    },
+    {
+     "key": "area:belem",
+     "kind": "area",
+     "value": "Belém",
+     "count": 1,
+     "ids": [
+      "p3"
+     ]
+    },
+    {
+     "key": "area:bounds green",
+     "kind": "area",
+     "value": "Bounds Green",
+     "count": 1,
+     "ids": [
+      "p5"
+     ]
+    },
+    {
+     "key": "cuisine:british",
+     "kind": "cuisine",
+     "value": "british",
+     "count": 1,
+     "ids": [
+      "r1"
+     ]
+    },
+    {
+     "key": "area:cais do sodre",
+     "kind": "area",
+     "value": "Cais do Sodré",
+     "count": 1,
+     "ids": [
+      "p2"
+     ]
+    },
+    {
+     "key": "area:chelsea",
+     "kind": "area",
+     "value": "Chelsea",
+     "count": 1,
+     "ids": [
+      "r5"
+     ]
+    },
+    {
+     "key": "genre:dark academia",
+     "kind": "genre",
+     "value": "Dark academia",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "cast:delroy lindo",
+     "kind": "cast",
+     "value": "Delroy Lindo",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "brand:falcon",
+     "kind": "brand",
+     "value": "Falcon",
+     "count": 1,
+     "ids": [
+      "u5"
+     ]
+    },
+    {
+     "key": "author:felicity cloake",
+     "kind": "author",
+     "value": "Felicity Cloake",
+     "count": 1,
+     "ids": [
+      "c2"
+     ]
+    },
+    {
+     "key": "site:field notes",
+     "kind": "site",
+     "value": "Field Notes",
+     "count": 1,
+     "ids": [
+      "u3"
+     ]
+    },
+    {
+     "key": "cuisine:french",
+     "kind": "cuisine",
+     "value": "french",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "author:gabriel garcia marquez",
+     "kind": "author",
+     "value": "Gabriel García Márquez",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "area:graca",
+     "kind": "area",
+     "value": "Graça",
+     "count": 1,
+     "ids": [
+      "p1"
+     ]
+    },
+    {
+     "key": "cast:hailee steinfeld",
+     "kind": "cast",
+     "value": "Hailee Steinfeld",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "genre:horror",
+     "kind": "genre",
+     "value": "Horror",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "author:j k rowling",
+     "kind": "author",
+     "value": "J.K. Rowling",
+     "count": 1,
+     "ids": [
+      "b5"
+     ]
+    },
+    {
+     "key": "cast:jack o connell",
+     "kind": "cast",
+     "value": "Jack O'Connell",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "author:joan didion",
+     "kind": "author",
+     "value": "Joan Didion",
+     "count": 1,
+     "ids": [
+      "q2"
+     ]
+    },
+    {
+     "key": "genre:labyrinths",
+     "kind": "genre",
+     "value": "Labyrinths",
+     "count": 1,
+     "ids": [
+      "b1"
+     ]
+    },
+    {
+     "key": "genre:magical realism",
+     "kind": "genre",
+     "value": "Magical realism",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "brand:maker",
+     "kind": "brand",
+     "value": "Maker",
+     "count": 1,
+     "ids": [
+      "w6"
+     ]
+    },
+    {
+     "key": "brand:marlow & co",
+     "kind": "brand",
+     "value": "Marlow & Co",
+     "count": 1,
+     "ids": [
+      "w3"
+     ]
+    },
+    {
+     "key": "city:paris",
+     "kind": "city",
+     "value": "Paris",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "area:peckham",
+     "kind": "area",
+     "value": "Peckham",
+     "count": 1,
+     "ids": [
+      "r2"
+     ]
+    },
+    {
+     "key": "author:r f kuang",
+     "kind": "author",
+     "value": "R. F. Kuang",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "area:saint germain des pres",
+     "kind": "area",
+     "value": "Saint-Germain-des-Prés",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "city:sao paulo",
+     "kind": "city",
+     "value": "São Paulo",
+     "count": 1,
+     "ids": [
+      "p8"
+     ]
+    },
+    {
+     "key": "city:seoul",
+     "kind": "city",
+     "value": "Seoul",
+     "count": 1,
+     "ids": [
+      "p9"
+     ]
+    },
+    {
+     "key": "author:simone weil",
+     "kind": "author",
+     "value": "Simone Weil",
+     "count": 1,
+     "ids": [
+      "q3"
+     ]
+    },
+    {
+     "key": "city:sintra",
+     "kind": "city",
+     "value": "Sintra",
+     "count": 1,
+     "ids": [
+      "p4"
+     ]
+    },
+    {
+     "key": "cuisine:south indian",
+     "kind": "cuisine",
+     "value": "South indian",
+     "count": 1,
+     "ids": [
+      "r2"
+     ]
+    },
+    {
+     "key": "cast:sylvester stallone",
+     "kind": "cast",
+     "value": "Sylvester Stallone",
+     "count": 1,
+     "ids": [
+      "m2"
+     ]
+    },
+    {
+     "key": "brand:tadafusa",
+     "kind": "brand",
+     "value": "Tadafusa",
+     "count": 1,
+     "ids": [
+      "w5"
+     ]
+    },
+    {
+     "key": "brand:thonet",
+     "kind": "brand",
+     "value": "Thonet",
+     "count": 1,
+     "ids": [
+      "w4"
+     ]
+    },
+    {
+     "key": "genre:thriller",
+     "kind": "genre",
+     "value": "Thriller",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "author:村上春樹",
+     "kind": "author",
+     "value": "村上春樹",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "city:東京",
+     "kind": "city",
+     "value": "東京",
+     "count": 1,
+     "ids": [
+      "p7"
+     ]
+    }
+   ]
+  },
+  {
+   "input": {
+    "count": 76
+   },
+   "output": [
+    {
+     "key": "decade:2020s",
+     "kind": "decade",
+     "value": "2020s",
+     "count": 6,
+     "ids": [
+      "b1",
+      "b3",
+      "m1",
+      "m3",
+      "m4",
+      "x22"
+     ]
+    },
+    {
+     "key": "genre:fantasy",
+     "kind": "genre",
+     "value": "Fantasy",
+     "count": 5,
+     "ids": [
+      "b1",
+      "b2",
+      "b3",
+      "m3",
+      "x10"
+     ]
+    },
+    {
+     "key": "cuisine:indian",
+     "kind": "cuisine",
+     "value": "Indian",
+     "count": 4,
+     "ids": [
+      "r2",
+      "c1",
+      "c3",
+      "x9"
+     ]
+    },
+    {
+     "key": "city:london",
+     "kind": "city",
+     "value": "London",
+     "count": 4,
+     "ids": [
+      "r5",
+      "p5",
+      "p6",
+      "x16"
+     ]
+    },
+    {
+     "key": "city:lisbon",
+     "kind": "city",
+     "value": "Lisbon",
+     "count": 3,
+     "ids": [
+      "p1",
+      "p2",
+      "p3"
+     ]
+    },
+    {
+     "key": "site:the guardian",
+     "kind": "site",
+     "value": "The Guardian",
+     "count": 3,
+     "ids": [
+      "c1",
+      "c2",
+      "c3"
+     ]
+    },
+    {
+     "key": "decade:1960s",
+     "kind": "decade",
+     "value": "1960s",
+     "count": 2,
+     "ids": [
+      "b6",
+      "x4"
+     ]
+    },
+    {
+     "key": "decade:2000s",
+     "kind": "decade",
+     "value": "2000s",
+     "count": 2,
+     "ids": [
+      "b2",
+      "b5"
+     ]
+    },
+    {
+     "key": "decade:2010s",
+     "kind": "decade",
+     "value": "2010s",
+     "count": 2,
+     "ids": [
+      "b7",
+      "m2"
+     ]
+    },
+    {
+     "key": "year:2020",
+     "kind": "year",
+     "value": "2020",
+     "count": 2,
+     "ids": [
+      "b1",
+      "x22"
+     ]
+    },
+    {
+     "key": "year:2023",
+     "kind": "year",
+     "value": "2023",
+     "count": 2,
+     "ids": [
+      "m3",
+      "m4"
+     ]
+    },
+    {
+     "key": "genre:drama",
+     "kind": "genre",
+     "value": "Drama",
+     "count": 2,
+     "ids": [
+      "m2",
+      "m3"
+     ]
+    },
+    {
+     "key": "area:farringdon",
+     "kind": "area",
+     "value": "Farringdon",
+     "count": 2,
+     "ids": [
+      "r1",
+      "r4"
+     ]
+    },
+    {
+     "key": "cuisine:italian",
+     "kind": "cuisine",
+     "value": "italian",
+     "count": 2,
+     "ids": [
+      "r4",
+      "c2"
+     ]
+    },
+    {
+     "key": "author:mary oliver",
+     "kind": "author",
+     "value": "Mary Oliver",
+     "count": 2,
+     "ids": [
+      "b7",
+      "q1"
+     ]
+    },
+    {
+     "key": "author:meera sodha",
+     "kind": "author",
+     "value": "Meera Sodha",
+     "count": 2,
+     "ids": [
+      "c1",
+      "c3"
+     ]
+    },
+    {
+     "key": "cast:michael b jordan",
+     "kind": "cast",
+     "value": "Michael B. Jordan",
+     "count": 2,
+     "ids": [
+      "m1",
+      "m2"
+     ]
+    },
+    {
+     "key": "brand:northfield",
+     "kind": "brand",
+     "value": "Northfield",
+     "count": 2,
+     "ids": [
+      "w1",
+      "w10"
+     ]
+    },
+    {
+     "key": "brand:petal",
+     "kind": "brand",
+     "value": "Petal",
+     "count": 2,
+     "ids": [
+      "w2",
+      "w8"
+     ]
+    },
+    {
+     "key": "director:ryan coogler",
+     "kind": "director",
+     "value": "Ryan Coogler",
+     "count": 2,
+     "ids": [
+      "m1",
+      "m2"
+     ]
+    },
+    {
+     "key": "city:sao paulo",
+     "kind": "city",
+     "value": "São Paulo",
+     "count": 2,
+     "ids": [
+      "p8",
+      "x15"
+     ]
+    },
+    {
+     "key": "author:susanna clarke",
+     "kind": "author",
+     "value": "Susanna Clarke",
+     "count": 2,
+     "ids": [
+      "b1",
+      "b2"
+     ]
+    },
+    {
+     "key": "site:0",
+     "kind": "site",
+     "value": "0",
+     "count": 1,
+     "ids": [
+      "x13"
+     ]
+    },
+    {
+     "key": "year:1962",
+     "kind": "year",
+     "value": "1962",
+     "count": 1,
+     "ids": [
+      "x4"
+     ]
+    },
+    {
+     "key": "year:1967",
+     "kind": "year",
+     "value": "1967",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "decade:1980s",
+     "kind": "decade",
+     "value": "1980s",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "year:1987",
+     "kind": "year",
+     "value": "1987",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "decade:1990s",
+     "kind": "decade",
+     "value": "1990s",
+     "count": 1,
+     "ids": [
+      "x5"
+     ]
+    },
+    {
+     "key": "year:1999",
+     "kind": "year",
+     "value": "1999",
+     "count": 1,
+     "ids": [
+      "x5"
+     ]
+    },
+    {
+     "key": "genre:2 5",
+     "kind": "genre",
+     "value": "2.5",
+     "count": 1,
+     "ids": [
+      "x8"
+     ]
+    },
+    {
+     "key": "year:2000",
+     "kind": "year",
+     "value": "2000",
+     "count": 1,
+     "ids": [
+      "b5"
+     ]
+    },
+    {
+     "key": "year:2004",
+     "kind": "year",
+     "value": "2004",
+     "count": 1,
+     "ids": [
+      "b2"
+     ]
+    },
+    {
+     "key": "year:2015",
+     "kind": "year",
+     "value": "2015",
+     "count": 1,
+     "ids": [
+      "m2"
+     ]
+    },
+    {
+     "key": "year:2016",
+     "kind": "year",
+     "value": "2016",
+     "count": 1,
+     "ids": [
+      "b7"
+     ]
+    },
+    {
+     "key": "year:2022",
+     "kind": "year",
+     "value": "2022",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "year:2025",
+     "kind": "year",
+     "value": "2025",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "author:7",
+     "kind": "author",
+     "value": "7",
+     "count": 1,
+     "ids": [
+      "x14"
+     ]
+    },
+    {
+     "key": "genre:7",
+     "kind": "genre",
+     "value": "7",
+     "count": 1,
+     "ids": [
+      "x8"
+     ]
+    },
+    {
+     "key": "author:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "kind": "author",
+     "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "count": 1,
+     "ids": [
+      "x19"
+     ]
+    },
+    {
+     "key": "brand:acme",
+     "kind": "brand",
+     "value": "Acme",
+     "count": 1,
+     "ids": [
+      "x18"
+     ]
+    },
+    {
+     "key": "director:alice rohrwacher",
+     "kind": "director",
+     "value": "Alice Rohrwacher",
+     "count": 1,
+     "ids": [
+      "m3"
+     ]
+    },
+    {
+     "key": "author:ann",
+     "kind": "author",
+     "value": "Ann",
+     "count": 1,
+     "ids": [
+      "x17"
+     ]
+    },
+    {
+     "key": "city:athens",
+     "kind": "city",
+     "value": "Athens",
+     "count": 1,
+     "ids": [
+      "x21"
+     ]
+    },
+    {
+     "key": "area:belem",
+     "kind": "area",
+     "value": "Belém",
+     "count": 1,
+     "ids": [
+      "p3"
+     ]
+    },
+    {
+     "key": "author:bob",
+     "kind": "author",
+     "value": "Bob",
+     "count": 1,
+     "ids": [
+      "x17"
+     ]
+    },
+    {
+     "key": "area:bounds green",
+     "kind": "area",
+     "value": "Bounds Green",
+     "count": 1,
+     "ids": [
+      "p5"
+     ]
+    },
+    {
+     "key": "cuisine:british",
+     "kind": "cuisine",
+     "value": "british",
+     "count": 1,
+     "ids": [
+      "r1"
+     ]
+    },
+    {
+     "key": "area:cais do sodre",
+     "kind": "area",
+     "value": "Cais do Sodré",
+     "count": 1,
+     "ids": [
+      "p2"
+     ]
+    },
+    {
+     "key": "area:chelsea",
+     "kind": "area",
+     "value": "Chelsea",
+     "count": 1,
+     "ids": [
+      "r5"
+     ]
+    },
+    {
+     "key": "genre:dark academia",
+     "kind": "genre",
+     "value": "Dark academia",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "cast:delroy lindo",
+     "kind": "cast",
+     "value": "Delroy Lindo",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "brand:falcon",
+     "kind": "brand",
+     "value": "Falcon",
+     "count": 1,
+     "ids": [
+      "u5"
+     ]
+    },
+    {
+     "key": "author:felicity cloake",
+     "kind": "author",
+     "value": "Felicity Cloake",
+     "count": 1,
+     "ids": [
+      "c2"
+     ]
+    },
+    {
+     "key": "site:field notes",
+     "kind": "site",
+     "value": "Field Notes",
+     "count": 1,
+     "ids": [
+      "u3"
+     ]
+    },
+    {
+     "key": "area:fitzrovia",
+     "kind": "area",
+     "value": "Fitzrovia",
+     "count": 1,
+     "ids": [
+      "x16"
+     ]
+    },
+    {
+     "key": "cuisine:french",
+     "kind": "cuisine",
+     "value": "french",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "author:gabriel garcia marquez",
+     "kind": "author",
+     "value": "Gabriel García Márquez",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "genre:gothic",
+     "kind": "genre",
+     "value": "Gothic",
+     "count": 1,
+     "ids": [
+      "x10"
+     ]
+    },
+    {
+     "key": "area:graca",
+     "kind": "area",
+     "value": "Graça",
+     "count": 1,
+     "ids": [
+      "p1"
+     ]
+    },
+    {
+     "key": "cast:hailee steinfeld",
+     "kind": "cast",
+     "value": "Hailee Steinfeld",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "genre:horror",
+     "kind": "genre",
+     "value": "Horror",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "cuisine:in dian",
+     "kind": "cuisine",
+     "value": "in dian",
+     "count": 1,
+     "ids": [
+      "x9"
+     ]
+    },
+    {
+     "key": "author:j k rowling",
+     "kind": "author",
+     "value": "J.K. Rowling",
+     "count": 1,
+     "ids": [
+      "b5"
+     ]
+    },
+    {
+     "key": "cast:jack o connell",
+     "kind": "cast",
+     "value": "Jack O'Connell",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "author:joan didion",
+     "kind": "author",
+     "value": "Joan Didion",
+     "count": 1,
+     "ids": [
+      "q2"
+     ]
+    },
+    {
+     "key": "genre:labyrinths",
+     "kind": "genre",
+     "value": "Labyrinths",
+     "count": 1,
+     "ids": [
+      "b1"
+     ]
+    },
+    {
+     "key": "author:lily tomlin",
+     "kind": "author",
+     "value": "Lily Tomlin.",
+     "count": 1,
+     "ids": [
+      "x12"
+     ]
+    },
+    {
+     "key": "genre:magical realism",
+     "kind": "genre",
+     "value": "Magical realism",
+     "count": 1,
+     "ids": [
+      "b6"
+     ]
+    },
+    {
+     "key": "brand:maker",
+     "kind": "brand",
+     "value": "Maker",
+     "count": 1,
+     "ids": [
+      "w6"
+     ]
+    },
+    {
+     "key": "brand:marlow & co",
+     "kind": "brand",
+     "value": "Marlow & Co",
+     "count": 1,
+     "ids": [
+      "w3"
+     ]
+    },
+    {
+     "key": "city:paris",
+     "kind": "city",
+     "value": "Paris",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "area:peckham",
+     "kind": "area",
+     "value": "Peckham",
+     "count": 1,
+     "ids": [
+      "r2"
+     ]
+    },
+    {
+     "key": "author:r f kuang",
+     "kind": "author",
+     "value": "R. F. Kuang",
+     "count": 1,
+     "ids": [
+      "b3"
+     ]
+    },
+    {
+     "key": "area:saint germain des pres",
+     "kind": "area",
+     "value": "Saint-Germain-des-Prés",
+     "count": 1,
+     "ids": [
+      "r3"
+     ]
+    },
+    {
+     "key": "city:seoul",
+     "kind": "city",
+     "value": "Seoul",
+     "count": 1,
+     "ids": [
+      "p9"
+     ]
+    },
+    {
+     "key": "author:simone weil",
+     "kind": "author",
+     "value": "Simone Weil",
+     "count": 1,
+     "ids": [
+      "q3"
+     ]
+    },
+    {
+     "key": "city:sintra",
+     "kind": "city",
+     "value": "Sintra",
+     "count": 1,
+     "ids": [
+      "p4"
+     ]
+    },
+    {
+     "key": "area:soho",
+     "kind": "area",
+     "value": "Soho",
+     "count": 1,
+     "ids": [
+      "x16"
+     ]
+    },
+    {
+     "key": "cuisine:south indian",
+     "kind": "cuisine",
+     "value": "South indian",
+     "count": 1,
+     "ids": [
+      "r2"
+     ]
+    },
+    {
+     "key": "director:susanna clarke",
+     "kind": "director",
+     "value": "Susanna Clarke",
+     "count": 1,
+     "ids": [
+      "x22"
+     ]
+    },
+    {
+     "key": "cast:sylvester stallone",
+     "kind": "cast",
+     "value": "Sylvester Stallone",
+     "count": 1,
+     "ids": [
+      "m2"
+     ]
+    },
+    {
+     "key": "brand:tadafusa",
+     "kind": "brand",
+     "value": "Tadafusa",
+     "count": 1,
+     "ids": [
+      "w5"
+     ]
+    },
+    {
+     "key": "brand:thonet",
+     "kind": "brand",
+     "value": "Thonet",
+     "count": 1,
+     "ids": [
+      "w4"
+     ]
+    },
+    {
+     "key": "genre:thriller",
+     "kind": "genre",
+     "value": "Thriller",
+     "count": 1,
+     "ids": [
+      "m1"
+     ]
+    },
+    {
+     "key": "city:zagreb",
+     "kind": "city",
+     "value": "Zagreb",
+     "count": 1,
+     "ids": [
+      "x20"
+     ]
+    },
+    {
+     "key": "author:村上春樹",
+     "kind": "author",
+     "value": "村上春樹",
+     "count": 1,
+     "ids": [
+      "b4"
+     ]
+    },
+    {
+     "key": "city:東京",
+     "kind": "city",
+     "value": "東京",
+     "count": 1,
+     "ids": [
+      "p7"
+     ]
+    }
+   ]
+  }
+ ],
+ "itemsWithTag": [
+  {
+   "input": {
+    "key": "decade:2020s"
+   },
+   "output": [
+    "b1",
+    "b3",
+    "m1",
+    "m3",
+    "m4",
+    "x22"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:fantasy"
+   },
+   "output": [
+    "b1",
+    "b2",
+    "b3",
+    "m3",
+    "x10"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:indian"
+   },
+   "output": [
+    "r2",
+    "c1",
+    "c3",
+    "x9"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:london"
+   },
+   "output": [
+    "r5",
+    "p5",
+    "p6",
+    "x16"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:lisbon"
+   },
+   "output": [
+    "p1",
+    "p2",
+    "p3"
+   ]
+  },
+  {
+   "input": {
+    "key": "site:the guardian"
+   },
+   "output": [
+    "c1",
+    "c2",
+    "c3"
+   ]
+  },
+  {
+   "input": {
+    "key": "decade:1960s"
+   },
+   "output": [
+    "b6",
+    "x4"
+   ]
+  },
+  {
+   "input": {
+    "key": "decade:2000s"
+   },
+   "output": [
+    "b2",
+    "b5"
+   ]
+  },
+  {
+   "input": {
+    "key": "decade:2010s"
+   },
+   "output": [
+    "b7",
+    "m2"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2020"
+   },
+   "output": [
+    "b1",
+    "x22"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2023"
+   },
+   "output": [
+    "m3",
+    "m4"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:drama"
+   },
+   "output": [
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:farringdon"
+   },
+   "output": [
+    "r1",
+    "r4"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:italian"
+   },
+   "output": [
+    "r4",
+    "c2"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:mary oliver"
+   },
+   "output": [
+    "b7",
+    "q1"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:meera sodha"
+   },
+   "output": [
+    "c1",
+    "c3"
+   ]
+  },
+  {
+   "input": {
+    "key": "cast:michael b jordan"
+   },
+   "output": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:northfield"
+   },
+   "output": [
+    "w1",
+    "w10"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:petal"
+   },
+   "output": [
+    "w2",
+    "w8"
+   ]
+  },
+  {
+   "input": {
+    "key": "director:ryan coogler"
+   },
+   "output": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:sao paulo"
+   },
+   "output": [
+    "p8",
+    "x15"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:susanna clarke"
+   },
+   "output": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "input": {
+    "key": "site:0"
+   },
+   "output": [
+    "x13"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:1962"
+   },
+   "output": [
+    "x4"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:1967"
+   },
+   "output": [
+    "b6"
+   ]
+  },
+  {
+   "input": {
+    "key": "decade:1980s"
+   },
+   "output": [
+    "b4"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:1987"
+   },
+   "output": [
+    "b4"
+   ]
+  },
+  {
+   "input": {
+    "key": "decade:1990s"
+   },
+   "output": [
+    "x5"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:1999"
+   },
+   "output": [
+    "x5"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:2 5"
+   },
+   "output": [
+    "x8"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2000"
+   },
+   "output": [
+    "b5"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2004"
+   },
+   "output": [
+    "b2"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2015"
+   },
+   "output": [
+    "m2"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2016"
+   },
+   "output": [
+    "b7"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2022"
+   },
+   "output": [
+    "b3"
+   ]
+  },
+  {
+   "input": {
+    "key": "year:2025"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:7"
+   },
+   "output": [
+    "x14"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:7"
+   },
+   "output": [
+    "x8"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "output": [
+    "x19"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:acme"
+   },
+   "output": [
+    "x18"
+   ]
+  },
+  {
+   "input": {
+    "key": "director:alice rohrwacher"
+   },
+   "output": [
+    "m3"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:ann"
+   },
+   "output": [
+    "x17"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:athens"
+   },
+   "output": [
+    "x21"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:belem"
+   },
+   "output": [
+    "p3"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:bob"
+   },
+   "output": [
+    "x17"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:bounds green"
+   },
+   "output": [
+    "p5"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:british"
+   },
+   "output": [
+    "r1"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:cais do sodre"
+   },
+   "output": [
+    "p2"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:chelsea"
+   },
+   "output": [
+    "r5"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:dark academia"
+   },
+   "output": [
+    "b3"
+   ]
+  },
+  {
+   "input": {
+    "key": "cast:delroy lindo"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:falcon"
+   },
+   "output": [
+    "u5"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:felicity cloake"
+   },
+   "output": [
+    "c2"
+   ]
+  },
+  {
+   "input": {
+    "key": "site:field notes"
+   },
+   "output": [
+    "u3"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:fitzrovia"
+   },
+   "output": [
+    "x16"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:french"
+   },
+   "output": [
+    "r3"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:gabriel garcia marquez"
+   },
+   "output": [
+    "b6"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:gothic"
+   },
+   "output": [
+    "x10"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:graca"
+   },
+   "output": [
+    "p1"
+   ]
+  },
+  {
+   "input": {
+    "key": "cast:hailee steinfeld"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:horror"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:in dian"
+   },
+   "output": [
+    "x9"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:j k rowling"
+   },
+   "output": [
+    "b5"
+   ]
+  },
+  {
+   "input": {
+    "key": "cast:jack o connell"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:joan didion"
+   },
+   "output": [
+    "q2"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:labyrinths"
+   },
+   "output": [
+    "b1"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:lily tomlin"
+   },
+   "output": [
+    "x12"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:magical realism"
+   },
+   "output": [
+    "b6"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:maker"
+   },
+   "output": [
+    "w6"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:marlow & co"
+   },
+   "output": [
+    "w3"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:paris"
+   },
+   "output": [
+    "r3"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:peckham"
+   },
+   "output": [
+    "r2"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:r f kuang"
+   },
+   "output": [
+    "b3"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:saint germain des pres"
+   },
+   "output": [
+    "r3"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:seoul"
+   },
+   "output": [
+    "p9"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:simone weil"
+   },
+   "output": [
+    "q3"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:sintra"
+   },
+   "output": [
+    "p4"
+   ]
+  },
+  {
+   "input": {
+    "key": "area:soho"
+   },
+   "output": [
+    "x16"
+   ]
+  },
+  {
+   "input": {
+    "key": "cuisine:south indian"
+   },
+   "output": [
+    "r2"
+   ]
+  },
+  {
+   "input": {
+    "key": "director:susanna clarke"
+   },
+   "output": [
+    "x22"
+   ]
+  },
+  {
+   "input": {
+    "key": "cast:sylvester stallone"
+   },
+   "output": [
+    "m2"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:tadafusa"
+   },
+   "output": [
+    "w5"
+   ]
+  },
+  {
+   "input": {
+    "key": "brand:thonet"
+   },
+   "output": [
+    "w4"
+   ]
+  },
+  {
+   "input": {
+    "key": "genre:thriller"
+   },
+   "output": [
+    "m1"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:zagreb"
+   },
+   "output": [
+    "x20"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:村上春樹"
+   },
+   "output": [
+    "b4"
+   ]
+  },
+  {
+   "input": {
+    "key": "city:東京"
+   },
+   "output": [
+    "p7"
+   ]
+  },
+  {
+   "input": {
+    "key": "author:nobody"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "key": "author:ryan coogler"
+   },
+   "output": []
+  },
+  {
+   "input": {
+    "key": ""
+   },
+   "output": []
+  }
+ ]
+}

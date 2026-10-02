@@ -1,0 +1,53 @@
+{
+ "counts": {
+  "books": 2,
+  "unsorted": 2,
+  "notes": 1,
+  "wishlist": 2,
+  "places": 2,
+  "quotes": 1,
+  "recipes": 1,
+  "movies": 1,
+  "restaurants": 1
+ },
+ "pile": [
+  "i_1hnuql81ntf6gy",
+  "i_10998nby2iu7",
+  "i_cvjcb5lot5p",
+  "i_vurltd19otj2d",
+  "i_pic0001abc"
+ ],
+ "shelves": {
+  "books": [
+   "i_s2365qu8gub",
+   "i_ksva83rpeoz9"
+  ],
+  "restaurants": [
+   "i_o176umksmsqq"
+  ],
+  "movies": [
+   "i_3k75q41ma2uuq"
+  ],
+  "recipes": [
+   "i_149lk2u1yls3bk"
+  ],
+  "quotes": [
+   "i_5q6fdgwwbes0"
+  ],
+  "places": [
+   "i_nrqz7l6gsyez",
+   "i_16lfiwx1uug9k9"
+  ],
+  "wishlist": [
+   "i_1xuyj621ptnjug",
+   "i_120y7pv5kqeo7"
+  ],
+  "notes": [
+   "i_note0001abc"
+  ],
+  "unsorted": [
+   "i_vurltd19otj2d",
+   "i_pic0001abc"
+  ]
+ }
+}

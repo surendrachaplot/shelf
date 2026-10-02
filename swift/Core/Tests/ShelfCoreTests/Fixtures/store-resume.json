@@ -1,0 +1,540 @@
+{
+ "cases": [
+  {
+   "name": "mixed",
+   "items": [
+    {
+     "id": "a",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/a",
+     "title": null
+    },
+    {
+     "id": "b",
+     "status": "pending",
+     "source_url": null,
+     "title": null
+    },
+    {
+     "id": "c",
+     "status": "filed",
+     "source_url": "https://x/c",
+     "title": "A thing"
+    },
+    {
+     "id": "d",
+     "status": "unread",
+     "source_url": "https://x/d",
+     "title": null
+    },
+    {
+     "id": "e",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/e",
+     "title": null
+    }
+   ],
+   "max": 6,
+   "plan": {
+    "pending": [
+     "a",
+     "b",
+     "e"
+    ],
+    "retry": [
+     "a",
+     "e"
+    ],
+    "giveUp": [
+     "b"
+    ],
+    "why": {
+     "b": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos."
+    }
+   }
+  },
+  {
+   "name": "many",
+   "items": [
+    {
+     "id": "i0",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i0",
+     "title": null
+    },
+    {
+     "id": "i1",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i1",
+     "title": null
+    },
+    {
+     "id": "i2",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i2",
+     "title": null
+    },
+    {
+     "id": "i3",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i3",
+     "title": null
+    },
+    {
+     "id": "i4",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i4",
+     "title": null
+    },
+    {
+     "id": "i5",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i5",
+     "title": null
+    },
+    {
+     "id": "i6",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i6",
+     "title": null
+    },
+    {
+     "id": "i7",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i7",
+     "title": null
+    },
+    {
+     "id": "i8",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i8",
+     "title": null
+    },
+    {
+     "id": "i9",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i9",
+     "title": null
+    },
+    {
+     "id": "i10",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i10",
+     "title": null
+    },
+    {
+     "id": "i11",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i11",
+     "title": null
+    },
+    {
+     "id": "i12",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i12",
+     "title": null
+    },
+    {
+     "id": "i13",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i13",
+     "title": null
+    },
+    {
+     "id": "i14",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i14",
+     "title": null
+    },
+    {
+     "id": "i15",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i15",
+     "title": null
+    },
+    {
+     "id": "i16",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i16",
+     "title": null
+    },
+    {
+     "id": "i17",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i17",
+     "title": null
+    },
+    {
+     "id": "i18",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i18",
+     "title": null
+    },
+    {
+     "id": "i19",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i19",
+     "title": null
+    }
+   ],
+   "max": 6,
+   "plan": {
+    "pending": [
+     "i0",
+     "i1",
+     "i2",
+     "i3",
+     "i4",
+     "i5",
+     "i6",
+     "i7",
+     "i8",
+     "i9",
+     "i10",
+     "i11",
+     "i12",
+     "i13",
+     "i14",
+     "i15",
+     "i16",
+     "i17",
+     "i18",
+     "i19"
+    ],
+    "retry": [
+     "i0",
+     "i1",
+     "i2",
+     "i3",
+     "i4",
+     "i5"
+    ],
+    "giveUp": [
+     "i6",
+     "i7",
+     "i8",
+     "i9",
+     "i10",
+     "i11",
+     "i12",
+     "i13",
+     "i14",
+     "i15",
+     "i16",
+     "i17",
+     "i18",
+     "i19"
+    ],
+    "why": {
+     "i6": "Reading this was interrupted — tap Read again",
+     "i7": "Reading this was interrupted — tap Read again",
+     "i8": "Reading this was interrupted — tap Read again",
+     "i9": "Reading this was interrupted — tap Read again",
+     "i10": "Reading this was interrupted — tap Read again",
+     "i11": "Reading this was interrupted — tap Read again",
+     "i12": "Reading this was interrupted — tap Read again",
+     "i13": "Reading this was interrupted — tap Read again",
+     "i14": "Reading this was interrupted — tap Read again",
+     "i15": "Reading this was interrupted — tap Read again",
+     "i16": "Reading this was interrupted — tap Read again",
+     "i17": "Reading this was interrupted — tap Read again",
+     "i18": "Reading this was interrupted — tap Read again",
+     "i19": "Reading this was interrupted — tap Read again"
+    }
+   }
+  },
+  {
+   "name": "many, two at a time",
+   "items": [
+    {
+     "id": "i0",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i0",
+     "title": null
+    },
+    {
+     "id": "i1",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i1",
+     "title": null
+    },
+    {
+     "id": "i2",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i2",
+     "title": null
+    },
+    {
+     "id": "i3",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i3",
+     "title": null
+    },
+    {
+     "id": "i4",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i4",
+     "title": null
+    },
+    {
+     "id": "i5",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i5",
+     "title": null
+    },
+    {
+     "id": "i6",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i6",
+     "title": null
+    },
+    {
+     "id": "i7",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i7",
+     "title": null
+    },
+    {
+     "id": "i8",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i8",
+     "title": null
+    },
+    {
+     "id": "i9",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i9",
+     "title": null
+    },
+    {
+     "id": "i10",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i10",
+     "title": null
+    },
+    {
+     "id": "i11",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i11",
+     "title": null
+    },
+    {
+     "id": "i12",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i12",
+     "title": null
+    },
+    {
+     "id": "i13",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i13",
+     "title": null
+    },
+    {
+     "id": "i14",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i14",
+     "title": null
+    },
+    {
+     "id": "i15",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i15",
+     "title": null
+    },
+    {
+     "id": "i16",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i16",
+     "title": null
+    },
+    {
+     "id": "i17",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i17",
+     "title": null
+    },
+    {
+     "id": "i18",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i18",
+     "title": null
+    },
+    {
+     "id": "i19",
+     "status": "pending",
+     "source_url": "https://www.instagram.com/reel/i19",
+     "title": null
+    }
+   ],
+   "max": 2,
+   "plan": {
+    "pending": [
+     "i0",
+     "i1",
+     "i2",
+     "i3",
+     "i4",
+     "i5",
+     "i6",
+     "i7",
+     "i8",
+     "i9",
+     "i10",
+     "i11",
+     "i12",
+     "i13",
+     "i14",
+     "i15",
+     "i16",
+     "i17",
+     "i18",
+     "i19"
+    ],
+    "retry": [
+     "i0",
+     "i1"
+    ],
+    "giveUp": [
+     "i2",
+     "i3",
+     "i4",
+     "i5",
+     "i6",
+     "i7",
+     "i8",
+     "i9",
+     "i10",
+     "i11",
+     "i12",
+     "i13",
+     "i14",
+     "i15",
+     "i16",
+     "i17",
+     "i18",
+     "i19"
+    ],
+    "why": {
+     "i2": "Reading this was interrupted — tap Read again",
+     "i3": "Reading this was interrupted — tap Read again",
+     "i4": "Reading this was interrupted — tap Read again",
+     "i5": "Reading this was interrupted — tap Read again",
+     "i6": "Reading this was interrupted — tap Read again",
+     "i7": "Reading this was interrupted — tap Read again",
+     "i8": "Reading this was interrupted — tap Read again",
+     "i9": "Reading this was interrupted — tap Read again",
+     "i10": "Reading this was interrupted — tap Read again",
+     "i11": "Reading this was interrupted — tap Read again",
+     "i12": "Reading this was interrupted — tap Read again",
+     "i13": "Reading this was interrupted — tap Read again",
+     "i14": "Reading this was interrupted — tap Read again",
+     "i15": "Reading this was interrupted — tap Read again",
+     "i16": "Reading this was interrupted — tap Read again",
+     "i17": "Reading this was interrupted — tap Read again",
+     "i18": "Reading this was interrupted — tap Read again",
+     "i19": "Reading this was interrupted — tap Read again"
+    }
+   }
+  },
+  {
+   "name": "odd",
+   "items": [
+    {
+     "id": "upper",
+     "status": "pending",
+     "source_url": "HTTPS://EXAMPLE.COM/x",
+     "title": null
+    },
+    {
+     "id": "http",
+     "status": "pending",
+     "source_url": "http://example.com",
+     "title": null
+    },
+    {
+     "id": "file",
+     "status": "pending",
+     "source_url": "file:///var/tmp/x.jpg",
+     "title": null
+    },
+    {
+     "id": "word",
+     "status": "pending",
+     "source_url": "not a url",
+     "title": null
+    },
+    {
+     "id": "ftp",
+     "status": "pending",
+     "source_url": "ftp://example.com",
+     "title": null
+    },
+    {
+     "id": "inside",
+     "status": "pending",
+     "source_url": "see https://example.com",
+     "title": null
+    },
+    {
+     "id": "empty",
+     "status": "pending",
+     "source_url": "",
+     "title": null
+    },
+    {
+     "id": "none",
+     "status": "pending",
+     "source_url": null,
+     "title": null
+    }
+   ],
+   "max": 6,
+   "plan": {
+    "pending": [
+     "upper",
+     "http",
+     "file",
+     "word",
+     "ftp",
+     "inside",
+     "empty",
+     "none"
+    ],
+    "retry": [
+     "upper",
+     "http"
+    ],
+    "giveUp": [
+     "file",
+     "word",
+     "ftp",
+     "inside",
+     "empty",
+     "none"
+    ],
+    "why": {
+     "file": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos.",
+     "word": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos.",
+     "ftp": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos.",
+     "inside": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos.",
+     "empty": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos.",
+     "none": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos."
+    }
+   }
+  },
+  {
+   "name": "none",
+   "items": [],
+   "max": 6,
+   "plan": {
+    "pending": [],
+    "retry": [],
+    "giveUp": [],
+    "why": {}
+   }
+  }
+ ],
+ "whyLink": "Reading this was interrupted — tap Read again",
+ "whyShot": "Reading this screenshot was interrupted, and the picture it came from is no longer here. Import it again from your photos."
+}

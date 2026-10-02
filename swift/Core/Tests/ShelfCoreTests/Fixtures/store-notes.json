@@ -1,0 +1,6 @@
+{
+ "gone1": "The shelf file isn't there any more. 1 item can be put back.",
+ "gone2": "The shelf file isn't there any more. 2 items can be put back.",
+ "bad": "Couldn't read your shelf file (18 bytes): Expected property name or '}' in JSON at position 2 (line 1 column 3). Nothing has been deleted — the file has been kept.",
+ "notShelf": "Couldn't read your shelf file (26 bytes): no items array. Nothing has been deleted — the file has been kept."
+}
