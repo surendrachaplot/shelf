@@ -54,4 +54,4 @@ xcodebuild -exportArchive -archivePath build/shelf.xcarchive -exportPath build/e
   -exportOptionsPlist build/export.plist -authenticationKeyPath ~/keys/AuthKey_$ASC_KEY_ID.p8 \
   -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID > build/export.log 2>&1 \
   || { grep -E "error:|Error" build/export.log | head -20; echo "log: $PWD/build/export.log"; exit 1; }
-tail -3 build/export.log; ls build/export; echo "✓ build $BN"
+tail -3 build/export.log; ls build/export 2>/dev/null || true; echo "✓ build $BN"

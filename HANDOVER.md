@@ -29,10 +29,10 @@ sign for the App Store, upload. No EAS. `NO_UPLOAD=1` stops before the upload.
 
 - PROVEN: archive + App Store export of `777ae24` (signed "Apple Distribution",
   app + share extension, App Group, `beta-reports-active`).
-- NOT DONE: the upload. App Store Connect has NO app record for
-  `com.surendrachaplot.shelf`, and Apple's API cannot make one. Suren makes it
-  by hand (My Apps → + → New App → iOS, bundle id `com.surendrachaplot.shelf`).
-  Then run `swift/scripts/testflight.sh` once.
+- DONE 2026-10-04: build 1.0.0 (202610042309), commit `41dba85`, is on
+  TestFlight and VALID. App record "Shelf - Save Anything", Apple id
+  6819092158. Internal group "First Cut" gets every build (3 testers invited).
+  Not yet opened on a real iPhone.
 - Signing is manual at export, because the API key gets "Cloud signing
   permission error". Profiles "shelf App Store" and "shelf share App Store"
   were made with the API (`~/gitrepo/tools/asc.mjs`), copies in `~/keys/`.

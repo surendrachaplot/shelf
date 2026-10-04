@@ -100,7 +100,7 @@ Decided 2026-10-02: the app is rewritten in Swift (`swift/`, see `swift/PLAN.md`
 | Serendipity, export, cover sizing, plate | DONE | same |
 | Share extension (eight shelves) | DONE, proven from Safari in the simulator | `swift/Tests/ShareLogicTests.swift` |
 | Every screen | DONE, seen in the iPhone 17 simulator (36 shots, 2026-10-02). One bug found and fixed there: cover titles lost their descenders | `swift/tools/shots.sh` |
-| A signed build | DONE on EAS (`8858b193…`, ad hoc). TestFlight: `swift/scripts/testflight.sh` signs for the App Store; the upload waits for the app record in App Store Connect | install it |
+| A signed build | DONE: on TestFlight, 1.0.0 (202610042309), from `swift/scripts/testflight.sh`. No Expo | install from the TestFlight app |
 | Location for "near you / open now" | NOT WIRED (the logic takes `here`; nothing asks for it) | — |
 | Entrance animation on rows | NOT DONE | — |
 | Android (Kotlin) | NOT STARTED | — |
